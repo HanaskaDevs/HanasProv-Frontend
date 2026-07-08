@@ -1,0 +1,110 @@
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
+import * as authApi from '../api/authApi';
+import { ROLES, type Usuario, type EmpresaAcceso } from '../types';
+
+interface AuthContextValue {
+  usuario: Usuario | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  idEmpresaActiva: number | null;
+  empresaActiva: EmpresaAcceso | null;
+  rolActivo: string | null;
+  esSistemas: boolean;
+  esAdmin: boolean;
+  esProveedor: boolean;
+  login: (email: string, password: string) => Promise<Usuario>;
+  logout: () => Promise<void>;
+  cambiarEmpresa: (idEmpresa: number) => Promise<void>;
+  refetchUsuario: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [idEmpresaActiva, setIdEmpresaActiva] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  async function cargarUsuarioActual() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const data = await authApi.me();
+      setUsuario(data.usuario);
+      setIdEmpresaActiva(data.id_empresa_activa);
+    } catch {
+      localStorage.removeItem('token');
+      setUsuario(null);
+      setIdEmpresaActiva(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    cargarUsuarioActual();
+  }, []);
+
+  async function login(email: string, password: string) {
+    const { usuario: usuarioLogueado, token, id_empresa_activa } = await authApi.login(email, password);
+    localStorage.setItem('token', token);
+    setUsuario(usuarioLogueado);
+    setIdEmpresaActiva(id_empresa_activa);
+    return usuarioLogueado;
+  }
+
+  async function logout() {
+    try {
+      await authApi.logout();
+    } finally {
+      localStorage.removeItem('token');
+      setUsuario(null);
+      setIdEmpresaActiva(null);
+    }
+  }
+
+  async function cambiarEmpresa(idEmpresa: number) {
+    const { id_empresa_activa } = await authApi.cambiarEmpresa(idEmpresa);
+    setIdEmpresaActiva(id_empresa_activa);
+  }
+
+  const empresaActiva = useMemo(
+    () => usuario?.empresas.find((e) => e.id_empresa === idEmpresaActiva) ?? null,
+    [usuario, idEmpresaActiva]
+  );
+
+  const rolActivo = empresaActiva?.nombre_rol ?? null;
+
+  return (
+    <AuthContext.Provider
+      value={{
+        usuario,
+        isLoading,
+        isAuthenticated: !!usuario,
+        idEmpresaActiva,
+        empresaActiva,
+        rolActivo,
+        esSistemas: rolActivo === ROLES.SISTEMAS,
+        esAdmin: rolActivo === ROLES.ADMIN,
+        esProveedor: usuario?.tipo_usuario === 'Proveedor',
+        login,
+        logout,
+        cambiarEmpresa,
+        refetchUsuario: cargarUsuarioActual,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth debe usarse dentro de un <AuthProvider>');
+  }
+  return context;
+}
