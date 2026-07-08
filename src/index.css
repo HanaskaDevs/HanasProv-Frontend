@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+@theme {
+  /* Paleta Hanaska */
+  --color-brand-900: #142831; /* Principal */
+  --color-brand-700: #274E61; /* Secundario oscuro */
+  --color-brand-200: #BDDEEB; /* Secundario claro */
+  --color-brand-wine: #772125; /* Secundario vino */
+  --color-brand-yellow: #E2DE3D; /* Detalle */
+
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-brand-900);
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+}
