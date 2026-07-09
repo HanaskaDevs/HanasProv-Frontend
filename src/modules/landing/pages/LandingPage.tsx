@@ -5,11 +5,11 @@ import HeroCarousel from '../components/HeroCarousel';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-brand-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-brand-200/40 via-white to-white flex flex-col">
       <header className="flex items-center justify-between px-8 py-6 md:px-16">
-        <Logo className="h-10" variant="light" />
+        <Logo className="h-14" variant="dark" />
         <Link to="/login">
-          <Button className="bg-brand-yellow text-brand-900 hover:bg-brand-yellow/90">Ingresar</Button>
+          <Button>Ingresar</Button>
         </Link>
       </header>
 
@@ -17,7 +17,7 @@ export default function LandingPage() {
         <HeroCarousel />
       </main>
 
-      <footer className="px-8 md:px-16 py-6 text-xs text-white/40 border-t border-white/10">
+      <footer className="px-8 md:px-16 py-6 text-xs text-brand-900/40 border-t border-brand-900/10">
         © {new Date().getFullYear()} Hanaska. Todos los derechos reservados.
       </footer>
     </div>

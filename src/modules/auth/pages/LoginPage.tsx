@@ -44,8 +44,14 @@ export default function LoginPage() {
   return (
     <AuthLayout title="Iniciar sesión" subtitle="Portal de Proveedores">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input label="Correo" type="email" {...register('email')} error={errors.email?.message} />
-        <Input label="Contraseña" type="password" {...register('password')} error={errors.password?.message} />
+       <div className="flex flex-col gap-1">
+  <label className="text-sm font-medium text-white/90">Correo</label>
+  <Input type="email" {...register('email')} error={errors.email?.message} />
+</div>
+<div className="flex flex-col gap-1">
+  <label className="text-sm font-medium text-white/90">Contraseña</label>
+  <Input type="password" {...register('password')} error={errors.password?.message} />
+</div>
 
         {errorGeneral && <p className="text-sm text-brand-wine">{errorGeneral}</p>}
 
@@ -54,7 +60,7 @@ export default function LoginPage() {
         </Button>
 
         <div className="text-center pt-1">
-          <Link to="/olvide-password" className="text-sm text-brand-700 hover:underline">
+          <Link to="/olvide-password" className="text-sm text-white/80 hover:underline">
             Olvidé mi contraseña
           </Link>
         </div>

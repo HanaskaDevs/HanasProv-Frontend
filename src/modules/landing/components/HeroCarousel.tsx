@@ -52,13 +52,9 @@ export default function HeroCarousel() {
   return (
     <div className="grid md:grid-cols-2 gap-12 items-center">
       <div className={`transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-        <p className="text-sm uppercase tracking-[0.2em] text-brand-yellow mb-4 font-semibold">
-          {slide.eyebrow}
-        </p>
-        <h2 className="font-display text-4xl md:text-5xl leading-tight text-white mb-5">
-          {slide.titulo}
-        </h2>
-        <p className="text-lg text-white/70 max-w-md mb-8">{slide.descripcion}</p>
+        <p className="text-sm uppercase tracking-[0.2em] text-brand-700 mb-4 font-semibold">{slide.eyebrow}</p>
+        <h2 className="font-display text-4xl md:text-5xl leading-tight text-brand-900 mb-5">{slide.titulo}</h2>
+        <p className="text-lg text-brand-900/70 max-w-md mb-8">{slide.descripcion}</p>
 
         <div className="flex gap-2">
           {SLIDES.map((_, i) => (
@@ -67,7 +63,7 @@ export default function HeroCarousel() {
               onClick={() => irA(i)}
               aria-label={`Ir a la diapositiva ${i + 1}`}
               className={`h-1.5 rounded-full transition-all ${
-                i === indice ? 'w-8 bg-brand-yellow' : 'w-4 bg-white/20'
+                i === indice ? 'w-8 bg-brand-wine' : 'w-4 bg-brand-900/15'
               }`}
             />
           ))}
@@ -75,11 +71,11 @@ export default function HeroCarousel() {
       </div>
 
       <div
-        className={`relative aspect-[4/3] rounded-3xl overflow-hidden bg-brand-700 transition-opacity duration-300 ${
+        className={`relative aspect-[4/3] rounded-3xl overflow-hidden bg-brand-900 shadow-xl transition-opacity duration-300 ${
           visible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-700 via-brand-900 to-brand-wine/60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-900 via-brand-700 to-brand-wine/60" />
         <svg viewBox="0 0 200 200" className="absolute inset-0 h-full w-full p-14 text-brand-yellow" fill="none">
           {indice === 0 && (
             <g stroke="currentColor" strokeWidth="2">

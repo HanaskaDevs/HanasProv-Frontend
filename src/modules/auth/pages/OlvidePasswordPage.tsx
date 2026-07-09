@@ -32,7 +32,7 @@ export default function OlvidePasswordPage() {
     try {
       await authApi.olvidePassword(values.email);
       setMensajeExito('Si el correo existe y está activo, se envió un código de recuperación.');
-      setTimeout(() => navigate(`/activar-cuenta?email=${encodeURIComponent(values.email)}`), 2000);
+      setTimeout(() => navigate(`/restablecer-password?email=${encodeURIComponent(values.email)}`), 2000);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) {
         const errores = error.response.data?.errors;
@@ -47,17 +47,20 @@ export default function OlvidePasswordPage() {
   return (
     <AuthLayout title="Olvidé mi contraseña" subtitle="Te enviaremos un código de recuperación">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input label="Correo" type="email" {...register('email')} error={errors.email?.message} />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-white/90">Correo</label>
+          <Input type="email" {...register('email')} error={errors.email?.message} />
+        </div>
 
-        {errorGeneral && <p className="text-sm text-brand-wine">{errorGeneral}</p>}
-        {mensajeExito && <p className="text-sm text-emerald-700">{mensajeExito}</p>}
+        {errorGeneral && <p className="text-sm text-red-300">{errorGeneral}</p>}
+        {mensajeExito && <p className="text-sm text-emerald-300">{mensajeExito}</p>}
 
         <Button type="submit" isLoading={isSubmitting} className="w-full">
           Enviar código
         </Button>
 
         <div className="text-center pt-1">
-          <Link to="/login" className="text-sm text-brand-700 hover:underline">
+          <Link to="/login" className="text-sm text-white/80 hover:underline">
             Volver al inicio de sesión
           </Link>
         </div>

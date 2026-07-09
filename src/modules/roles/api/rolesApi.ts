@@ -7,6 +7,6 @@ export interface Rol {
 }
 
 export async function listarRoles(): Promise<Rol[]> {
-  const { data } = await apiClient.get<Rol[]>('/roles');
+  const { data } = await apiClient.get<Rol[]>('/auth/roles');
   return data;
 }
