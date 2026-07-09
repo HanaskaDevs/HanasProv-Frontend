@@ -31,7 +31,7 @@ export default function LoginPage() {
     setErrorGeneral(null);
     try {
       await login(values.email, values.password);
-      navigate('/');
+      navigate('/panel');
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) {
         setErrorGeneral('Las credenciales no son válidas.');

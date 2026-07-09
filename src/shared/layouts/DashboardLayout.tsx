@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const navItems: NavItem[] = [
-    { to: '/', label: 'Panel principal', show: true },
+    { to: '/panel', label: 'Panel principal', show: true },
     { to: '/mi-ficha', label: 'Mi Ficha', show: esProveedor },
     { to: '/usuarios/internos', label: 'Usuarios internos', show: esSistemas },
     { to: '/usuarios/externos', label: 'Usuarios externos', show: esSistemas || esAdmin },
@@ -39,7 +39,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/'}
+                end={item.to === '/panel'}
                 className={({ isActive }) =>
                   `block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
