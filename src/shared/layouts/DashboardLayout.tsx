@@ -12,6 +12,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
+  const [cambiandoEmpresa, setCambiandoEmpresa] = useState(false);
+
+  async function handleCambiarEmpresa(idEmpresa: number) {
+    setCambiandoEmpresa(true);
+    try {
+      await cambiarEmpresa(idEmpresa);
+      // Recarga completa a propósito: garantiza que TODA la app (Mi Ficha,
+      // Documentos, Productos, etc.) vuelva a pedir sus datos frescos para
+      // la nueva empresa activa, sin tener que auditar cada página.
+      window.location.reload();
+    } catch {
+      setCambiandoEmpresa(false);
+      alert('No se pudo cambiar de empresa. Intenta de nuevo.');
+    }
+  }
 
   const menu = obtenerMenu(rolActivo, usuario?.tipo_usuario ?? 'Interno');
 
@@ -29,12 +44,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-4">
             {usuario && usuario.empresas.length > 1 && (
               <select
-                value={empresaActiva?.id_empresa ?? ''}
-                onChange={(e) => cambiarEmpresa(Number(e.target.value))}
+                value={empresaActiva ? String(empresaActiva.id_empresa) : ''}
+                onChange={(e) => handleCambiarEmpresa(Number(e.target.value))}
+                disabled={cambiandoEmpresa}
                 className="bg-white/10 text-white text-sm rounded-md px-3 py-1.5 border border-white/20"
               >
                 {usuario.empresas.map((e) => (
-                  <option key={e.id_empresa} value={e.id_empresa} className="text-brand-900">
+                  <option key={e.id_empresa} value={String(e.id_empresa)} className="text-brand-900">
                     {e.nombre_comercial ?? e.razon_social}
                   </option>
                 ))}

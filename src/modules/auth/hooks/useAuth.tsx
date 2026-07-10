@@ -86,8 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIdEmpresaActiva(id_empresa_activa);
   }
 
+  // Comparación con Number() en ambos lados: el driver de SQL Server a
+  // veces devuelve columnas numéricas como string ("2" en vez de 2), y una
+  // comparación estricta (===) entre tipos distintos nunca coincide -> la
+  // empresa activa quedaba sin resolverse aunque el dato fuera correcto.
   const empresaActiva = useMemo(
-    () => usuario?.empresas.find((e) => e.id_empresa === idEmpresaActiva) ?? null,
+    () => usuario?.empresas.find((e) => Number(e.id_empresa) === Number(idEmpresaActiva)) ?? null,
     [usuario, idEmpresaActiva]
   );
 

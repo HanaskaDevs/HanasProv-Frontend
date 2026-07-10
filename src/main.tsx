@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './modules/auth/hooks/useAuth';
+import 'leaflet/dist/leaflet.css';
 
 const queryClient = new QueryClient();
 
