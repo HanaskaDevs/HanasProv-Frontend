@@ -11,6 +11,7 @@ const schema = z.object({
   razon_social: z.string().min(1, 'Requerido'),
   ruc: z.string().min(13, 'El RUC debe tener 13 dígitos').max(13, 'El RUC debe tener 13 dígitos'),
   nombre_comercial: z.string().optional(),
+  empresa_bc: z.string().optional(),
   logo_url: z.string().optional(),
 });
 
@@ -30,6 +31,7 @@ export default function ModalEmpresa({ empresa, onClose }: { empresa: Empresa | 
       razon_social: empresa?.razon_social ?? '',
       ruc: empresa?.ruc ?? '',
       nombre_comercial: empresa?.nombre_comercial ?? '',
+      empresa_bc: empresa?.empresa_bc ?? '',
       logo_url: empresa?.logo_url ?? '',
     },
   });
@@ -54,6 +56,7 @@ export default function ModalEmpresa({ empresa, onClose }: { empresa: Empresa | 
           <Input label="Razón social" {...register('razon_social')} error={errors.razon_social?.message} />
           <Input label="RUC" {...register('ruc')} error={errors.ruc?.message} />
           <Input label="Nombre comercial (opcional)" {...register('nombre_comercial')} />
+          <Input label="Código Business Central (opcional)" {...register('empresa_bc')} />
           <Input label="URL del logo (opcional)" {...register('logo_url')} />
 
           <div className="flex justify-end gap-2 pt-2">

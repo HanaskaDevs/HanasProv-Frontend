@@ -26,35 +26,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   async function cargarUsuarioActual() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-    try {
-      const data = await authApi.me();
-      setUsuario(data.usuario);
-      setIdEmpresaActiva(data.id_empresa_activa);
-    } catch {
-      localStorage.removeItem('token');
-      setUsuario(null);
-      setIdEmpresaActiva(null);
-    } finally {
-      setIsLoading(false);
-    }
+  const token = localStorage.getItem('token');
+  if (!token) {
+    setIsLoading(false);
+    return;
   }
+  try {
+    const data = await authApi.me();
+    setUsuario(data.usuario);
+
+    if (data.id_empresa_activa) {
+      setIdEmpresaActiva(data.id_empresa_activa);
+    } else if (data.usuario.empresas.length > 0) {
+      const primeraEmpresa = data.usuario.empresas[0].id_empresa;
+      await authApi.cambiarEmpresa(primeraEmpresa);
+      setIdEmpresaActiva(primeraEmpresa);
+    }
+  } catch {
+    localStorage.removeItem('token');
+    setUsuario(null);
+    setIdEmpresaActiva(null);
+  } finally {
+    setIsLoading(false);
+  }
+}
 
   useEffect(() => {
     cargarUsuarioActual();
   }, []);
 
-  async function login(email: string, password: string) {
-    const { usuario: usuarioLogueado, token, id_empresa_activa } = await authApi.login(email, password);
-    localStorage.setItem('token', token);
-    setUsuario(usuarioLogueado);
+ async function login(email: string, password: string) {
+  const { usuario: usuarioLogueado, token, id_empresa_activa } = await authApi.login(email, password);
+  localStorage.setItem('token', token);
+  setUsuario(usuarioLogueado);
+
+  if (id_empresa_activa) {
     setIdEmpresaActiva(id_empresa_activa);
-    return usuarioLogueado;
+  } else if (usuarioLogueado.empresas.length > 0) {
+    const primeraEmpresa = usuarioLogueado.empresas[0].id_empresa;
+    await authApi.cambiarEmpresa(primeraEmpresa);
+    setIdEmpresaActiva(primeraEmpresa);
   }
+
+  return usuarioLogueado;
+}
 
   async function logout() {
     try {

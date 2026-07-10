@@ -18,10 +18,15 @@ export default function EmpresasPage() {
     queryFn: empresasApi.listarEmpresas,
   });
 
-  const inactivar = useMutation({
-    mutationFn: empresasApi.inactivarEmpresa,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['empresas'] }),
-  });
+ const inactivar = useMutation({
+  mutationFn: empresasApi.inactivarEmpresa,
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['empresas'] }),
+});
+
+const activar = useMutation({
+  mutationFn: empresasApi.activarEmpresa,
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['empresas'] }),
+});
 
   function abrirNueva() {
     setEmpresaEditando(null);
@@ -74,20 +79,29 @@ export default function EmpresasPage() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right space-x-2">
-                  <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => abrirEditar(empresa)}>
-                    Editar
-                  </Button>
-                  {empresa.activo && (
-                    <Button
-                      variant="ghost"
-                      className="text-xs px-2 py-1 text-brand-wine"
-                      isLoading={inactivar.isPending}
-                      onClick={() => inactivar.mutate(empresa.id_empresa)}
-                    >
-                      Inactivar
-                    </Button>
-                  )}
-                </td>
+  <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => abrirEditar(empresa)}>
+    Editar
+  </Button>
+  {empresa.activo ? (
+    <Button
+      variant="ghost"
+      className="text-xs px-2 py-1 text-brand-wine"
+      isLoading={inactivar.isPending}
+      onClick={() => inactivar.mutate(empresa.id_empresa)}
+    >
+      Inactivar
+    </Button>
+  ) : (
+    <Button
+      variant="ghost"
+      className="text-xs px-2 py-1 text-emerald-700"
+      isLoading={activar.isPending}
+      onClick={() => activar.mutate(empresa.id_empresa)}
+    >
+      Activar
+    </Button>
+  )}
+</td>
               </tr>
             ))}
           </tbody>

@@ -4,6 +4,7 @@ export interface Empresa {
   ruc: string;
   nombre_comercial: string | null;
   logo_url: string | null;
+  empresa_bc: string | null;
   activo: boolean;
 }
 
@@ -12,4 +13,5 @@ export interface EmpresaPayload {
   ruc: string;
   nombre_comercial?: string;
   logo_url?: string;
+  empresa_bc?: string;
 }

@@ -19,3 +19,8 @@ export async function actualizarEmpresa(idEmpresa: number, payload: EmpresaPaylo
 export async function inactivarEmpresa(idEmpresa: number): Promise<void> {
   await apiClient.delete(`/empresas/${idEmpresa}`);
 }
+
+export async function activarEmpresa(idEmpresa: number): Promise<Empresa> {
+  const { data } = await apiClient.patch<Empresa>(`/empresas/${idEmpresa}/activar`);
+  return data;
+}

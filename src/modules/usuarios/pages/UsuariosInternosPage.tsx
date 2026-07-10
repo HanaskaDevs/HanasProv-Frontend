@@ -6,12 +6,17 @@ import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import EstadoBadge from '../components/EstadoBadge';
 import ModalCrearUsuarioInterno from '../components/ModalCrearUsuarioInterno';
-import { listarInternos, type UsuarioInterno } from '../api/usuariosApi';
+import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
+import ModalEditarUsuario from '../components/ModalEditarUsuario';
+import { listarInternos, inactivarUsuario, reactivarUsuario, type UsuarioInterno } from '../api/usuariosApi';
 
 function UsuariosInternosContent() {
   const [usuarios, setUsuarios] = useState<UsuarioInterno[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [usuarioParaEmpresa, setUsuarioParaEmpresa] = useState<number | null>(null);
+  const [usuarioEditando, setUsuarioEditando] = useState<number | null>(null);
+  const [procesandoId, setProcesandoId] = useState<number | null>(null);
 
   const cargar = useCallback(async () => {
     setIsLoading(true);
@@ -26,6 +31,20 @@ function UsuariosInternosContent() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  async function alternarEstado(u: UsuarioInterno) {
+    setProcesandoId(u.id);
+    try {
+      if (u.activo) {
+        await inactivarUsuario(u.id);
+      } else {
+        await reactivarUsuario(u.id);
+      }
+      await cargar();
+    } finally {
+      setProcesandoId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -52,6 +71,7 @@ function UsuariosInternosContent() {
                 <th className="px-4 py-3 font-medium">Correo</th>
                 <th className="px-4 py-3 font-medium">Rol</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-900/8">
@@ -63,6 +83,26 @@ function UsuariosInternosContent() {
                   <td className="px-4 py-3">
                     <EstadoBadge activo={u.activo} requiereActivacion={u.requiere_activacion} />
                   </td>
+                  <td className="px-4 py-3 text-right space-x-2">
+                    <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => setUsuarioEditando(u.id)}>
+                      Editar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="text-xs px-2 py-1"
+                      onClick={() => setUsuarioParaEmpresa(u.id)}
+                    >
+                      + Empresa
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className={`text-xs px-2 py-1 ${u.activo ? 'text-brand-wine' : 'text-emerald-700'}`}
+                      isLoading={procesandoId === u.id}
+                      onClick={() => alternarEstado(u)}
+                    >
+                      {u.activo ? 'Inactivar' : 'Reactivar'}
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -72,6 +112,24 @@ function UsuariosInternosContent() {
 
       {modalAbierto && (
         <ModalCrearUsuarioInterno onClose={() => setModalAbierto(false)} onCreado={cargar} />
+      )}
+
+      {usuarioParaEmpresa !== null && (
+        <ModalAgregarEmpresa
+          idUsuario={usuarioParaEmpresa}
+          esInterno
+          onClose={() => setUsuarioParaEmpresa(null)}
+          onAgregado={cargar}
+        />
+      )}
+
+      {usuarioEditando !== null && (
+        <ModalEditarUsuario
+          idUsuario={usuarioEditando}
+          esInterno
+          onClose={() => setUsuarioEditando(null)}
+          onActualizado={cargar}
+        />
       )}
     </div>
   );

@@ -22,11 +22,11 @@ export default function AppRoutes() {
       <Route path="/activar-cuenta" element={<ActivarCuentaPage />} />
       <Route path="/olvide-password" element={<OlvidePasswordPage />} />
       <Route path="/restablecer-password" element={<RestablecerPasswordPage />} />
-      <Route path="/empresas" element={<EmpresasPage />} />
+     
 
       <Route element={<ProtectedRoute />}>
         <Route path="/panel" element={<DashboardHomePage />} />
-
+        <Route path="/empresas" element={<EmpresasPage />} />
         <Route path="/mi-ficha" element={<MiFichaPage />} />
         <Route path="/documentos" element={<DocumentosPage />} />
         <Route path="/productos" element={<ProductosPage />} />
