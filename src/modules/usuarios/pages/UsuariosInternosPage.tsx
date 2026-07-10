@@ -1,9 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import RoleRoute from '../../../routes/RoleRoute';
 import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+import BarraBusqueda from '../../../shared/components/BarraBusqueda';
+import SelectFiltro from '../../../shared/components/SelectFiltro';
 import EstadoBadge from '../components/EstadoBadge';
 import ModalCrearUsuarioInterno from '../components/ModalCrearUsuarioInterno';
 import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
@@ -17,6 +19,9 @@ function UsuariosInternosContent() {
   const [usuarioParaEmpresa, setUsuarioParaEmpresa] = useState<number | null>(null);
   const [usuarioEditando, setUsuarioEditando] = useState<number | null>(null);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroRol, setFiltroRol] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
 
   const cargar = useCallback(async () => {
     setIsLoading(true);
@@ -31,6 +36,25 @@ function UsuariosInternosContent() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  const rolesDisponibles = useMemo(() => {
+    const nombres = new Set(usuarios.map((u) => u.rol?.nombre_rol).filter((n): n is string => !!n));
+    return Array.from(nombres).map((n) => ({ valor: n, etiqueta: n }));
+  }, [usuarios]);
+
+  const usuariosFiltrados = useMemo(() => {
+    return usuarios.filter((u) => {
+      const texto = busqueda.trim().toLowerCase();
+      const coincideBusqueda =
+        !texto || u.nombre_completo.toLowerCase().includes(texto) || u.email.toLowerCase().includes(texto);
+
+      const coincideRol = !filtroRol || u.rol?.nombre_rol === filtroRol;
+
+      const coincideEstado = !filtroEstado || (filtroEstado === 'activo' ? u.activo : !u.activo);
+
+      return coincideBusqueda && coincideRol && coincideEstado;
+    });
+  }, [usuarios, busqueda, filtroRol, filtroEstado]);
 
   async function alternarEstado(u: UsuarioInterno) {
     setProcesandoId(u.id);
@@ -56,13 +80,34 @@ function UsuariosInternosContent() {
         <Button onClick={() => setModalAbierto(true)}>Nuevo usuario</Button>
       </div>
 
+      <div className="flex items-center gap-3">
+        <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por nombre o correo..." />
+        <SelectFiltro
+          valor={filtroRol}
+          onCambiar={setFiltroRol}
+          opciones={rolesDisponibles}
+          etiquetaTodos="Todos los roles"
+        />
+        <SelectFiltro
+          valor={filtroEstado}
+          onCambiar={setFiltroEstado}
+          opciones={[
+            { valor: 'activo', etiqueta: 'Activos' },
+            { valor: 'inactivo', etiqueta: 'Inactivos' },
+          ]}
+          etiquetaTodos="Todos los estados"
+        />
+      </div>
+
       <Card className="p-0 overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Spinner />
           </div>
-        ) : usuarios.length === 0 ? (
-          <p className="text-center text-sm text-brand-900/50 py-12">Todavía no hay usuarios internos creados.</p>
+        ) : usuariosFiltrados.length === 0 ? (
+          <p className="text-center text-sm text-brand-900/50 py-12">
+            No hay usuarios internos que coincidan con la búsqueda.
+          </p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-brand-200/30 text-left text-brand-900/70">
@@ -75,7 +120,7 @@ function UsuariosInternosContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-900/8">
-              {usuarios.map((u) => (
+              {usuariosFiltrados.map((u) => (
                 <tr key={u.id}>
                   <td className="px-4 py-3 text-brand-900">{u.nombre_completo}</td>
                   <td className="px-4 py-3 text-brand-900/70">{u.email}</td>

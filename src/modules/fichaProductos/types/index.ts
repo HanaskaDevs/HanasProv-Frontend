@@ -14,7 +14,7 @@ export interface Producto {
   nombre_producto: string;
   codigo_barras: string | null;
   unidad_presentacion: string;
-  precio: string;
+  precio: string | null;
   documentos: DocumentoProducto[];
 }
 
@@ -22,5 +22,5 @@ export interface NuevoProducto {
   nombre_producto: string;
   codigo_barras?: string;
   id_unidad_presentacion: number;
-  precio: number;
+  precio?: number;
 }

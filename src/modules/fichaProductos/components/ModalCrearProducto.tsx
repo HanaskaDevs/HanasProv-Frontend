@@ -10,7 +10,7 @@ const schema = z.object({
   nombre_producto: z.string().min(1, 'El nombre es requerido'),
   codigo_barras: z.string().optional(),
   id_unidad_presentacion: z.coerce.number().min(1, 'Selecciona una unidad'),
-  precio: z.coerce.number().min(0, 'El precio debe ser positivo'),
+  precio: z.coerce.number().min(0, 'El precio debe ser positivo').optional(),
 });
 
 type FormInput = z.input<typeof schema>;

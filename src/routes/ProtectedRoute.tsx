@@ -1,10 +1,17 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../modules/auth/hooks/useAuth';
 import DashboardLayout from '../shared/layouts/DashboardLayout';
 import Spinner from '../shared/components/Spinner';
+import { useInactividad } from '../shared/hooks/useInactividad';
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useInactividad(15, async () => {
+    await logout();
+    navigate('/login');
+  });
 
   if (isLoading) {
     return (

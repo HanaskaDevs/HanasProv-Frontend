@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as empresasApi from '../api/empresasApi';
 import type { Empresa } from '../types';
@@ -6,27 +6,46 @@ import Card from '../../../shared/components/Card';
 import Badge from '../../../shared/components/Badge';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+import BarraBusqueda from '../../../shared/components/BarraBusqueda';
+import SelectFiltro from '../../../shared/components/SelectFiltro';
 import ModalEmpresa from '../components/ModalEmpresa';
 
 export default function EmpresasPage() {
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [empresaEditando, setEmpresaEditando] = useState<Empresa | null>(null);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['empresas'],
     queryFn: empresasApi.listarEmpresas,
   });
 
- const inactivar = useMutation({
-  mutationFn: empresasApi.inactivarEmpresa,
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['empresas'] }),
-});
+  const inactivar = useMutation({
+    mutationFn: empresasApi.inactivarEmpresa,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['empresas'] }),
+  });
 
-const activar = useMutation({
-  mutationFn: empresasApi.activarEmpresa,
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['empresas'] }),
-});
+  const activar = useMutation({
+    mutationFn: empresasApi.activarEmpresa,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['empresas'] }),
+  });
+
+  const empresasFiltradas = useMemo(() => {
+    return (data ?? []).filter((e) => {
+      const texto = busqueda.trim().toLowerCase();
+      const coincideBusqueda =
+        !texto ||
+        e.razon_social.toLowerCase().includes(texto) ||
+        e.ruc.includes(texto) ||
+        (e.nombre_comercial?.toLowerCase().includes(texto) ?? false);
+
+      const coincideEstado = !filtroEstado || (filtroEstado === 'activa' ? e.activo : !e.activo);
+
+      return coincideBusqueda && coincideEstado;
+    });
+  }, [data, busqueda, filtroEstado]);
 
   function abrirNueva() {
     setEmpresaEditando(null);
@@ -56,6 +75,19 @@ const activar = useMutation({
         <Button onClick={abrirNueva}>+ Nueva empresa</Button>
       </div>
 
+      <div className="flex items-center gap-3">
+        <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por razón social o RUC..." />
+        <SelectFiltro
+          valor={filtroEstado}
+          onCambiar={setFiltroEstado}
+          opciones={[
+            { valor: 'activa', etiqueta: 'Activas' },
+            { valor: 'inactiva', etiqueta: 'Inactivas' },
+          ]}
+          etiquetaTodos="Todos los estados"
+        />
+      </div>
+
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-brand-200/20 text-brand-900/70 text-left">
@@ -68,7 +100,7 @@ const activar = useMutation({
             </tr>
           </thead>
           <tbody>
-            {data?.map((empresa) => (
+            {empresasFiltradas.map((empresa) => (
               <tr key={empresa.id_empresa} className="border-t border-brand-900/8">
                 <td className="px-4 py-3 text-brand-900">{empresa.razon_social}</td>
                 <td className="px-4 py-3 text-brand-900/70">{empresa.ruc}</td>
@@ -79,36 +111,36 @@ const activar = useMutation({
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right space-x-2">
-  <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => abrirEditar(empresa)}>
-    Editar
-  </Button>
-  {empresa.activo ? (
-    <Button
-      variant="ghost"
-      className="text-xs px-2 py-1 text-brand-wine"
-      isLoading={inactivar.isPending}
-      onClick={() => inactivar.mutate(empresa.id_empresa)}
-    >
-      Inactivar
-    </Button>
-  ) : (
-    <Button
-      variant="ghost"
-      className="text-xs px-2 py-1 text-emerald-700"
-      isLoading={activar.isPending}
-      onClick={() => activar.mutate(empresa.id_empresa)}
-    >
-      Activar
-    </Button>
-  )}
-</td>
+                  <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => abrirEditar(empresa)}>
+                    Editar
+                  </Button>
+                  {empresa.activo ? (
+                    <Button
+                      variant="ghost"
+                      className="text-xs px-2 py-1 text-brand-wine"
+                      isLoading={inactivar.isPending}
+                      onClick={() => inactivar.mutate(empresa.id_empresa)}
+                    >
+                      Inactivar
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      className="text-xs px-2 py-1 text-emerald-700"
+                      isLoading={activar.isPending}
+                      onClick={() => activar.mutate(empresa.id_empresa)}
+                    >
+                      Activar
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {data?.length === 0 && (
-          <p className="text-sm text-brand-900/60 text-center py-10">Todavía no hay empresas registradas.</p>
+        {empresasFiltradas.length === 0 && (
+          <p className="text-sm text-brand-900/60 text-center py-10">No hay empresas que coincidan con la búsqueda.</p>
         )}
       </Card>
 

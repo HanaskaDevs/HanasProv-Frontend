@@ -13,6 +13,7 @@ import ProximamentePage from '../shared/pages/ProximamentePage';
 import ProtectedRoute from './ProtectedRoute';
 import RestablecerPasswordPage from '../modules/auth/pages/RestablecerPasswordPage';
 import EmpresasPage from '../modules/empresas/pages/EmpresasPage';
+import PedidosAbiertosPage from '../modules/pedidos/pages/PedidosAbiertosPage';
 
 export default function AppRoutes() {
   return (
@@ -36,7 +37,7 @@ export default function AppRoutes() {
         <Route path="/proveedores" element={<ProximamentePage titulo="Proveedores" />} />
 
         <Route path="/calificacion" element={<ProximamentePage titulo="Calificación" />} />
-        <Route path="/pedidos/abiertos" element={<ProximamentePage titulo="Pedidos Abiertos" />} />
+        <Route path="/pedidos/abiertos" element={<PedidosAbiertosPage />} />
         <Route path="/pedidos/cerrados" element={<ProximamentePage titulo="Pedidos Cerrados" />} />
         <Route path="/reclamos/abiertos" element={<ProximamentePage titulo="Reclamos Abiertos" />} />
         <Route path="/reclamos/cerrados" element={<ProximamentePage titulo="Reclamos Cerrados" />} />

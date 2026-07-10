@@ -28,3 +28,11 @@ export async function listarUnidadesPresentacion(): Promise<UnidadPresentacion[]
   const { data } = await apiClient.get<UnidadPresentacion[]>('/mis-productos/unidades-presentacion');
   return data;
 }
+
+export async function verDocumentoProducto(idDocumentoProducto: number): Promise<void> {
+  const { data } = await apiClient.get(`/mis-productos/documentos/${idDocumentoProducto}/ver`, {
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(data);
+  window.open(url, '_blank');
+}
