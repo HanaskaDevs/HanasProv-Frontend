@@ -56,14 +56,14 @@ export default function Seccion3Form({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <p className="text-sm text-brand-900/60">Selecciona todas las que apliquen.</p>
 
-      <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+      <div className="grid grid-cols-2 gap-2">
         {catalogo.map((categoria) => (
           <label
             key={categoria.id_categoria_producto}
-            className={`flex items-center gap-3 rounded-md border px-4 py-3 text-sm cursor-pointer transition-colors
+            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors
               ${
                 seleccionIds.includes(categoria.id_categoria_producto)
                   ? 'border-brand-900 bg-brand-200/30'
