@@ -9,13 +9,13 @@ const ETIQUETAS = ['Datos Generales', 'Contactos', 'Clase de Proveedor', 'Catego
 
 export default function ProgressSteps({ pasoActual, pasosCompletados, onIrAPaso, porcentaje }: ProgressStepsProps) {
   return (
-    <div className="mb-8">
+    <div className="mb-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-brand-900">Progreso de la Ficha</span>
         <span className="text-sm font-medium text-brand-700">{porcentaje}%</span>
       </div>
 
-      <div className="h-2 w-full rounded-full bg-brand-200/50 mb-6 overflow-hidden">
+      <div className="h-2 w-full rounded-full bg-brand-200/50 mb-3 overflow-hidden">
         <div
           className="h-full rounded-full bg-brand-900 transition-all duration-300"
           style={{ width: `${porcentaje}%` }}

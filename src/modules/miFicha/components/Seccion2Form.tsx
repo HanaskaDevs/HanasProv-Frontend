@@ -54,14 +54,14 @@ export default function Seccion2Form({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <p className="text-sm text-brand-900/60">Selecciona todas las que apliquen.</p>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         {catalogo.map((clase) => (
           <label
             key={clase.id_clase_proveedor}
-            className={`flex items-center gap-3 rounded-md border px-4 py-3 text-sm cursor-pointer transition-colors
+            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors
               ${
                 seleccionIds.includes(clase.id_clase_proveedor)
                   ? 'border-brand-900 bg-brand-200/30'

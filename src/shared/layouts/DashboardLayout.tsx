@@ -36,8 +36,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-brand-200/10">
-      <header className="bg-brand-900 text-white">
+    <div className="h-screen flex flex-col overflow-hidden bg-brand-200/10">
+      <header className="bg-brand-900 text-white shrink-0">
         <div className="flex items-center justify-between px-6 py-3">
           <LogoLink className="h-12" variant="light" />
 
@@ -136,7 +136,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="p-8">{children}</main>
+      <main className="flex-1 overflow-y-auto p-8">{children}</main>
 
       {modalPasswordAbierto && <ModalCambiarPassword onClose={() => setModalPasswordAbierto(false)} />}
     </div>

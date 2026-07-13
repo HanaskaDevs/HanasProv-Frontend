@@ -2,36 +2,39 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
-import Input from '../../../shared/components/Input';
+import CampoFicha from './CampoFicha';
 import Button from '../../../shared/components/Button';
 import LocationPicker from './LocationPicker';
 import { guardarSeccion1 } from '../api/fichaApi';
 import type { FichaProveedor, Seccion1Data } from '../types';
 
+const requerido = (mensaje = 'Requerido') => z.string().min(1, mensaje);
+const correoRequerido = z.string().min(1, 'Requerido').email('Correo inválido');
+
 const schema = z.object({
   ruc: z.string().length(13, 'El RUC debe tener 13 dígitos'),
-  clase_contribuyente: z.string().optional(),
-  razon_social: z.string().min(1, 'Requerido'),
-  nombre_comercial: z.string().optional(),
-  email: z.string().email('Correo inválido'),
-  telefono: z.string().optional(),
-  direccion: z.string().optional(),
-  ciudad: z.string().optional(),
+  clase_contribuyente: requerido(),
+  razon_social: requerido(),
+  nombre_comercial: requerido(),
+  email: correoRequerido,
+  telefono: requerido(),
+  direccion: requerido(),
+  ciudad: requerido(),
   pagina_web: z.string().optional(),
-  latitud: z.string().optional(),
-  longitud: z.string().optional(),
-  representante_legal: z.string().optional(),
-  correo_representante: z.string().email('Correo inválido').optional().or(z.literal('')),
-  telefono_representante: z.string().optional(),
-  contacto_venta: z.string().optional(),
-  correo_venta: z.string().email('Correo inválido').optional().or(z.literal('')),
-  telefono_contacto_venta: z.string().optional(),
-  contacto_calidad: z.string().optional(),
-  correo_calidad: z.string().email('Correo inválido').optional().or(z.literal('')),
-  telefono_contacto_calidad: z.string().optional(),
-  contacto_contabilidad: z.string().optional(),
-  correo_contabilidad: z.string().email('Correo inválido').optional().or(z.literal('')),
-  telefono_contabilidad: z.string().optional(),
+  latitud: requerido('Selecciona la ubicación en el mapa'),
+  longitud: requerido('Selecciona la ubicación en el mapa'),
+  representante_legal: requerido(),
+  correo_representante: correoRequerido,
+  telefono_representante: requerido(),
+  contacto_venta: requerido(),
+  correo_venta: correoRequerido,
+  telefono_contacto_venta: requerido(),
+  contacto_calidad: requerido(),
+  correo_calidad: correoRequerido,
+  telefono_contacto_calidad: requerido(),
+  contacto_contabilidad: requerido(),
+  correo_contabilidad: correoRequerido,
+  telefono_contabilidad: requerido(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -40,7 +43,22 @@ function aTexto(valor: string | number | null | undefined): string {
   return valor === null || valor === undefined ? '' : String(valor);
 }
 
-const CAMPOS_DATOS_GENERALES: (keyof FormValues)[] = ['ruc', 'razon_social', 'email'];
+const CAMPOS_DATOS_GENERALES: (keyof FormValues)[] = [
+  'ruc',
+  'clase_contribuyente',
+  'razon_social',
+  'nombre_comercial',
+  'email',
+  'telefono',
+  'direccion',
+  'ciudad',
+  'latitud',
+  'longitud',
+];
+
+function Divisor() {
+  return <hr className="border-t border-brand-900/10" />;
+}
 
 /**
  * Cubre los pasos 1 (Datos Generales) y 2 (Contactos) del wizard -> el
@@ -49,12 +67,8 @@ const CAMPOS_DATOS_GENERALES: (keyof FormValues)[] = ['ruc', 'razon_social', 'em
  * pierde lo escrito al ir y volver entre ellos) y se guardan juntos al
  * terminar el paso 2.
  *
- * IMPORTANTE: el <form> NO tiene onSubmit nativo a propósito. "Siguiente"
- * y "Guardar y continuar" son ambos type="button", disparando la lógica
- * explícitamente por código (handleSubmit(onSubmit)() en vez de depender
- * de un submit real) -> evita que un cambio de layout a mitad de un clic
- * (el botón "Siguiente" es reemplazado por "Guardar y continuar" en la
- * misma posición al avanzar de paso) pueda disparar un submit accidental.
+ * IMPORTANTE: el <form> NO tiene onSubmit nativo a propósito -> ver nota
+ * en los botones al final del archivo.
  */
 export default function InformacionProveedorForm({
   subPaso,
@@ -124,20 +138,30 @@ export default function InformacionProveedorForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {subPaso === 1 && (
         <>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="RUC" {...register('ruc')} error={errors.ruc?.message} />
-            <Input label="Clase de contribuyente" {...register('clase_contribuyente')} />
-            <Input label="Razón social" {...register('razon_social')} error={errors.razon_social?.message} />
-            <Input label="Nombre comercial" {...register('nombre_comercial')} />
-            <Input label="Correo" type="email" {...register('email')} error={errors.email?.message} />
-            <Input label="Teléfono" {...register('telefono')} />
-            <Input label="Dirección" {...register('direccion')} />
-            <Input label="Ciudad" {...register('ciudad')} />
-            <Input label="Página web" {...register('pagina_web')} />
+          <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+            <CampoFicha label="RUC" {...register('ruc')} error={errors.ruc?.message} />
+            <CampoFicha
+              label="Clase de contribuyente"
+              {...register('clase_contribuyente')}
+              error={errors.clase_contribuyente?.message}
+            />
+            <CampoFicha label="Razón social" {...register('razon_social')} error={errors.razon_social?.message} />
+            <CampoFicha
+              label="Nombre comercial"
+              {...register('nombre_comercial')}
+              error={errors.nombre_comercial?.message}
+            />
+            <CampoFicha label="Correo" type="email" {...register('email')} error={errors.email?.message} />
+            <CampoFicha label="Teléfono" {...register('telefono')} error={errors.telefono?.message} />
+            <CampoFicha label="Dirección" {...register('direccion')} error={errors.direccion?.message} />
+            <CampoFicha label="Ciudad" {...register('ciudad')} error={errors.ciudad?.message} />
+            <CampoFicha label="Página web (opcional)" {...register('pagina_web')} />
           </div>
+
+          <Divisor />
 
           <LocationPicker
             latitudInicial={datosIniciales.latitud ? Number(datosIniciales.latitud) : null}
@@ -147,19 +171,30 @@ export default function InformacionProveedorForm({
               setValue('longitud', String(lng));
             }}
           />
+          {(errors.latitud || errors.longitud) && (
+            <p className="text-xs text-brand-wine">{errors.latitud?.message ?? errors.longitud?.message}</p>
+          )}
         </>
       )}
 
       {subPaso === 2 && (
-        <div className="space-y-6">
-          <section className="space-y-4">
-            <h3 className="font-display text-xs font-semibold text-brand-900 uppercase tracking-wide">
+        <div className="space-y-3">
+          <section className="space-y-1.5">
+            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
               Representante legal
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Nombre" {...register('representante_legal')} />
-              <Input label="Teléfono" {...register('telefono_representante')} />
-              <Input
+            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+              <CampoFicha
+                label="Nombre"
+                {...register('representante_legal')}
+                error={errors.representante_legal?.message}
+              />
+              <CampoFicha
+                label="Teléfono"
+                {...register('telefono_representante')}
+                error={errors.telefono_representante?.message}
+              />
+              <CampoFicha
                 label="Correo"
                 type="email"
                 {...register('correo_representante')}
@@ -168,14 +203,20 @@ export default function InformacionProveedorForm({
             </div>
           </section>
 
-          <section className="space-y-4">
-            <h3 className="font-display text-xs font-semibold text-brand-900 uppercase tracking-wide">
+          <Divisor />
+
+          <section className="space-y-1.5">
+            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
               Contacto de ventas
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Nombre" {...register('contacto_venta')} />
-              <Input label="Teléfono" {...register('telefono_contacto_venta')} />
-              <Input
+            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+              <CampoFicha label="Nombre" {...register('contacto_venta')} error={errors.contacto_venta?.message} />
+              <CampoFicha
+                label="Teléfono"
+                {...register('telefono_contacto_venta')}
+                error={errors.telefono_contacto_venta?.message}
+              />
+              <CampoFicha
                 label="Correo"
                 type="email"
                 {...register('correo_venta')}
@@ -184,14 +225,24 @@ export default function InformacionProveedorForm({
             </div>
           </section>
 
-          <section className="space-y-4">
-            <h3 className="font-display text-xs font-semibold text-brand-900 uppercase tracking-wide">
+          <Divisor />
+
+          <section className="space-y-1.5">
+            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
               Contacto de calidad
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Nombre" {...register('contacto_calidad')} />
-              <Input label="Teléfono" {...register('telefono_contacto_calidad')} />
-              <Input
+            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+              <CampoFicha
+                label="Nombre"
+                {...register('contacto_calidad')}
+                error={errors.contacto_calidad?.message}
+              />
+              <CampoFicha
+                label="Teléfono"
+                {...register('telefono_contacto_calidad')}
+                error={errors.telefono_contacto_calidad?.message}
+              />
+              <CampoFicha
                 label="Correo"
                 type="email"
                 {...register('correo_calidad')}
@@ -200,14 +251,24 @@ export default function InformacionProveedorForm({
             </div>
           </section>
 
-          <section className="space-y-4">
-            <h3 className="font-display text-xs font-semibold text-brand-900 uppercase tracking-wide">
+          <Divisor />
+
+          <section className="space-y-1.5">
+            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
               Contacto de contabilidad
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Nombre" {...register('contacto_contabilidad')} />
-              <Input label="Teléfono" {...register('telefono_contabilidad')} />
-              <Input
+            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+              <CampoFicha
+                label="Nombre"
+                {...register('contacto_contabilidad')}
+                error={errors.contacto_contabilidad?.message}
+              />
+              <CampoFicha
+                label="Teléfono"
+                {...register('telefono_contabilidad')}
+                error={errors.telefono_contabilidad?.message}
+              />
+              <CampoFicha
                 label="Correo"
                 type="email"
                 {...register('correo_contabilidad')}
