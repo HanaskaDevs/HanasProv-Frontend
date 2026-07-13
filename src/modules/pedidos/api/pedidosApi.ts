@@ -15,3 +15,17 @@ export async function actualizarPedidos(): Promise<{ message: string; total: num
   const { data } = await apiClient.post('/pedidos/actualizar');
   return data;
 }
+
+export async function descargarPedidosPdf(ids: number[]): Promise<void> {
+  const { data } = await apiClient.post(
+    '/pedidos/descargar-pdf',
+    { ids },
+    { responseType: 'blob' }
+  );
+  const url = window.URL.createObjectURL(data);
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = ids.length === 1 ? `pedido-${ids[0]}.pdf` : 'pedidos.pdf';
+  enlace.click();
+  window.URL.revokeObjectURL(url);
+}

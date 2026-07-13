@@ -11,13 +11,7 @@ export interface MenuItem {
   children?: SubMenuItem[];
 }
 
-const PEDIDOS: MenuItem = {
-  label: 'Pedidos',
-  children: [
-    { to: '/pedidos/abiertos', label: 'Pedidos Abiertos' },
-    { to: '/pedidos/cerrados', label: 'Pedidos Cerrados' },
-  ],
-};
+const PEDIDOS: MenuItem = { label: 'Pedidos', to: '/pedidos' };
 
 const RECLAMOS: MenuItem = {
   label: 'Reclamos',
