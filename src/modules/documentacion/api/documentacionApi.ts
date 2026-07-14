@@ -1,23 +1,49 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { TipoDocumentoChecklist } from '../types';
+import type { ChecklistDocumentacion } from '../types';
 
-export async function obtenerChecklist(): Promise<TipoDocumentoChecklist[]> {
-  const { data } = await apiClient.get<TipoDocumentoChecklist[]>('/mi-documentos');
+export async function obtenerChecklist(): Promise<ChecklistDocumentacion> {
+  const { data } = await apiClient.get<ChecklistDocumentacion>('/mi-documentos');
   return data;
 }
 
 export async function subirDocumento(
   idTipoDocumento: number,
   archivo: File,
-  fechaCaducidad?: string
+  fechaCaducidad?: string,
+  nombreDocumento?: string
 ): Promise<void> {
   const formData = new FormData();
   formData.append('archivo', archivo);
   if (fechaCaducidad) formData.append('fecha_caducidad', fechaCaducidad);
+  if (nombreDocumento) formData.append('nombre_documento', nombreDocumento);
 
   await apiClient.post(`/mi-documentos/${idTipoDocumento}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+}
+
+export async function reemplazarDocumento(
+  idDocumentoProveedor: number,
+  archivo: File,
+  fechaCaducidad?: string,
+  nombreDocumento?: string
+): Promise<void> {
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+  if (fechaCaducidad) formData.append('fecha_caducidad', fechaCaducidad);
+  if (nombreDocumento) formData.append('nombre_documento', nombreDocumento);
+
+  await apiClient.post(`/mi-documentos/documento/${idDocumentoProveedor}/reemplazar`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
+export async function borrarDocumento(idDocumentoProveedor: number): Promise<void> {
+  await apiClient.delete(`/mi-documentos/documento/${idDocumentoProveedor}`);
+}
+
+export async function registrarDocumentacion(): Promise<void> {
+  await apiClient.post('/mi-documentos/registrar');
 }
 
 export async function descargarDocumento(idDocumentoProveedor: number): Promise<void> {

@@ -1,77 +1,78 @@
 import Badge from '../../../shared/components/Badge';
+import CampoFicha from './CampoFicha';
 import type { FichaProveedor } from '../types';
 
-function Campo({ label, valor }: { label: string; valor: string | number | null | undefined }) {
-  return (
-    <div>
-      <p className="text-xs text-brand-900/50">{label}</p>
-      <p className="text-sm text-brand-900">{valor || '—'}</p>
-    </div>
-  );
+function aTexto(valor: string | number | null | undefined): string {
+  return valor === null || valor === undefined ? '' : String(valor);
 }
 
+/**
+ * Misma cara visual que InformacionProveedorForm (CampoFicha, grilla de 2
+ * columnas, títulos de sección en negrita) pero 100% de solo lectura:
+ * todos los inputs van "disabled" -> el usuario ve exactamente el mismo
+ * formato que cuando la ficha estaba en edición, sin poder tocar nada.
+ */
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-1.5 pb-3 border-b border-brand-900/10 last:border-0">
-      <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
+    <section className="space-y-2 pb-3 border-b border-brand-900/10 last:border-0">
+      <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
         {titulo}
       </h3>
-      <div className="grid grid-cols-3 gap-x-6 gap-y-2">{children}</div>
+      <div className="grid grid-cols-2 gap-x-10 gap-y-3">{children}</div>
     </section>
   );
 }
 
 export default function VistaFichaCompleta({ ficha }: { ficha: FichaProveedor }) {
   const s1 = ficha.seccion_1;
+  const ubicacion =
+    s1.latitud && s1.longitud ? `${s1.latitud}, ${s1.longitud}` : '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="rounded-md bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
         Tu ficha está completa y en revisión. No se puede editar mientras el equipo la evalúa.
       </div>
 
       <Seccion titulo="Datos generales">
-        <Campo label="RUC" valor={s1.ruc} />
-        <Campo label="Clase de contribuyente" valor={s1.clase_contribuyente} />
-        <Campo label="Razón social" valor={s1.razon_social} />
-        <Campo label="Nombre comercial" valor={s1.nombre_comercial} />
-        <Campo label="Correo" valor={s1.email} />
-        <Campo label="Teléfono" valor={s1.telefono} />
-        <Campo label="Dirección" valor={s1.direccion} />
-        <Campo label="Ciudad" valor={s1.ciudad} />
-        <Campo label="Página web" valor={s1.pagina_web} />
-        <Campo
-          label="Ubicación"
-          valor={s1.latitud && s1.longitud ? `${s1.latitud}, ${s1.longitud}` : null}
-        />
+        <CampoFicha label="RUC" value={aTexto(s1.ruc)} disabled />
+        <CampoFicha label="Clase de contribuyente" value={aTexto(s1.clase_contribuyente)} disabled />
+        <CampoFicha label="Razón social" value={aTexto(s1.razon_social)} disabled />
+        <CampoFicha label="Nombre comercial" value={aTexto(s1.nombre_comercial)} disabled />
+        <CampoFicha label="Correo" value={aTexto(s1.email)} disabled />
+        <CampoFicha label="Teléfono" value={aTexto(s1.telefono)} disabled />
+        <CampoFicha label="Dirección" value={aTexto(s1.direccion)} disabled />
+        <CampoFicha label="Ciudad" value={aTexto(s1.ciudad)} disabled />
+        <CampoFicha label="Página web (opcional)" value={aTexto(s1.pagina_web)} disabled />
+        <CampoFicha label="Ubicación" value={ubicacion} disabled />
       </Seccion>
 
       <Seccion titulo="Representante legal">
-        <Campo label="Nombre" valor={s1.representante_legal} />
-        <Campo label="Teléfono" valor={s1.telefono_representante} />
-        <Campo label="Correo" valor={s1.correo_representante} />
+        <CampoFicha label="Nombre" value={aTexto(s1.representante_legal)} disabled />
+        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_representante)} disabled />
+        <CampoFicha label="Correo" value={aTexto(s1.correo_representante)} disabled />
       </Seccion>
 
       <Seccion titulo="Contacto de ventas">
-        <Campo label="Nombre" valor={s1.contacto_venta} />
-        <Campo label="Teléfono" valor={s1.telefono_contacto_venta} />
-        <Campo label="Correo" valor={s1.correo_venta} />
+        <CampoFicha label="Nombre" value={aTexto(s1.contacto_venta)} disabled />
+        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_contacto_venta)} disabled />
+        <CampoFicha label="Correo" value={aTexto(s1.correo_venta)} disabled />
       </Seccion>
 
       <Seccion titulo="Contacto de calidad">
-        <Campo label="Nombre" valor={s1.contacto_calidad} />
-        <Campo label="Teléfono" valor={s1.telefono_contacto_calidad} />
-        <Campo label="Correo" valor={s1.correo_calidad} />
+        <CampoFicha label="Nombre" value={aTexto(s1.contacto_calidad)} disabled />
+        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_contacto_calidad)} disabled />
+        <CampoFicha label="Correo" value={aTexto(s1.correo_calidad)} disabled />
       </Seccion>
 
       <Seccion titulo="Contacto de contabilidad">
-        <Campo label="Nombre" valor={s1.contacto_contabilidad} />
-        <Campo label="Teléfono" valor={s1.telefono_contabilidad} />
-        <Campo label="Correo" valor={s1.correo_contabilidad} />
+        <CampoFicha label="Nombre" value={aTexto(s1.contacto_contabilidad)} disabled />
+        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_contabilidad)} disabled />
+        <CampoFicha label="Correo" value={aTexto(s1.correo_contabilidad)} disabled />
       </Seccion>
 
-      <section className="space-y-2">
-        <h3 className="font-display text-xs font-semibold text-brand-900 uppercase tracking-wide">
+      <section className="space-y-2 pb-1">
+        <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
           Clase de proveedor
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -84,7 +85,7 @@ export default function VistaFichaCompleta({ ficha }: { ficha: FichaProveedor })
       </section>
 
       <section className="space-y-2">
-        <h3 className="font-display text-xs font-semibold text-brand-900 uppercase tracking-wide">
+        <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
           Categoría de productos
         </h3>
         <div className="flex flex-wrap gap-2">

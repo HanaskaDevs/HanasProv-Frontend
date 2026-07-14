@@ -141,7 +141,7 @@ export default function InformacionProveedorForm({
     <div className="space-y-4">
       {subPaso === 1 && (
         <>
-          <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+          <div className="grid grid-cols-2 gap-x-10 gap-y-3">
             <CampoFicha label="RUC" {...register('ruc')} error={errors.ruc?.message} />
             <CampoFicha
               label="Clase de contribuyente"
@@ -180,10 +180,10 @@ export default function InformacionProveedorForm({
       {subPaso === 2 && (
         <div className="space-y-3">
           <section className="space-y-1.5">
-            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
+            <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
               Representante legal
             </h3>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-3">
               <CampoFicha
                 label="Nombre"
                 {...register('representante_legal')}
@@ -206,10 +206,10 @@ export default function InformacionProveedorForm({
           <Divisor />
 
           <section className="space-y-1.5">
-            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
+            <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
               Contacto de ventas
             </h3>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-3">
               <CampoFicha label="Nombre" {...register('contacto_venta')} error={errors.contacto_venta?.message} />
               <CampoFicha
                 label="Teléfono"
@@ -228,10 +228,10 @@ export default function InformacionProveedorForm({
           <Divisor />
 
           <section className="space-y-1.5">
-            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
+            <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
               Contacto de calidad
             </h3>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-3">
               <CampoFicha
                 label="Nombre"
                 {...register('contacto_calidad')}
@@ -254,10 +254,10 @@ export default function InformacionProveedorForm({
           <Divisor />
 
           <section className="space-y-1.5">
-            <h3 className="font-display text-[11px] font-semibold text-brand-900/70 uppercase tracking-wide">
+            <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
               Contacto de contabilidad
             </h3>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-3">
               <CampoFicha
                 label="Nombre"
                 {...register('contacto_contabilidad')}

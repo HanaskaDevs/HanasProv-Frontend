@@ -1,10 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ProgressSteps from './ProgressSteps';
 import InformacionProveedorForm from './InformacionProveedorForm';
 import Seccion2Form from './Seccion2Form';
 import Seccion3Form from './Seccion3Form';
 import VistaFichaCompleta from './VistaFichaCompleta';
 import type { FichaProveedor } from '../types';
+
+function IconoExpandir() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 3 21 3 21 9" />
+      <polyline points="9 21 3 21 3 15" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  );
+}
+
+function IconoContraer() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="4 14 10 14 10 20" />
+      <polyline points="20 10 14 10 14 4" />
+      <line x1="14" y1="10" x2="21" y2="3" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  );
+}
 
 function esDatosGeneralesCompleta(ficha: FichaProveedor): boolean {
   return !!ficha.seccion_1.ruc && !!ficha.seccion_1.razon_social;
@@ -28,6 +50,7 @@ export default function ModalFichaProveedor({
   onFichaActualizada: (ficha: FichaProveedor) => void;
 }) {
   const [ficha, setFicha] = useState(fichaInicial);
+  const [expandido, setExpandido] = useState(false);
 
   // Se calcula UNA sola vez, sobre el estado con el que se abrió el modal:
   // si ya estaba completa, queda en modo solo-lectura durante toda la
@@ -49,6 +72,15 @@ export default function ModalFichaProveedor({
   const porcentaje = Math.round((pasosCompletados.filter(Boolean).length / 4) * 100);
   const todoCompleto = pasosCompletados.every(Boolean);
 
+  // Al cambiar de paso (ej. "Siguiente" en Datos Generales -> Contactos),
+  // el contenedor con scroll conserva la posición anterior por defecto
+  // -> el nuevo paso aparecía scrolleado hacia abajo. Lo llevamos al
+  // inicio cada vez que cambia pasoVisible.
+  const contenidoRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    contenidoRef.current?.scrollTo({ top: 0 });
+  }, [pasoVisible]);
+
   function actualizar(fichaActualizada: FichaProveedor) {
     setFicha(fichaActualizada);
     onFichaActualizada(fichaActualizada);
@@ -69,17 +101,35 @@ export default function ModalFichaProveedor({
   }
 
   return (
-    <div className="fixed inset-0 bg-brand-900/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
+    <div
+      className={`fixed inset-0 bg-brand-900/50 flex items-center justify-center z-50 ${
+        expandido ? 'p-2' : 'p-4'
+      }`}
+    >
+      <div
+        className={`bg-white rounded-lg shadow-xl flex flex-col transition-[max-width,height] duration-150 ${
+          expandido ? 'w-full h-full max-w-none' : 'w-full max-w-6xl h-[90vh]'
+        }`}
+      >
         <div className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-brand-900/8">
           <h2 className="font-display text-lg font-semibold text-brand-900">Ficha de Proveedor</h2>
-          <button
-            onClick={onClose}
-            className="text-brand-900/40 hover:text-brand-900 text-xl leading-none px-2"
-            aria-label="Cerrar"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setExpandido((v) => !v)}
+              className="text-brand-900/40 hover:text-brand-900 p-1.5 rounded hover:bg-brand-900/5"
+              aria-label={expandido ? 'Contraer' : 'Expandir'}
+              title={expandido ? 'Contraer' : 'Expandir'}
+            >
+              {expandido ? <IconoContraer /> : <IconoExpandir />}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-brand-900/40 hover:text-brand-900 text-xl leading-none px-2"
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {soloLectura ? (
@@ -103,7 +153,7 @@ export default function ModalFichaProveedor({
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">
+            <div ref={contenidoRef} className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">
               {(pasoVisible === 1 || pasoVisible === 2) && (
                 <InformacionProveedorForm
                   subPaso={pasoVisible as 1 | 2}
