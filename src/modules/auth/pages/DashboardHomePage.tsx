@@ -1,8 +1,9 @@
 import { useAuth } from '../hooks/useAuth';
 import Card from '../../../shared/components/Card';
+import PanelProveedor from '../components/PanelProveedor';
 
 export default function DashboardHomePage() {
-  const { usuario, empresaActiva } = useAuth();
+  const { usuario, empresaActiva, esProveedor } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -15,11 +16,15 @@ export default function DashboardHomePage() {
         </p>
       </div>
 
-      <Card>
-        <p className="text-sm text-brand-900/70">
-          Portal de Proveedores — usa el menú lateral para navegar según tu rol.
-        </p>
-      </Card>
+      {esProveedor ? (
+        <PanelProveedor />
+      ) : (
+        <Card>
+          <p className="text-sm text-brand-900/70">
+            Portal de Proveedores — usa el menú lateral para navegar según tu rol.
+          </p>
+        </Card>
+      )}
     </div>
   );
 }
