@@ -15,3 +15,9 @@ export interface TipoDocumentoChecklist {
   requiere_fecha_caducidad: boolean;
   documentos: DocumentoSubido[];
 }
+
+export interface ChecklistDocumentacion {
+  registrado: boolean;
+  fecha_registro: string | null;
+  documentos: TipoDocumentoChecklist[];
+}

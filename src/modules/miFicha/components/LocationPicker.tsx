@@ -119,7 +119,7 @@ export default function LocationPicker({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="max-w-xl space-y-2">
       <label className="text-sm font-medium text-brand-900">Ubicación</label>
 
       <div className="relative">
