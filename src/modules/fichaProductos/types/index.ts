@@ -15,6 +15,9 @@ export interface Producto {
   codigo_barras: string | null;
   unidad_presentacion: string;
   precio: string | null;
+  bloqueado: boolean;
+  estado_calificacion: 'Pendiente' | 'Aprobado' | 'Rechazado' | null;
+  comentario_calificacion: string | null;
   documentos: DocumentoProducto[];
 }
 
@@ -23,4 +26,11 @@ export interface NuevoProducto {
   codigo_barras?: string;
   id_unidad_presentacion: number;
   precio?: number;
+}
+
+export interface ResumenRegistro {
+  total_productos: number;
+  productos_incompletos: string[];
+  puede_registrar: boolean;
+  ya_bloqueado: boolean;
 }

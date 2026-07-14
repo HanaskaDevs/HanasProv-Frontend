@@ -12,6 +12,7 @@ interface AuthContextValue {
   esSistemas: boolean;
   esAdmin: boolean;
   esProveedor: boolean;
+  puedeGestionarRecepciones: boolean;
   login: (email: string, password: string) => Promise<Usuario>;
   logout: () => Promise<void>;
   cambiarEmpresa: (idEmpresa: number) => Promise<void>;
@@ -109,6 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         esSistemas: rolActivo === ROLES.SISTEMAS,
         esAdmin: rolActivo === ROLES.ADMIN,
         esProveedor: usuario?.tipo_usuario === 'Proveedor',
+        puedeGestionarRecepciones:
+          rolActivo === ROLES.SISTEMAS || rolActivo === ROLES.ADMIN || rolActivo === ROLES.COMPRAS,
         login,
         logout,
         cambiarEmpresa,

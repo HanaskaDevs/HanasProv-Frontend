@@ -1,5 +1,5 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { NuevoProducto, Producto, UnidadPresentacion } from '../types';
+import type { NuevoProducto, Producto, ResumenRegistro, UnidadPresentacion } from '../types';
 
 export async function listarProductos(): Promise<Producto[]> {
   const { data } = await apiClient.get<Producto[]>('/mis-productos');
@@ -35,4 +35,14 @@ export async function verDocumentoProducto(idDocumentoProducto: number): Promise
   });
   const url = window.URL.createObjectURL(data);
   window.open(url, '_blank');
+}
+
+export async function obtenerResumenRegistro(): Promise<ResumenRegistro> {
+  const { data } = await apiClient.get<ResumenRegistro>('/mis-productos/resumen-registro');
+  return data;
+}
+
+export async function registrarProductos(): Promise<{ message: string; total: number }> {
+  const { data } = await apiClient.post('/mis-productos/registrar');
+  return data;
 }

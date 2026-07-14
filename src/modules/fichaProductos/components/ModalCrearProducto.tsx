@@ -34,6 +34,7 @@ export default function ModalCrearProducto({ onClose }: { onClose: () => void })
     mutationFn: (values: FormOutput) => productosApi.crearProducto(values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
       onClose();
     },
   });
