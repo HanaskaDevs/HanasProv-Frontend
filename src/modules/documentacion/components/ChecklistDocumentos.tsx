@@ -69,12 +69,6 @@ function IconoAlerta({ className = '' }: { className?: string }) {
   );
 }
 
-/**
- * Fila de UN archivo ya cargado, dentro de la fila de su tipo. Cada uno
- * maneja su propio input de archivo y su propio reemplazo -> en los tipos
- * con permite_multiples, "Reemplazar"/"Borrar" afectan solo a ESE archivo
- * puntual, sin tocar los demás que el proveedor ya subió.
- */
 function ArchivoSubido({
   doc,
   tipo,
@@ -269,10 +263,6 @@ function ArchivoSubido({
   );
 }
 
-/**
- * Una fila = un tipo de documento del checklist. Minimalista: sin caja
- * propia, solo un divisor fino entre filas (lo pone el padre con divide-y).
- */
 function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; soloLectura: boolean }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -328,7 +318,15 @@ function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; so
   const mostrarCuadroCarga = !soloLectura && (tipo.permite_multiples || !yaSubido);
 
   return (
-    <div className="py-2.5">
+    <div
+      className={`rounded-lg border p-3 transition-colors ${
+        faltaObligatorio
+          ? 'border-brand-wine/25 bg-brand-wine/[0.03]'
+          : yaSubido
+            ? 'border-emerald-600/15 bg-emerald-50/40'
+            : 'border-brand-900/10 bg-white'
+      }`}
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <IconoDocumento className={yaSubido ? 'text-emerald-600 shrink-0' : 'text-brand-900/35 shrink-0'} />
@@ -404,12 +402,6 @@ function formateaFecha(iso: string): string {
   return new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/**
- * Franja inferior con el botón "Registrar documentación": mientras no se
- * haya registrado, deja seguir subiendo/reemplazando y muestra cuántos
- * documentos obligatorios faltan. Al confirmar en el modal, todo el
- * checklist de arriba pasa a modo solo lectura (soloLectura=true).
- */
 function BarraRegistro({
   registrado,
   fechaRegistro,
@@ -449,12 +441,6 @@ function BarraRegistro({
           <div>
             <p className="text-sm font-medium text-brand-900">
               Cuando termines de cargar todo, registra tu documentación.
-            </p>
-            <p className="text-xs text-brand-900/50 mt-0.5">
-              {faltantes.length > 0
-                ? `Todavía falta: ${faltantes.join(', ')}.`
-                : 'Ya tienes todos los documentos obligatorios cargados.'}{' '}
-              Después de registrar no podrás editar ni subir más archivos.
             </p>
           </div>
           <Button
@@ -504,11 +490,119 @@ function BarraRegistro({
   );
 }
 
+function AroProgreso({ porcentaje }: { porcentaje: number }) {
+  const radio = 26;
+  const circunferencia = 2 * Math.PI * radio;
+  const offset = circunferencia * (1 - porcentaje / 100);
+  const color = porcentaje >= 100 ? 'stroke-emerald-500' : porcentaje >= 50 ? 'stroke-brand-700' : 'stroke-brand-wine';
+
+  return (
+    <svg width="64" height="64" viewBox="0 0 64 64" className="shrink-0 -rotate-90">
+      <circle cx="32" cy="32" r={radio} fill="none" strokeWidth="6" className="stroke-brand-900/8" />
+      <circle
+        cx="32"
+        cy="32"
+        r={radio}
+        fill="none"
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeDasharray={circunferencia}
+        strokeDashoffset={offset}
+        className={`transition-all duration-500 ${color}`}
+      />
+      <text
+        x="32"
+        y="32"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="rotate-90 fill-brand-900 text-[13px] font-bold"
+        style={{ transformOrigin: '32px 32px' }}
+      >
+        {porcentaje}%
+      </text>
+    </svg>
+  );
+}
+
+function ResumenProgreso({
+  totalObligatorios,
+  cargadosObligatorios,
+  totalDocumentos,
+  cargadosDocumentos,
+}: {
+  totalObligatorios: number;
+  cargadosObligatorios: number;
+  totalDocumentos: number;
+  cargadosDocumentos: number;
+}) {
+  const porcentaje =
+    totalObligatorios > 0 ? Math.round((cargadosObligatorios / totalObligatorios) * 100) : 100;
+  const faltanObligatorios = totalObligatorios - cargadosObligatorios;
+
+  return (
+    <Card className="!p-4 sm:!p-5">
+      <div className="flex items-center gap-4 sm:gap-5">
+        <AroProgreso porcentaje={porcentaje} />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-brand-900">
+            {faltanObligatorios > 0
+              ? `Te ${faltanObligatorios === 1 ? 'falta' : 'faltan'} ${faltanObligatorios} documento${faltanObligatorios === 1 ? '' : 's'} obligatorio${faltanObligatorios === 1 ? '' : 's'}`
+              : '¡Todos los documentos obligatorios están cargados!'}
+          </p>
+          <p className="text-xs text-brand-900/50 mt-0.5">
+            {cargadosObligatorios}/{totalObligatorios} obligatorios · {cargadosDocumentos}/{totalDocumentos} en total
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function TabCategoria({
+  nombre,
+  activa,
+  cargados,
+  total,
+  faltanObligatorios,
+  onClick,
+}: {
+  nombre: string;
+  activa: boolean;
+  cargados: number;
+  total: number;
+  faltanObligatorios: number;
+  onClick: () => void;
+}) {
+  const puntoColor = faltanObligatorios > 0 ? 'bg-brand-wine' : cargados === total ? 'bg-emerald-500' : 'bg-brand-900/25';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 whitespace-nowrap rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+        activa
+          ? 'border-brand-700 text-brand-900 bg-white'
+          : 'border-transparent text-brand-900/50 hover:text-brand-900 hover:bg-brand-900/[0.03]'
+      }`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${puntoColor}`} />
+      {nombre}
+      <span
+        className={`text-[10.5px] rounded-full px-1.5 py-0.5 ${
+          activa ? 'bg-brand-200/60 text-brand-700' : 'bg-brand-900/8 text-brand-900/40'
+        }`}
+      >
+        {cargados}/{total}
+      </span>
+    </button>
+  );
+}
+
 export default function ChecklistDocumentos() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['mi-documentos'],
     queryFn: documentacionApi.obtenerChecklist,
   });
+  const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -541,48 +635,70 @@ export default function ChecklistDocumentos() {
     );
   }
 
-  // 'General' antes que 'Certificaciones' (el backend ordena alfabético,
-  // donde C < G, así que reordenamos acá para que salga en el orden
-  // esperado por el equipo).
   const categorias = Array.from(new Set(tipos.map((t) => t.categoria))).sort((a, b) =>
     a === 'General' ? -1 : b === 'General' ? 1 : a.localeCompare(b)
   );
 
   const faltantes = tipos.filter((t) => t.obligatorio && t.documentos.length === 0).map((t) => t.nombre_documento);
 
+  const statsPorCategoria = categorias.map((categoria) => {
+    const tiposCategoria = tipos
+      .filter((t) => t.categoria === categoria)
+      .sort((a, b) => Number(b.obligatorio) - Number(a.obligatorio));
+    const cargados = tiposCategoria.filter((t) => t.documentos.length > 0).length;
+    const faltanObligatorios = tiposCategoria.filter((t) => t.obligatorio && t.documentos.length === 0).length;
+    return { categoria, tiposCategoria, cargados, faltanObligatorios };
+  });
+
+  const categoriaSeleccionada =
+    categoriaActiva && categorias.includes(categoriaActiva) ? categoriaActiva : categorias[0];
+  const statsActivos = statsPorCategoria.find((s) => s.categoria === categoriaSeleccionada)!;
+
+  const totalObligatorios = tipos.filter((t) => t.obligatorio).length;
+  const cargadosObligatorios = totalObligatorios - faltantes.length;
+  const cargadosDocumentos = tipos.filter((t) => t.documentos.length > 0).length;
+
   return (
     <div className="space-y-4">
-      {categorias.map((categoria) => {
-        const tiposCategoria = tipos
-          .filter((t) => t.categoria === categoria)
-          // Obligatorios primero, opcionales al final. Array.sort es
-          // estable en JS moderno -> dentro de cada grupo se respeta el
-          // orden que ya venía del backend.
-          .sort((a, b) => Number(b.obligatorio) - Number(a.obligatorio));
-        const cargados = tiposCategoria.filter((t) => t.documentos.length > 0).length;
+      <ResumenProgreso
+        totalObligatorios={totalObligatorios}
+        cargadosObligatorios={cargadosObligatorios}
+        totalDocumentos={tipos.length}
+        cargadosDocumentos={cargadosDocumentos}
+      />
 
-        return (
-          <Card key={categoria}>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">{categoria}</h3>
-              <span className="text-[11px] text-brand-900/40">
-                {cargados}/{tiposCategoria.length} cargados
-              </span>
-            </div>
-            <div className="divide-y divide-brand-900/8">
-              {tiposCategoria.map((tipo) => (
-                <FilaDocumento key={tipo.id_tipo_documento} tipo={tipo} soloLectura={data?.registrado ?? false} />
-              ))}
-            </div>
-          </Card>
-        );
-      })}
-
+      {/* Se movió la barra de registro aquí arriba y dejó de ser sticky */}
       <BarraRegistro
         registrado={data?.registrado ?? false}
         fechaRegistro={data?.fecha_registro ?? null}
         faltantes={faltantes}
       />
+
+      <Card className="!p-0 overflow-hidden">
+        <div className="flex gap-0.5 overflow-x-auto border-b border-brand-900/8 bg-brand-900/[0.02] px-2 pt-1">
+          {statsPorCategoria.map(({ categoria, tiposCategoria, cargados, faltanObligatorios }) => (
+            <TabCategoria
+              key={categoria}
+              nombre={categoria}
+              activa={categoria === categoriaSeleccionada}
+              cargados={cargados}
+              total={tiposCategoria.length}
+              faltanObligatorios={faltanObligatorios}
+              onClick={() => setCategoriaActiva(categoria)}
+            />
+          ))}
+        </div>
+
+        <div className="p-5">
+          <div className="columns-1 lg:columns-2 gap-4 [&>*]:mb-3">
+            {statsActivos.tiposCategoria.map((tipo) => (
+              <div key={tipo.id_tipo_documento} className="break-inside-avoid">
+                <FilaDocumento tipo={tipo} soloLectura={data?.registrado ?? false} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
