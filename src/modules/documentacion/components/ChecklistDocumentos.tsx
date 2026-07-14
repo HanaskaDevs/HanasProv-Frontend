@@ -13,7 +13,7 @@ const TAMANO_MAXIMO_MB = 4;
 
 function IconoDocumento({ className = '' }: { className?: string }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
     </svg>
@@ -22,7 +22,7 @@ function IconoDocumento({ className = '' }: { className?: string }) {
 
 function IconoSubir({ className = '' }: { className?: string }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M4 14.9A5 5 0 0 1 6 5.3 6 6 0 0 1 17.9 8.7a4.5 4.5 0 0 1 1.1 8.9" />
       <polyline points="12 12 12 21" />
       <polyline points="9 15 12 12 15 15" />
@@ -32,7 +32,7 @@ function IconoSubir({ className = '' }: { className?: string }) {
 
 function IconoOjo({ className = '' }: { className?: string }) {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -41,9 +41,20 @@ function IconoOjo({ className = '' }: { className?: string }) {
 
 function IconoRepetir({ className = '' }: { className?: string }) {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <polyline points="23 4 23 10 17 10" />
       <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+  );
+}
+
+function IconoBasura({ className = '' }: { className?: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
     </svg>
   );
 }
@@ -58,22 +69,11 @@ function IconoAlerta({ className = '' }: { className?: string }) {
   );
 }
 
-function IconoBasura({ className = '' }: { className?: string }) {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <line x1="10" y1="11" x2="10" y2="17" />
-      <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-  );
-}
-
 /**
- * Fila de UN archivo ya cargado. Cada uno maneja su propio input de
- * archivo y su propio reemplazo -> así, en los tipos con
- * permite_multiples, "Reemplazar" afecta solo a ESE archivo puntual y no
- * toca los demás que el proveedor ya subió para el mismo tipo.
+ * Fila de UN archivo ya cargado, dentro de la fila de su tipo. Cada uno
+ * maneja su propio input de archivo y su propio reemplazo -> en los tipos
+ * con permite_multiples, "Reemplazar"/"Borrar" afectan solo a ESE archivo
+ * puntual, sin tocar los demás que el proveedor ya subió.
  */
 function ArchivoSubido({
   doc,
@@ -149,103 +149,91 @@ function ArchivoSubido({
   }
 
   return (
-    <div className="rounded-md border border-emerald-200/70 bg-white px-2.5 py-2">
-      <p className="text-[11px] font-medium text-brand-900 truncate" title={doc.nombre_original}>
-        {doc.nombre_original}
-      </p>
-      {doc.fecha_caducidad && (
-        <p className="text-[10.5px] font-bold text-brand-900/70">Fecha_Exp_{doc.fecha_caducidad}</p>
-      )}
+    <div className="pl-[22px] py-1">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="text-xs font-medium text-brand-900 truncate" title={doc.nombre_original}>
+            {doc.nombre_original}
+          </span>
+          {doc.fecha_caducidad && (
+            <span className="text-[10.5px] font-bold text-brand-900/60 shrink-0">
+              Fecha_Exp_{doc.fecha_caducidad}
+            </span>
+          )}
+        </div>
 
-      <div className="flex items-center gap-3 mt-1.5">
-        <button
-          onClick={() => ver.mutate()}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
-        >
-          <IconoOjo /> Ver
-        </button>
-
-        {!soloLectura && !reemplazando && (
+        <div className="flex items-center gap-3 shrink-0">
           <button
-            onClick={() => setReemplazando(true)}
-            disabled={reemplazar.isPending}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-900/50 hover:text-brand-900"
+            onClick={() => ver.mutate()}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
           >
-            <IconoRepetir /> Reemplazar
+            <IconoOjo /> Ver
           </button>
-        )}
-
-        {!soloLectura && (
-          <button
-            onClick={() => setConfirmandoBorrar(true)}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-wine/70 hover:text-brand-wine"
-          >
-            <IconoBasura /> Borrar
-          </button>
-        )}
+          {!soloLectura && (
+            <button
+              onClick={() => setReemplazando((v) => !v)}
+              disabled={reemplazar.isPending}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-900/50 hover:text-brand-900"
+            >
+              <IconoRepetir /> Reemplazar
+            </button>
+          )}
+          {!soloLectura && (
+            <button
+              onClick={() => setConfirmandoBorrar(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-wine/70 hover:text-brand-wine"
+            >
+              <IconoBasura /> Borrar
+            </button>
+          )}
+        </div>
       </div>
 
       {!soloLectura && reemplazando && (
-        <div className="mt-2 pt-2 border-t border-brand-900/8 flex flex-col gap-1.5">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={handleSeleccionar}
-          />
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
 
           {tipo.permite_multiples && (
-            <div className="flex items-center gap-1.5">
-              <label className="shrink-0 text-[11px] text-brand-900/50">Nombre</label>
-              <input
-                type="text"
-                value={nuevoNombre}
-                onChange={(e) => setNuevoNombre(e.target.value)}
-                placeholder="Ej: HACCP 2026"
-                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
-                  text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
-              />
-            </div>
+            <input
+              type="text"
+              value={nuevoNombre}
+              onChange={(e) => setNuevoNombre(e.target.value)}
+              placeholder="Nombre del documento"
+              className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
+            />
           )}
-
           {tipo.requiere_fecha_caducidad && (
-            <div className="flex items-center gap-1.5">
-              <label className="shrink-0 text-[11px] text-brand-900/50">Nueva vence</label>
-              <input
-                type="date"
-                value={nuevaFecha}
-                onChange={(e) => setNuevaFecha(e.target.value)}
-                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
-                  text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
-              />
-            </div>
+            <input
+              type="date"
+              value={nuevaFecha}
+              onChange={(e) => setNuevaFecha(e.target.value)}
+              className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
+            />
           )}
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              disabled={reemplazar.isPending}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
-            >
-              {reemplazar.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir className="h-3.5 w-3.5" />}
-              Elegir nuevo PDF
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setReemplazando(false);
-                setNuevaFecha('');
-                setNuevoNombre('');
-                setError(null);
-              }}
-              disabled={reemplazar.isPending}
-              className="text-[11px] text-brand-900/40 hover:text-brand-900"
-            >
-              Cancelar
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={reemplazar.isPending}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
+          >
+            {reemplazar.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir />}
+            Elegir PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setReemplazando(false);
+              setNuevaFecha('');
+              setNuevoNombre('');
+              setError(null);
+            }}
+            disabled={reemplazar.isPending}
+            className="text-[11px] text-brand-900/40 hover:text-brand-900"
+          >
+            Cancelar
+          </button>
         </div>
       )}
 
@@ -265,9 +253,7 @@ function ArchivoSubido({
             </div>
           </div>
 
-          {borrar.isError && (
-            <p className="text-xs text-brand-wine mt-3">No se pudo borrar. Intenta de nuevo.</p>
-          )}
+          {borrar.isError && <p className="text-xs text-brand-wine mt-3">No se pudo borrar. Intenta de nuevo.</p>}
 
           <div className="flex justify-end gap-2 mt-5">
             <Button variant="ghost" onClick={() => setConfirmandoBorrar(false)} disabled={borrar.isPending}>
@@ -283,7 +269,11 @@ function ArchivoSubido({
   );
 }
 
-function CasillaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; soloLectura: boolean }) {
+/**
+ * Una fila = un tipo de documento del checklist. Minimalista: sin caja
+ * propia, solo un divisor fino entre filas (lo pone el padre con divide-y).
+ */
+function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; soloLectura: boolean }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [fechaCaducidad, setFechaCaducidad] = useState('');
@@ -335,30 +325,20 @@ function CasillaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist;
 
   const yaSubido = tipo.documentos.length > 0;
   const faltaObligatorio = tipo.obligatorio && !yaSubido;
-  // Sin "permite_multiples": solo mostramos el cuadro de carga si todavía
-  // no hay nada (después se reemplaza con el botón "Reemplazar").
-  // Con "permite_multiples": el cuadro se queda siempre visible para
-  // seguir agregando, además de la lista de lo ya subido.
-  // En modo solo lectura (documentación ya registrada) nunca se muestra.
   const mostrarCuadroCarga = !soloLectura && (tipo.permite_multiples || !yaSubido);
 
   return (
-    <div
-      className={`min-w-0 rounded-lg border p-3 flex flex-col gap-2 transition-colors ${
-        yaSubido
-          ? 'border-emerald-200 bg-emerald-50/40'
-          : faltaObligatorio
-            ? 'border-brand-wine/25 bg-brand-wine/[0.03]'
-            : 'border-brand-900/10 bg-white'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-1.5 min-w-0">
-          <IconoDocumento className={`mt-0.5 shrink-0 ${yaSubido ? 'text-emerald-600' : 'text-brand-900/35'}`} />
-          <p className="text-xs font-medium text-brand-900 leading-snug line-clamp-2">
+    <div className="py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <IconoDocumento className={yaSubido ? 'text-emerald-600 shrink-0' : 'text-brand-900/35 shrink-0'} />
+          <span className="text-sm font-medium text-brand-900 truncate">
             {tipo.nombre_documento}
             {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
-          </p>
+          </span>
+          {tipo.permite_multiples && (
+            <span className="text-[10.5px] text-brand-700/60 shrink-0 hidden sm:inline">(varios archivos)</span>
+          )}
         </div>
         {yaSubido ? (
           <Badge tone="success">Cargado</Badge>
@@ -369,80 +349,53 @@ function CasillaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist;
         )}
       </div>
 
-      {tipo.permite_multiples && (
-        <p className="text-[10.5px] text-brand-700/70 -mt-1">Puedes subir más de un archivo.</p>
-      )}
-
-      {!soloLectura && (
-        <input
-          ref={inputRef}
-          type="file"
-          accept="application/pdf"
-          className="hidden"
-          onChange={handleSeleccionar}
-        />
-      )}
-
-      {!soloLectura && tipo.permite_multiples && (
-        <div className="flex items-center gap-1.5">
-          <label className="shrink-0 text-[11px] text-brand-900/50">Nombre</label>
-          <input
-            type="text"
-            value={nombreDocumento}
-            onChange={(e) => setNombreDocumento(e.target.value)}
-            placeholder="Ej: HACCP 2026"
-            className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
-              text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
-          />
-        </div>
-      )}
-
-      {!soloLectura && tipo.requiere_fecha_caducidad && (
-        <div className="flex items-center gap-1.5">
-          <label className="shrink-0 text-[11px] text-brand-900/50">Vence</label>
-          <input
-            type="date"
-            value={fechaCaducidad}
-            onChange={(e) => setFechaCaducidad(e.target.value)}
-            className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
-              text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
-          />
-        </div>
-      )}
-
       {tipo.documentos.map((doc) => (
         <ArchivoSubido key={doc.id_documento_proveedor} doc={doc} tipo={tipo} soloLectura={soloLectura} />
       ))}
 
       {soloLectura && !yaSubido && (
-        <p className="text-[11px] text-brand-900/35 italic">No se cargó ningún archivo.</p>
+        <p className="pl-[22px] text-[11px] text-brand-900/35 italic">No se cargó ningún archivo.</p>
       )}
 
       {mostrarCuadroCarga && (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={subir.isPending}
-          className={`w-full rounded-md border-2 border-dashed px-3 py-3 flex flex-col items-center justify-center gap-1 text-center transition-colors
-            ${
-              faltaObligatorio
-                ? 'border-brand-wine/30 hover:border-brand-wine/60 hover:bg-brand-wine/5'
-                : 'border-brand-900/15 hover:border-brand-700/50 hover:bg-brand-700/5'
-            }`}
-        >
-          {subir.isPending ? (
-            <Spinner className="h-4 w-4" />
-          ) : (
-            <IconoSubir className={faltaObligatorio ? 'text-brand-wine/60' : 'text-brand-900/35'} />
+        <div className="pl-[22px] mt-1 flex flex-wrap items-center gap-2">
+          <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
+
+          {tipo.permite_multiples && (
+            <input
+              type="text"
+              value={nombreDocumento}
+              onChange={(e) => setNombreDocumento(e.target.value)}
+              placeholder="Nombre del documento"
+              className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
+            />
           )}
-          <p className="text-[11px] font-medium text-brand-900">
-            {yaSubido ? 'Cargar otro archivo' : 'Clic para cargar'}
-          </p>
-          <p className="text-[10.5px] text-brand-900/40">PDF, máx. 4MB</p>
-        </button>
+          {tipo.requiere_fecha_caducidad && (
+            <input
+              type="date"
+              value={fechaCaducidad}
+              onChange={(e) => setFechaCaducidad(e.target.value)}
+              className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
+            />
+          )}
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={subir.isPending}
+            className={`inline-flex items-center gap-1 text-[11px] font-medium ${
+              faltaObligatorio ? 'text-brand-wine hover:text-brand-wine/80' : 'text-brand-700 hover:text-brand-900'
+            }`}
+          >
+            {subir.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir />}
+            {yaSubido ? 'Cargar otro archivo' : 'Subir archivo'}
+          </button>
+          <span className="text-[10px] text-brand-900/35">PDF, máx. 4MB</span>
+        </div>
       )}
 
-      {error && <span className="text-[10px] text-brand-wine">{error}</span>}
+      {error && <span className="pl-[22px] text-[10px] text-brand-wine block mt-1">{error}</span>}
     </div>
   );
 }
@@ -522,9 +475,7 @@ function BarraRegistro({
               <IconoAlerta />
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-brand-900">
-                ¿Estás seguro de registrar la documentación ingresada?
-              </p>
+              <p className="text-sm text-brand-900">¿Estás seguro de registrar la documentación ingresada?</p>
               <p className="text-xs text-brand-900/50">
                 Una vez registrada, no podrás editar ni cargar más archivos. Solo podrás verlos.
               </p>
@@ -585,9 +536,7 @@ export default function ChecklistDocumentos() {
   if (tipos.length === 0) {
     return (
       <Card>
-        <p className="text-sm text-brand-900/60 text-center py-6">
-          No hay documentos configurados todavía.
-        </p>
+        <p className="text-sm text-brand-900/60 text-center py-6">No hay documentos configurados todavía.</p>
       </Card>
     );
   }
@@ -614,17 +563,15 @@ export default function ChecklistDocumentos() {
 
         return (
           <Card key={categoria}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
-                {categoria}
-              </h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">{categoria}</h3>
               <span className="text-[11px] text-brand-900/40">
                 {cargados}/{tiposCategoria.length} cargados
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="divide-y divide-brand-900/8">
               {tiposCategoria.map((tipo) => (
-                <CasillaDocumento key={tipo.id_tipo_documento} tipo={tipo} soloLectura={data?.registrado ?? false} />
+                <FilaDocumento key={tipo.id_tipo_documento} tipo={tipo} soloLectura={data?.registrado ?? false} />
               ))}
             </div>
           </Card>
