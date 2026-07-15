@@ -26,6 +26,21 @@ interface ResultadoBusqueda {
   lon: string;
 }
 
+// Nominatim (uso público/gratuito) exige no pasar de 1 solicitud por
+// segundo -> este throttle evita mandarle dos búsquedas casi pegadas
+// (ej. escribiendo rápido) y que empiece a devolver 403/429.
+let ultimaSolicitudNominatim = 0;
+async function fetchNominatim(url: string): Promise<Response> {
+  const ahora = Date.now();
+  const espera = Math.max(0, 1100 - (ahora - ultimaSolicitudNominatim));
+  if (espera > 0) await new Promise((resolve) => setTimeout(resolve, espera));
+  ultimaSolicitudNominatim = Date.now();
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Nominatim respondió ${res.status}`);
+  return res;
+}
+
 function ManejadorClick({ onClick }: { onClick: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -50,6 +65,11 @@ function CentrarMapa({ posicion }: { posicion: [number, number] | null }) {
   return null;
 }
 
+/**
+ * Solo sirve para ELEGIR lat/lng (por búsqueda o clic directo en el
+ * mapa). Ya NO autocompleta Dirección/Ciudad -> esos los llena el
+ * proveedor a mano (Ciudad ahora es un dropdown en el formulario).
+ */
 export default function LocationPicker({
   latitudInicial,
   longitudInicial,
@@ -68,6 +88,7 @@ export default function LocationPicker({
   const [resultados, setResultados] = useState<ResultadoBusqueda[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [mostrarResultados, setMostrarResultados] = useState(false);
+  const [errorBusqueda, setErrorBusqueda] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function handleClick(lat: number, lng: number) {
@@ -78,6 +99,7 @@ export default function LocationPicker({
 
   function handleBusquedaChange(valor: string) {
     setBusqueda(valor);
+    setErrorBusqueda(null);
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
@@ -90,6 +112,7 @@ export default function LocationPicker({
     // evitamos mandarle una consulta por cada tecla presionada.
     timeoutRef.current = setTimeout(async () => {
       setBuscando(true);
+      setErrorBusqueda(null);
       try {
         const params = new URLSearchParams({
           format: 'json',
@@ -97,12 +120,13 @@ export default function LocationPicker({
           countrycodes: 'ec',
           limit: '5',
         });
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
+        const res = await fetchNominatim(`https://nominatim.openstreetmap.org/search?${params}`);
         const data = await res.json();
         setResultados(data);
         setMostrarResultados(true);
       } catch {
         setResultados([]);
+        setErrorBusqueda('No se pudo buscar en este momento. Espera un segundo e intenta de nuevo.');
       } finally {
         setBuscando(false);
       }
@@ -152,6 +176,8 @@ export default function LocationPicker({
           </div>
         )}
       </div>
+
+      {errorBusqueda && <p className="text-xs text-brand-wine">{errorBusqueda}</p>}
 
       <div className="rounded-md overflow-hidden border border-brand-900/15">
         <MapContainer

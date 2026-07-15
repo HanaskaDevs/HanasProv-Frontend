@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ProgressSteps from './ProgressSteps';
 import InformacionProveedorForm from './InformacionProveedorForm';
 import Seccion2Form from './Seccion2Form';
@@ -147,8 +148,25 @@ export default function ModalFichaProveedor({
               />
 
               {todoCompleto && (
-                <div className="mb-6 rounded-md bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
-                  Has completado las 4 secciones. Tu ficha será revisada por el equipo correspondiente.
+                <div className="mb-6 rounded-md bg-emerald-50 border border-emerald-200 px-4 py-3">
+                  <p className="text-sm text-emerald-800">
+                    <span className="font-semibold">¡Completaste las 4 secciones de tu Ficha!</span> Ese es el
+                    primer paso, pero todavía no terminaste.
+                  </p>
+                  <p className="text-sm text-emerald-800 mt-1">
+                    Ahora sigue cargar tu <span className="font-semibold">documentación</span> — sin eso tu
+                    proceso como proveedor no queda completo.
+                  </p>
+                  <Link
+                    to="/documentos"
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
+                  >
+                    Ir a Documentación
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </Link>
                 </div>
               )}
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Card from '../../../shared/components/Card';
 import Badge from '../../../shared/components/Badge';
@@ -107,6 +108,30 @@ export default function MiFichaPage() {
           {porcentaje === 0 ? 'Completar ficha' : 'Ver ficha'}
         </Button>
       </Card>
+
+      {porcentaje === 100 && (
+        <Card className="bg-brand-700/5 border-brand-700/20">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-brand-900">Siguiente paso: tu documentación</p>
+              <p className="text-xs text-brand-900/55 mt-0.5">
+                Completar la ficha es el primer paso. Para terminar tu proceso como proveedor todavía falta
+                cargar la documentación requerida.
+              </p>
+            </div>
+            <Link
+              to="/documentos"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-brand-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-900"
+            >
+              Ir a Documentación
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {modalAbierto && (
         <ModalFichaProveedor

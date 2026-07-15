@@ -44,7 +44,7 @@ const CampoFicha = forwardRef<HTMLInputElement, CampoFichaProps>(
           <input
             ref={ref}
             id={props.id ?? props.name}
-            className={`min-w-0 max-w-[220px] flex-1 rounded-sm border bg-white px-2 py-1 text-[13px]
+            className={`min-w-0 max-w-[220px] w-full rounded-sm border bg-white px-2 py-1 text-[13px]
               text-brand-900 shadow-sm placeholder:text-brand-900/30
               focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700
               disabled:cursor-default disabled:bg-brand-900/[0.04] disabled:text-brand-900/70
