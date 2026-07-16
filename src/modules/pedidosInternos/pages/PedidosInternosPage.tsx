@@ -78,7 +78,7 @@ export default function PedidosInternosPage() {
                                 : 'border-transparent text-brand-900/40 hover:text-brand-900/70'
                             }`}
                     >
-                        {t === 'Abierto' ? 'Abiertos' : 'Cerrados'}
+                        {t === 'Abierto' ? 'Vigentes' : 'Históricos'}
                     </button>
                 ))}
             </div>
@@ -92,7 +92,7 @@ export default function PedidosInternosPage() {
             ) : (data ?? []).length === 0 ? (
                 <Card>
                     <p className="text-sm text-brand-900/60 text-center py-10">
-                        {tab === 'Abierto' ? 'No hay pedidos abiertos.' : 'No hay pedidos cerrados.'}
+                        {tab === 'Abierto' ? 'No hay pedidos vigentes.' : 'No hay pedidos históricos.'}
                     </p>
                 </Card>
             ) : (

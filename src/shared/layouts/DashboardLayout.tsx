@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../modules/auth/hooks/useAuth';
@@ -7,6 +7,7 @@ import LogoLink from '../components/LogoLink';
 import Avatar from '../components/Avatar';
 import ModalCambiarPassword from '../../modules/auth/components/ModalCambiarPassword';
 import * as fichaApi from '../../modules/miFicha/api/fichaApi';
+import GuiaInicioTour from '../components/GuiaInicioTour';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { usuario, empresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } = useAuth();
@@ -15,6 +16,28 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const [cambiandoEmpresa, setCambiandoEmpresa] = useState(false);
+  const [tourVisible, setTourVisible] = useState(false);
+
+  const claveTour = usuario ? `tour_completado_${usuario.id}` : null;
+
+  useEffect(() => {
+    if (usuario?.tipo_usuario === 'Proveedor' && claveTour && localStorage.getItem(claveTour) !== 'true') {
+      setTourVisible(true);
+    }
+  }, [usuario, claveTour]);
+
+  useEffect(() => {
+    function abrirTour() {
+      setTourVisible(true);
+    }
+    window.addEventListener('guia-inicio:abrir', abrirTour);
+    return () => window.removeEventListener('guia-inicio:abrir', abrirTour);
+  }, []);
+
+  function cerrarTour() {
+    setTourVisible(false);
+    if (claveTour) localStorage.setItem(claveTour, 'true');
+  }
 
   // Solo nos interesa para decidir qué mostrar en el menú -> se pide acá
   // (no en cada página) para que la restricción aplique en TODA la app
@@ -141,6 +164,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <NavLink
                 key={item.label}
                 to={item.to!}
+                id={
+                  item.to === '/mi-ficha'
+                    ? 'tour-mi-ficha'
+                    : item.to === '/documentos'
+                      ? 'tour-documentacion'
+                      : item.to === '/productos'
+                        ? 'tour-productos'
+                        : undefined
+                }
                 className={({ isActive }) =>
                   `px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
                     isActive ? 'bg-white/10 text-white' : 'text-white/80 hover:text-white hover:bg-white/5'
@@ -157,6 +189,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-y-auto p-8">{children}</main>
 
       {modalPasswordAbierto && <ModalCambiarPassword onClose={() => setModalPasswordAbierto(false)} />}
+
+      <GuiaInicioTour visible={tourVisible} onCerrar={cerrarTour} />
     </div>
   );
 }

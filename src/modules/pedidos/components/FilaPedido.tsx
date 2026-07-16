@@ -5,32 +5,14 @@ import Spinner from '../../../shared/components/Spinner';
 
 function formatearFecha(fecha: string | null): string {
     if (!fecha) return '—';
-    const d = new Date(fecha + 'T00:00:00');
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return '—';
     return d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function urgencia(fechaEsperada: string | null, cerrado: boolean): 'vencido' | 'proximo' | 'normal' | 'sin_fecha' {
-    if (cerrado) return 'normal';
-    if (!fechaEsperada) return 'sin_fecha';
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const esperada = new Date(fechaEsperada + 'T00:00:00');
-    const diffDias = Math.round((esperada.getTime() - hoy.getTime()) / 86400000);
-    if (diffDias < 0) return 'vencido';
-    if (diffDias <= 1) return 'proximo';
-    return 'normal';
-}
-
-const CONFIG_URGENCIA = {
-    vencido:   { barra: 'bg-brand-wine',      fecha: 'text-brand-wine font-medium',   badge: 'bg-brand-wine/10 text-brand-wine',     label: 'Vencido' },
-    proximo:   { barra: 'bg-brand-yellow',     fecha: 'text-amber-700 font-medium',    badge: 'bg-brand-yellow/20 text-amber-700',    label: 'Por vencer' },
-    normal:    { barra: 'bg-brand-700',        fecha: 'text-brand-900/60',             badge: '',                                     label: '' },
-    sin_fecha: { barra: 'bg-brand-900/15',     fecha: 'text-brand-900/40',             badge: '',                                     label: '' },
-};
-
 function IconoDescargar() {
     return (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
@@ -41,7 +23,7 @@ function IconoDescargar() {
 function IconoChevron({ abierto }: { abierto: boolean }) {
     return (
         <svg
-            width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             className={`transition-transform duration-200 ${abierto ? 'rotate-90' : ''}`}
         >
@@ -67,127 +49,107 @@ export default function FilaPedido({
         mutationFn: () => pedidosApi.descargarPedidosPdf([pedido.id_pedido_compra]),
     });
 
-    const estado = urgencia(pedido.fecha_recepcion_esperada, pedido.estado === 'Cerrado');
-    const cfg = CONFIG_URGENCIA[estado];
+    const completo = pedido.porcentaje_entrega >= 100;
 
     return (
-        <div className="relative">
-            <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${cfg.barra}`} />
-
-            <div className="grid items-center gap-2.5 pl-4 pr-3 py-2.5 hover:bg-brand-900/[0.02] transition-colors group"
-                style={{ gridTemplateColumns: '16px 28px 1fr 130px 130px 90px 44px 32px' }}>
-
-                {/* checkbox */}
+        <div>
+            <div className="flex items-start gap-3.5 px-5 py-4 hover:bg-brand-200/[0.06] transition-colors group">
                 <input
                     type="checkbox"
                     checked={seleccionado}
                     onChange={onSeleccionar}
-                    className="h-4 w-4 shrink-0 accent-brand-700 cursor-pointer"
+                    className="h-4 w-4 mt-1.5 shrink-0 accent-brand-700 cursor-pointer"
                 />
 
-                {/* chevron */}
                 <button
                     onClick={onExpandir}
-                    className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-brand-900/40 hover:bg-brand-900/8 hover:text-brand-900 transition-colors"
+                    className="h-7 w-7 mt-0.5 shrink-0 rounded-full flex items-center justify-center text-brand-900/40 hover:bg-brand-900/8 hover:text-brand-900 transition-colors"
                 >
                     <IconoChevron abierto={expandido} />
                 </button>
 
-                {/* número + badge urgencia */}
-                <button onClick={onExpandir} className="text-left min-w-0">
-                    <p className="font-mono text-[13px] font-semibold text-brand-900 tracking-tight truncate">
-                        {pedido.nro_pedido}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                <button onClick={onExpandir} className="flex-1 text-left min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap mb-2">
+                        <span className="font-mono text-base font-semibold text-brand-900 tracking-tight">
+                            {pedido.nro_pedido}
+                        </span>
+
                         {pedido.estado === 'Cerrado' && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800">
                                 Cerrado
                             </span>
                         )}
-                        {cfg.label && (
-                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${cfg.badge}`}>
-                                {cfg.label}
-                            </span>
-                        )}
+
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                            completo ? 'bg-emerald-50 text-emerald-800' : 'bg-brand-yellow/20 text-amber-800'
+                        }`}>
+                            {pedido.porcentaje_entrega}% entregado
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-5 text-sm text-brand-900/60 flex-wrap">
+                        <span className="flex items-center gap-1.5">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700">
+                                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            Registro {formatearFecha(pedido.fecha_registro_bc)}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700">
+                                <rect x="3" y="4" width="18" height="18" rx="2" /><path d="m9 16 2 2 4-4" />
+                            </svg>
+                            Esperada {formatearFecha(pedido.fecha_recepcion_esperada)}
+                        </span>
+                        <span>{pedido.lineas.length} {pedido.lineas.length === 1 ? 'ítem' : 'ítems'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 mt-2.5">
+                        <div className="flex-1 max-w-[220px] h-2 rounded-full bg-brand-900/8 overflow-hidden">
+                            <div
+                                className="h-full rounded-full transition-all"
+                                style={{ width: `${pedido.porcentaje_entrega}%`, backgroundColor: completo ? '#3B6D11' : '#274E61' }}
+                            />
+                        </div>
+                        <span className="text-xs text-brand-900/50">{pedido.porcentaje_entrega}% entregado</span>
                     </div>
                 </button>
 
-                {/* fecha registro */}
-                <div className="text-xs text-brand-900/60 flex items-center gap-1 min-w-0">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-brand-900/30">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    <span className="truncate">{formatearFecha(pedido.fecha_registro_bc)}</span>
-                </div>
-
-                {/* fecha recepción esperada */}
-                <div className={`text-xs flex items-center gap-1 min-w-0 ${cfg.fecha}`}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    <span className="truncate">{formatearFecha(pedido.fecha_recepcion_esperada)}</span>
-                </div>
-
-                {/* estado */}
-                <div>
-                    {pedido.estado === 'Cerrado' ? (
-                        <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 inline-flex items-center gap-1">
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Cerrado
-                        </span>
-                    ) : estado === 'vencido' ? (
-                        <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-brand-wine/10 text-brand-wine inline-flex items-center gap-1">
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            Vencido
-                        </span>
-                    ) : (
-                        <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-brand-700/10 text-brand-700 inline-flex items-center gap-1">
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            Abierto
-                        </span>
-                    )}
-                </div>
-
-                {/* ítems */}
-                <div className="text-xs text-brand-900/50 flex items-center gap-1">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-                    </svg>
-                    {pedido.lineas.length}
-                </div>
-
-                {/* descargar */}
                 <button
                     onClick={() => descargar.mutate()}
                     disabled={descargar.isPending}
                     title="Descargar PDF"
-                    className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-brand-900/30 hover:bg-brand-700/10 hover:text-brand-700 transition-colors opacity-0 group-hover:opacity-100"
+                    className="h-8 w-8 mt-0.5 shrink-0 rounded-full flex items-center justify-center text-brand-900/30 hover:bg-brand-700/10 hover:text-brand-700 transition-colors opacity-0 group-hover:opacity-100"
                 >
-                    {descargar.isPending ? <Spinner className="h-3.5 w-3.5" /> : <IconoDescargar />}
+                    {descargar.isPending ? <Spinner className="h-4 w-4" /> : <IconoDescargar />}
                 </button>
             </div>
 
-            {expandido && (
-                <div className="pl-[72px] pr-4 pb-3 pt-1 bg-brand-900/[0.015]">
-                    <div className="rounded-lg border border-brand-900/8 overflow-hidden bg-white">
-                        <div className="grid text-[10px] font-medium uppercase tracking-wider text-brand-900/40 px-3 py-2 bg-brand-900/[0.02]"
-                            style={{ gridTemplateColumns: '100px 1fr 60px' }}>
-                            <span>Código</span>
-                            <span>Descripción</span>
-                            <span className="text-right">Cant.</span>
-                        </div>
-                        {pedido.lineas.map((linea) => (
-                            <div key={linea.nro_linea}
-                                className="grid items-center px-3 py-2 text-xs border-t border-brand-900/6"
-                                style={{ gridTemplateColumns: '100px 1fr 60px' }}>
-                                <span className="font-mono text-brand-900/50 truncate">{linea.codigo_producto}</span>
-                                <span className="text-brand-900/75 truncate">{linea.descripcion ?? '—'}</span>
-                                <span className="font-medium text-brand-900 text-right">{linea.cantidad}</span>
+            <div
+                className="grid transition-all duration-300 ease-out"
+                style={{ gridTemplateRows: expandido ? '1fr' : '0fr' }}
+            >
+                <div className="overflow-hidden">
+                    <div className="pl-16 pr-5 pb-4">
+                        <div className="rounded-lg border border-brand-900/8 overflow-hidden bg-white">
+                            <div className="grid grid-cols-[100px_1fr_70px_70px] items-center text-xs font-medium uppercase tracking-wider text-brand-900/40 px-3.5 py-2 bg-brand-900/[0.02]">
+                                <span>Código</span>
+                                <span>Descripción</span>
+                                <span className="text-right">Pedido</span>
+                                <span className="text-right">Recibido</span>
                             </div>
-                        ))}
+                            {pedido.lineas.map((linea) => (
+                                <div key={linea.nro_linea}
+                                    className="grid grid-cols-[100px_1fr_70px_70px] items-center px-3.5 py-2.5 text-sm border-t border-brand-900/6">
+                                    <span className="font-mono text-brand-900/50 truncate">{linea.codigo_producto}</span>
+                                    <span className="text-brand-900/75 truncate">{linea.descripcion ?? '—'}</span>
+                                    <span className="font-medium text-brand-900 text-right">{linea.cantidad}</span>
+                                    <span className="font-medium text-brand-900/70 text-right">{linea.cantidad_recibida}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

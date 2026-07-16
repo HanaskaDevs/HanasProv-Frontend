@@ -46,3 +46,17 @@ export async function registrarProductos(): Promise<{ message: string; total: nu
   const { data } = await apiClient.post('/mis-productos/registrar');
   return data;
 }
+export async function eliminarProducto(idProducto: number): Promise<{ message: string }> {
+  const { data } = await apiClient.delete(`/mis-productos/${idProducto}`);
+  return data;
+}
+
+export async function eliminarProductosMasivo(ids: number[]): Promise<{ message: string; total: number }> {
+  const { data } = await apiClient.delete('/mis-productos/masivo', { data: { ids } });
+  return data;
+}
+
+export async function eliminarDocumentoProducto(idDocumentoProducto: number): Promise<{ message: string }> {
+  const { data } = await apiClient.delete(`/mis-productos/documentos/${idDocumentoProducto}`);
+  return data;
+}

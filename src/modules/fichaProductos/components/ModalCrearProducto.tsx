@@ -27,6 +27,7 @@ export default function ModalCrearProducto({ onClose }: { onClose: () => void })
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormOutput>({ resolver: zodResolver(schema) });
 
@@ -39,13 +40,32 @@ export default function ModalCrearProducto({ onClose }: { onClose: () => void })
     },
   });
 
+  // Muestra el texto en mayúsculas en vivo mientras el proveedor escribe,
+  // sin importar si tipea en minúsculas o intercalado. El backend igual
+  // vuelve a normalizar al guardar, esto es solo para que la vista previa
+  // coincida con el resultado final.
+  const { onChange: onChangeNombre, ...restNombre } = register('nombre_producto');
+
+  function handleNombreChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const mayusculas = e.target.value.toUpperCase();
+    setValue('nombre_producto', mayusculas, { shouldValidate: true });
+    e.target.value = mayusculas;
+    onChangeNombre(e);
+  }
+
   return (
     <div className="fixed inset-0 bg-brand-900/40 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h2 className="font-display text-lg font-semibold text-brand-900 mb-4">Nuevo producto</h2>
 
         <form onSubmit={handleSubmit((values) => crear.mutate(values))} className="space-y-4">
-          <Input label="Nombre del producto" {...register('nombre_producto')} error={errors.nombre_producto?.message} />
+          <Input
+            label="Nombre del producto"
+            {...restNombre}
+            onChange={handleNombreChange}
+            error={errors.nombre_producto?.message}
+            style={{ textTransform: 'uppercase' }}
+          />
           <Input label="Código de barras" {...register('codigo_barras')} error={errors.codigo_barras?.message} />
 
           <div className="flex flex-col gap-1">
