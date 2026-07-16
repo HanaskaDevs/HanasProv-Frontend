@@ -14,6 +14,7 @@ import ProtectedRoute from './ProtectedRoute';
 import RestablecerPasswordPage from '../modules/auth/pages/RestablecerPasswordPage';
 import EmpresasPage from '../modules/empresas/pages/EmpresasPage';
 import PedidosPage from '../modules/pedidos/pages/PedidosPage';
+import ProveedoresPage from '../modules/proveedores/pages/ProveedoresPage';
 
 export default function AppRoutes() {
   return (
@@ -34,7 +35,7 @@ export default function AppRoutes() {
 
         <Route path="/usuarios/internos" element={<UsuariosInternosPage />} />
         <Route path="/usuarios/proveedores" element={<UsuariosExternosPage />} />
-        <Route path="/proveedores" element={<ProximamentePage titulo="Proveedores" />} />
+        <Route path="/proveedores" element={<ProveedoresPage />} />
 
         <Route path="/calificacion" element={<ProximamentePage titulo="Calificación" />} />
         <Route path="/pedidos" element={<PedidosPage />} />
