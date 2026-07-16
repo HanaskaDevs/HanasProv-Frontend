@@ -17,6 +17,7 @@ export default function ModalConfirmarRegistro({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+      window.dispatchEvent(new Event('hana:celebrar'));
       onClose();
     },
   });
