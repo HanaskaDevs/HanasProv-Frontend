@@ -14,17 +14,6 @@ import PedidosInternosPage from '../../pedidosInternos/pages/PedidosInternosPage
 
 const PEDIDOS_POR_PAGINA = 20;
 
-function esUrgente(fechaEsperada: string | null): 'vencido' | 'proximo' | null {
-    if (!fechaEsperada) return null;
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const esperada = new Date(fechaEsperada + 'T00:00:00');
-    const diffDias = Math.round((esperada.getTime() - hoy.getTime()) / 86400000);
-    if (diffDias < 0) return 'vencido';
-    if (diffDias <= 1) return 'proximo';
-    return null;
-}
-
 function PedidosProveedor() {
     const queryClient = useQueryClient();
     const [tab, setTab] = useState<'Abierto' | 'Cerrado'>('Abierto');
@@ -78,18 +67,16 @@ function PedidosProveedor() {
 
     const estadisticas = useMemo(() => {
         const listaAbiertos = abiertos ?? [];
-        let vencidos = 0;
-        let proximos = 0;
-        for (const p of listaAbiertos) {
-            const u = esUrgente(p.fecha_recepcion_esperada);
-            if (u === 'vencido') vencidos++;
-            if (u === 'proximo') proximos++;
-        }
+        const listaCerrados = cerrados ?? [];
+        const todos = [...listaAbiertos, ...listaCerrados];
+        const promedio = todos.length > 0
+            ? Math.round(todos.reduce((acc, p) => acc + p.porcentaje_entrega, 0) / todos.length)
+            : 0;
+
         return {
             totalAbiertos: listaAbiertos.length,
-            totalCerrados: (cerrados ?? []).length,
-            vencidos,
-            proximos,
+            totalCerrados: listaCerrados.length,
+            porcentajeEntregaPromedio: promedio,
         };
     }, [abiertos, cerrados]);
 
@@ -176,7 +163,7 @@ function PedidosProveedor() {
                                 : 'border-transparent text-brand-900/40 hover:text-brand-900/70'
                         }`}
                     >
-                        {t === 'Abierto' ? 'Abiertos' : 'Cerrados'}
+                        {t === 'Abierto' ? 'Vigentes' : 'Históricos'}
                         <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                             tab === t
                                 ? 'bg-brand-700 text-white'
@@ -201,29 +188,14 @@ function PedidosProveedor() {
                     <p className="text-sm text-brand-900/60 text-center py-10">
                         {(datosTab ?? []).length === 0
                             ? tab === 'Abierto'
-                                ? 'No tienes pedidos abiertos. Presiona "Actualizar pedidos" para traer los más recientes.'
-                                : 'Todavía no tienes pedidos cerrados.'
+                                ? 'No tienes pedidos vigentes. Presiona "Actualizar pedidos" para traer los más recientes.'
+                                : 'Todavía no tienes pedidos históricos.'
                             : 'Sin resultados para tu búsqueda.'}
                     </p>
                 </Card>
             ) : (
                 <>
                     <Card className="p-0 overflow-hidden">
-                        {/* Encabezados de columna */}
-                        <div
-                            className="grid text-[10px] font-medium uppercase tracking-wider text-brand-900/40 px-4 py-2 bg-brand-900/[0.02] border-b border-brand-900/6"
-                            style={{ gridTemplateColumns: '16px 28px 1fr 130px 130px 90px 44px 32px', gap: '10px' }}
-                        >
-                            <span />
-                            <span />
-                            <span>Pedido</span>
-                            <span>Registro BC</span>
-                            <span>Recepción esp.</span>
-                            <span>Estado</span>
-                            <span>Ítems</span>
-                            <span />
-                        </div>
-
                         <div className="divide-y divide-brand-900/6">
                             {pedidosPagina.map((pedido) => (
                                 <FilaPedido
