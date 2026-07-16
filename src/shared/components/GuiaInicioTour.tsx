@@ -1,0 +1,148 @@
+import { useEffect, useLayoutEffect, useState } from 'react';
+
+interface PasoTour {
+    targetId: string;
+    titulo: string;
+    texto: string;
+}
+
+const PASOS: PasoTour[] = [
+    {
+        targetId: 'tour-mi-ficha',
+        titulo: 'Paso 1 · Ficha de Proveedor',
+        texto: 'Aquí debes llenar los datos de tu empresa: información general, clase de proveedor y categoría de productos o servicios.',
+    },
+    {
+        targetId: 'tour-documentacion',
+        titulo: 'Paso 2 · Documentación',
+        texto: 'Aquí deberás subir en formato PDF toda la documentación requerida. Tienes documentos obligatorios y opcionales.',
+    },
+    {
+        targetId: 'tour-productos',
+        titulo: 'Paso 3 · Ficha de Productos',
+        texto: 'Aquí registras tus productos con su ficha técnica, análisis y carta de alérgenos. Cuando termines, podrás enviarlos a calificación.',
+    },
+];
+
+const ANCHO_TARJETA = 300;
+const ESPACIO_RESALTADO = 8;
+const ESPACIO_TARJETA = 14;
+
+export default function GuiaInicioTour({ visible, onCerrar }: { visible: boolean; onCerrar: () => void }) {
+    const [paso, setPaso] = useState(0);
+    const [rect, setRect] = useState<DOMRect | null>(null);
+
+    useEffect(() => {
+        if (visible) setPaso(0);
+    }, [visible]);
+
+    useLayoutEffect(() => {
+        if (!visible) return;
+
+        function actualizarPosicion() {
+            const el = document.getElementById(PASOS[paso].targetId);
+            if (el) setRect(el.getBoundingClientRect());
+        }
+
+        actualizarPosicion();
+        window.addEventListener('resize', actualizarPosicion);
+        return () => window.removeEventListener('resize', actualizarPosicion);
+    }, [visible, paso]);
+
+    if (!visible || !rect) return null;
+
+    const esUltimo = paso === PASOS.length - 1;
+    const pasoActual = PASOS[paso];
+
+    const centroTarget = rect.left + rect.width / 2;
+    let izquierdaTarjeta = centroTarget - ANCHO_TARJETA / 2;
+    izquierdaTarjeta = Math.max(12, Math.min(izquierdaTarjeta, window.innerWidth - ANCHO_TARJETA - 12));
+
+    const flechaIzquierda = Math.max(20, Math.min(centroTarget - izquierdaTarjeta, ANCHO_TARJETA - 20));
+
+    function siguiente() {
+        if (esUltimo) {
+            onCerrar();
+        } else {
+            setPaso((p) => p + 1);
+        }
+    }
+
+    return (
+        <>
+            {/* Spotlight sobre el elemento del menú */}
+            <div
+                className="fixed rounded-lg pointer-events-none transition-all duration-300 ease-out z-[60]"
+                style={{
+                    top: rect.top - ESPACIO_RESALTADO,
+                    left: rect.left - ESPACIO_RESALTADO,
+                    width: rect.width + ESPACIO_RESALTADO * 2,
+                    height: rect.height + ESPACIO_RESALTADO * 2,
+                    boxShadow: '0 0 0 9999px rgba(20,40,49,0.72)',
+                    border: '2px solid #E2DE3D',
+                }}
+            />
+
+            {/* Bloqueo de clicks fuera de la tarjeta */}
+            <div className="fixed inset-0 z-[59]" onClick={siguiente} />
+
+            {/* Tarjeta explicativa */}
+            <div
+                className="fixed z-[61] rounded-xl bg-brand-900 text-white shadow-2xl transition-all duration-300 ease-out"
+                style={{
+                    top: rect.bottom + ESPACIO_RESALTADO + ESPACIO_TARJETA,
+                    left: izquierdaTarjeta,
+                    width: ANCHO_TARJETA,
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div
+                    className="absolute -top-1.5 h-3 w-3 rotate-45 bg-brand-900"
+                    style={{ left: flechaIzquierda }}
+                />
+
+                <div className="p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-yellow">
+                            {pasoActual.titulo}
+                        </span>
+                        <button onClick={onCerrar} className="text-white/40 hover:text-white text-xs">
+                            Saltar
+                        </button>
+                    </div>
+
+                    <p className="text-sm text-white/90 leading-relaxed mb-4">{pasoActual.texto}</p>
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex gap-1.5">
+                            {PASOS.map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={`h-1.5 rounded-full transition-all ${i === paso ? 'w-4 bg-brand-yellow' : 'w-1.5 bg-white/25'
+                                        }`}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {paso > 0 && (
+                                <button
+                                    onClick={() => setPaso((p) => p - 1)}
+                                    className="text-xs font-medium text-white/60 hover:text-white px-2 py-1.5"
+                                >
+                                    Atrás
+                                </button>
+                            )}
+                            <button
+                                onClick={siguiente}
+                                className="text-xs font-medium bg-brand-yellow text-brand-900 px-3 py-1.5 rounded-md hover:bg-brand-yellow/90"
+                            >
+                                {esUltimo ? 'Entendido, comenzar' : 'Siguiente'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+}
