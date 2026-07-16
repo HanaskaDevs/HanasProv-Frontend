@@ -15,7 +15,7 @@ const PRODUCTOS_POR_PAGINA = 20;
 
 const TIPOS_DOCUMENTO = [
   { id: 1, slug: 'ficha-tecnica', etiqueta: 'Ficha técnica', obligatorio: true },
-  { id: 2, slug: 'analisis-producto', etiqueta: 'Análisis de producto', obligatorio: true },
+  { id: 2, slug: 'analisis-producto', etiqueta: 'Análisis de Laboratorio', obligatorio: true },
   { id: 3, slug: 'carta-alergenos', etiqueta: 'Carta de alérgenos', obligatorio: false },
 ] as const;
 
@@ -48,10 +48,12 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mostrarPublicidad, setMostrarPublicidad] = useState(false);
 
   const yaSubido = producto.documentos.find((d) => d.tipo === tipo.slug);
+  const esAnalisisProducto = tipo.slug === 'analisis-producto';
 
- const subir = useMutation({
+  const subir = useMutation({
     mutationFn: (archivo: File) => productosApi.subirDocumentoProducto(producto.id_producto, tipo.id, archivo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
@@ -63,6 +65,14 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
 
   const ver = useMutation({
     mutationFn: (idDocumentoProducto: number) => productosApi.verDocumentoProducto(idDocumentoProducto),
+  });
+
+  const eliminarDoc = useMutation({
+    mutationFn: (idDocumentoProducto: number) => productosApi.eliminarDocumentoProducto(idDocumentoProducto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+    },
   });
 
   function handleSeleccionar(e: ChangeEvent<HTMLInputElement>) {
@@ -84,20 +94,38 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
   }
 
   const bloqueado = producto.bloqueado;
+  const mostrarTooltipAnalisis = esAnalisisProducto && !yaSubido && mostrarPublicidad;
 
   return (
-    <div className="min-w-0 flex-1">
+    <div className="min-w-0 flex-1 relative">
       <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
 
-      {yaSubido ? (
-        <div className={`rounded-md border px-3 py-2 ${bloqueado ? 'border-brand-900/10 bg-brand-900/[0.03]' : 'border-emerald-200 bg-emerald-50'}`}>
-          <p className={`text-xs font-medium flex items-center gap-1 ${bloqueado ? 'text-brand-900/50' : 'text-emerald-800'}`}>
-            ✓ {tipo.etiqueta}
+      {mostrarTooltipAnalisis && (
+        <div className="absolute bottom-full left-0 mb-2 z-20 w-64 rounded-lg bg-brand-900 text-white text-xs px-3 py-2.5 shadow-lg">
+          <p className="font-medium mb-1">¿Aún no tienes el análisis de Laboratorio?</p>
+          <p className="text-white/80 leading-relaxed">
+            Puedes realizarlo con Hanaska. Para más información contáctanos a{' '}
+            <a href="mailto:analisis@hanska.com" className="underline font-medium">
+              analisis@hanska.com
+            </a>
           </p>
-          <p className={`text-[11px] truncate ${bloqueado ? 'text-brand-900/40' : 'text-emerald-700/70'}`} title={yaSubido.nombre_original}>
-            {yaSubido.nombre_original}
-          </p>
-          <div className="flex gap-3 mt-1">
+          <div className="absolute top-full left-4 h-2 w-2 -mt-1 rotate-45 bg-brand-900" />
+        </div>
+      )}
+
+      <div
+        onMouseEnter={() => esAnalisisProducto && !yaSubido && setMostrarPublicidad(true)}
+        onMouseLeave={() => setMostrarPublicidad(false)}
+      >
+        {yaSubido ? (
+          <div className={`rounded-md border px-3 py-2 ${bloqueado ? 'border-brand-900/10 bg-brand-900/[0.03]' : 'border-emerald-200 bg-emerald-50'}`}>
+            <p className={`text-xs font-medium flex items-center gap-1 ${bloqueado ? 'text-brand-900/50' : 'text-emerald-800'}`}>
+              ✓ {tipo.etiqueta}
+            </p>
+            <p className={`text-[11px] truncate ${bloqueado ? 'text-brand-900/40' : 'text-emerald-700/70'}`} title={yaSubido.nombre_original}>
+              {yaSubido.nombre_original}
+            </p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
             <button
               onClick={() => ver.mutate(yaSubido.id_documento_producto)}
               className="text-[11px] font-medium text-brand-700 hover:underline"
@@ -105,26 +133,34 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
               Ver
             </button>
             {!bloqueado && (
-              <button
-                onClick={() => inputRef.current?.click()}
-                disabled={subir.isPending}
-                className="text-[11px] font-medium text-brand-900/50 hover:underline"
-              >
-                Reemplazar
-              </button>
+              <>
+                <button
+                  onClick={() => inputRef.current?.click()}
+                  disabled={subir.isPending}
+                  className="text-[11px] font-medium text-brand-900/50 hover:underline"
+                >
+                  Reemplazar
+                </button>
+                <button
+                  onClick={() => eliminarDoc.mutate(yaSubido.id_documento_producto)}
+                  disabled={eliminarDoc.isPending}
+                  className="text-[11px] font-medium text-brand-wine hover:underline"
+                >
+                  Eliminar
+                </button>
+              </>
             )}
           </div>
-        </div>
-      ) : bloqueado ? (
-        <div className="w-full rounded-md border-2 border-dashed border-brand-900/10 px-3 py-2 bg-brand-900/[0.02]">
-          <p className="text-xs font-medium text-brand-900/40">
-            {tipo.etiqueta}
-            {tipo.obligatorio && <span> *</span>}
-          </p>
-          <p className="text-[11px] text-brand-900/30">Bloqueado durante revisión</p>
-        </div>
-      ) : (
-        <div className="relative group/promo">
+          </div>
+        ) : bloqueado ? (
+          <div className="w-full rounded-md border-2 border-dashed border-brand-900/10 px-3 py-2 bg-brand-900/[0.02]">
+            <p className="text-xs font-medium text-brand-900/40">
+              {tipo.etiqueta}
+              {tipo.obligatorio && <span> *</span>}
+            </p>
+            <p className="text-[11px] text-brand-900/30">Bloqueado durante revisión</p>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
@@ -142,41 +178,81 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
             </p>
             <p className="text-[11px] text-brand-900/40">PDF, máx. 4MB</p>
           </button>
-
-          {tipo.slug === 'analisis-producto' && (
-            <div className="pointer-events-none absolute left-0 right-0 bottom-full mb-2 z-10 opacity-0 translate-y-1 transition-all duration-150 group-hover/promo:opacity-100 group-hover/promo:translate-y-0">
-              <div className="rounded-lg bg-brand-900 text-white text-xs px-3.5 py-3 shadow-lg">
-                <p className="font-medium">¿No cuentas con análisis de producto?</p>
-                <p className="text-white/70 mt-1">
-                  Puedes contratar este servicio con HANASKA. Contáctanos en{' '}
-                  <a href="mailto:prueba@hanaska.com" className="text-brand-200 hover:underline pointer-events-auto">
-                    prueba@hanaska.com
-                  </a>
-                </p>
-              </div>
-              <div className="w-2.5 h-2.5 bg-brand-900 rotate-45 mx-4 -mt-1.5" />
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {error && <span className="text-[10px] text-brand-wine block mt-1">{error}</span>}
     </div>
   );
 }
 
-function TarjetaProducto({ producto }: { producto: Producto }) {
+function TarjetaProducto({
+  producto,
+  seleccionado,
+  onSeleccionar,
+  onEliminar,
+  eliminando,
+}: {
+  producto: Producto;
+  seleccionado: boolean;
+  onSeleccionar: () => void;
+  onEliminar: () => void;
+  eliminando: boolean;
+}) {
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+
   return (
     <Card className={producto.bloqueado ? 'opacity-75' : ''}>
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-medium text-brand-900">{producto.nombre_producto}</p>
-          <p className="text-xs text-brand-900/50 mt-0.5">
-            {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
-            {producto.precio != null && ` · $${producto.precio}`}
-          </p>
+        <div className="flex items-start gap-2.5 min-w-0">
+          {!producto.bloqueado && (
+            <input
+              type="checkbox"
+              checked={seleccionado}
+              onChange={onSeleccionar}
+              className="mt-1 h-4 w-4 accent-brand-700 cursor-pointer shrink-0"
+            />
+          )}
+          <div className="min-w-0">
+            <p className="font-medium text-brand-900">{producto.nombre_producto}</p>
+            <p className="text-xs text-brand-900/50 mt-0.5">
+              {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
+              {producto.precio != null && ` · $${producto.precio}`}
+            </p>
+          </div>
         </div>
-        <BadgeCalificacion producto={producto} />
+        <div className="flex items-center gap-2 shrink-0">
+          <BadgeCalificacion producto={producto} />
+          {!producto.bloqueado && (
+            confirmandoEliminar ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { onEliminar(); setConfirmandoEliminar(false); }}
+                  disabled={eliminando}
+                  className="text-[11px] font-medium px-2 py-1 rounded-md bg-brand-wine text-white"
+                >
+                  Confirmar
+                </button>
+                <button
+                  onClick={() => setConfirmandoEliminar(false)}
+                  className="text-[11px] font-medium px-1.5 py-1 text-brand-900/40"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmandoEliminar(true)}
+                className="h-7 w-7 rounded-full flex items-center justify-center text-brand-900/30 hover:bg-brand-wine/10 hover:text-brand-wine transition-colors"
+                title="Eliminar producto"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {producto.estado_calificacion === 'Rechazado' && producto.comentario_calificacion && (
@@ -186,7 +262,7 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-brand-900/8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 pt-4 border-t border-brand-900/8">
         {TIPOS_DOCUMENTO.map((tipo) => (
           <CasillaDocumento key={tipo.id} producto={producto} tipo={tipo} />
         ))}
@@ -196,10 +272,12 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
 }
 
 export default function ListaProductos() {
+  const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [pagina, setPagina] = useState(1);
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
 
   const { data, isLoading } = useQuery({
     queryKey: ['mis-productos'],
@@ -209,6 +287,23 @@ export default function ListaProductos() {
   const { data: resumen, isLoading: cargandoResumen } = useQuery({
     queryKey: ['resumen-registro'],
     queryFn: productosApi.obtenerResumenRegistro,
+  });
+
+  const eliminarUno = useMutation({
+    mutationFn: (idProducto: number) => productosApi.eliminarProducto(idProducto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+    },
+  });
+
+  const eliminarSeleccionados = useMutation({
+    mutationFn: () => productosApi.eliminarProductosMasivo(Array.from(seleccionados)),
+    onSuccess: () => {
+      setSeleccionados(new Set());
+      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+    },
   });
 
   const productosFiltrados = useMemo(() => {
@@ -231,6 +326,15 @@ export default function ListaProductos() {
   useEffect(() => {
     setPagina(1);
   }, [busqueda]);
+
+  function alternarSeleccionado(id: number) {
+    setSeleccionados((prev) => {
+      const nuevo = new Set(prev);
+      if (nuevo.has(id)) nuevo.delete(id);
+      else nuevo.add(id);
+      return nuevo;
+    });
+  }
 
   const hayProductosBloqueados = resumen?.ya_bloqueado ?? false;
 
@@ -256,6 +360,16 @@ export default function ListaProductos() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar producto o código de barras..." />
         <div className="flex gap-2">
+          {seleccionados.size > 0 && (
+            <Button
+              variant="secondary"
+              className="text-brand-wine"
+              isLoading={eliminarSeleccionados.isPending}
+              onClick={() => eliminarSeleccionados.mutate()}
+            >
+              Eliminar {seleccionados.size} seleccionado{seleccionados.size > 1 ? 's' : ''}
+            </Button>
+          )}
           <Button onClick={() => setModalAbierto(true)} disabled={hayProductosBloqueados}>
             + Agregar producto
           </Button>
@@ -279,7 +393,14 @@ export default function ListaProductos() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {productosPagina.map((producto) => (
-              <TarjetaProducto key={producto.id_producto} producto={producto} />
+              <TarjetaProducto
+                key={producto.id_producto}
+                producto={producto}
+                seleccionado={seleccionados.has(producto.id_producto)}
+                onSeleccionar={() => alternarSeleccionado(producto.id_producto)}
+                onEliminar={() => eliminarUno.mutate(producto.id_producto)}
+                eliminando={eliminarUno.isPending}
+              />
             ))}
           </div>
 
@@ -294,4 +415,4 @@ export default function ListaProductos() {
       )}
     </div>
   );
-}
+} 
