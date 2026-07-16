@@ -124,23 +124,40 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
           <p className="text-[11px] text-brand-900/30">Bloqueado durante revisión</p>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={subir.isPending}
-          className={`w-full rounded-md border-2 border-dashed px-3 py-2 text-left transition-colors
-            ${tipo.obligatorio
-              ? 'border-brand-wine/30 hover:border-brand-wine/60 hover:bg-brand-wine/5'
-              : 'border-brand-900/15 hover:border-brand-900/30 hover:bg-brand-900/5'
-            }`}
-        >
-          <p className="text-xs font-medium text-brand-900">
-            {subir.isPending ? <Spinner className="h-3 w-3 inline mr-1" /> : null}
-            Cargue aquí {tipo.etiqueta.toLowerCase()}
-            {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
-          </p>
-          <p className="text-[11px] text-brand-900/40">PDF, máx. 4MB</p>
-        </button>
+        <div className="relative group/promo">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={subir.isPending}
+            className={`w-full rounded-md border-2 border-dashed px-3 py-2 text-left transition-colors
+              ${tipo.obligatorio
+                ? 'border-brand-wine/30 hover:border-brand-wine/60 hover:bg-brand-wine/5'
+                : 'border-brand-900/15 hover:border-brand-900/30 hover:bg-brand-900/5'
+              }`}
+          >
+            <p className="text-xs font-medium text-brand-900">
+              {subir.isPending ? <Spinner className="h-3 w-3 inline mr-1" /> : null}
+              Cargue aquí {tipo.etiqueta.toLowerCase()}
+              {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
+            </p>
+            <p className="text-[11px] text-brand-900/40">PDF, máx. 4MB</p>
+          </button>
+
+          {tipo.slug === 'analisis-producto' && (
+            <div className="pointer-events-none absolute left-0 right-0 bottom-full mb-2 z-10 opacity-0 translate-y-1 transition-all duration-150 group-hover/promo:opacity-100 group-hover/promo:translate-y-0">
+              <div className="rounded-lg bg-brand-900 text-white text-xs px-3.5 py-3 shadow-lg">
+                <p className="font-medium">¿No cuentas con análisis de producto?</p>
+                <p className="text-white/70 mt-1">
+                  Puedes contratar este servicio con HANASKA. Contáctanos en{' '}
+                  <a href="mailto:prueba@hanaska.com" className="text-brand-200 hover:underline pointer-events-auto">
+                    prueba@hanaska.com
+                  </a>
+                </p>
+              </div>
+              <div className="w-2.5 h-2.5 bg-brand-900 rotate-45 mx-4 -mt-1.5" />
+            </div>
+          )}
+        </div>
       )}
 
       {error && <span className="text-[10px] text-brand-wine block mt-1">{error}</span>}

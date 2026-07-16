@@ -14,6 +14,8 @@ import ProtectedRoute from './ProtectedRoute';
 import RestablecerPasswordPage from '../modules/auth/pages/RestablecerPasswordPage';
 import EmpresasPage from '../modules/empresas/pages/EmpresasPage';
 import PedidosPage from '../modules/pedidos/pages/PedidosPage';
+import ReclamosAbiertosPage from '../modules/reclamos/pages/ReclamosAbiertosPage';
+import ReclamosCerradosPage from '../modules/reclamos/pages/ReclamosCerradosPage';
 
 export default function AppRoutes() {
   return (
@@ -38,6 +40,8 @@ export default function AppRoutes() {
 
         <Route path="/calificacion" element={<ProximamentePage titulo="Calificación" />} />
         <Route path="/pedidos" element={<PedidosPage />} />
+        <Route path="/reclamos/abiertos" element={<ReclamosAbiertosPage />} />
+        <Route path="/reclamos/cerrados" element={<ReclamosCerradosPage />} />
         <Route path="/auditorias" element={<ProximamentePage titulo="Auditorías" />} />
         <Route path="/politicas" element={<ProximamentePage titulo="Políticas" />} />
         <Route path="/calendario" element={<ProximamentePage titulo="Calendario" />} />
