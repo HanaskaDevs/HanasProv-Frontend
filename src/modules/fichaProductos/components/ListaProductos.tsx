@@ -58,6 +58,7 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+      window.dispatchEvent(new Event('hana:celebrar'));
       setError(null);
     },
     onError: () => setError('No se pudo subir. Verifica que sea PDF y pese menos de 4MB.'),

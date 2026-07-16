@@ -8,6 +8,7 @@ import Avatar from '../components/Avatar';
 import ModalCambiarPassword from '../../modules/auth/components/ModalCambiarPassword';
 import * as fichaApi from '../../modules/miFicha/api/fichaApi';
 import GuiaInicioTour from '../components/GuiaInicioTour';
+import HanaBot from '../components/HanaBot';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { usuario, empresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } = useAuth();
@@ -191,6 +192,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {modalPasswordAbierto && <ModalCambiarPassword onClose={() => setModalPasswordAbierto(false)} />}
 
       <GuiaInicioTour visible={tourVisible} onCerrar={cerrarTour} />
+
+      <HanaBot />
     </div>
   );
 }
