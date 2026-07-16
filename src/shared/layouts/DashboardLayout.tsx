@@ -1,14 +1,16 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../modules/auth/hooks/useAuth';
 import { obtenerMenu } from '../config/menuConfig';
 import LogoLink from '../components/LogoLink';
 import Avatar from '../components/Avatar';
 import ModalCambiarPassword from '../../modules/auth/components/ModalCambiarPassword';
+import * as fichaApi from '../../modules/miFicha/api/fichaApi';
 import GuiaInicioTour from '../components/GuiaInicioTour';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { usuario, empresaActiva, rolActivo, cambiarEmpresa, logout } = useAuth();
+  const { usuario, empresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } = useAuth();
   const navigate = useNavigate();
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
@@ -37,6 +39,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (claveTour) localStorage.setItem(claveTour, 'true');
   }
 
+  // Solo nos interesa para decidir qué mostrar en el menú -> se pide acá
+  // (no en cada página) para que la restricción aplique en TODA la app
+  // consistentemente. Comparte queryKey con MiFichaPage/PanelProveedor,
+  // así que React Query lo cachea entre ellos y no duplica la llamada.
+  const { data: ficha, isLoading: cargandoFicha } = useQuery({
+    queryKey: ['mi-ficha'],
+    queryFn: fichaApi.obtenerMiFicha,
+    enabled: esProveedor,
+    retry: false,
+  });
+
+  // Mientras no sepamos el estado (recién cargando), asumimos Aspirante
+  // -> es más seguro mostrar de menos y luego expandir el menú, que
+  // mostrar de más un instante y después ocultarlo (se ve como un bug).
+  const esAspirante = !esProveedor ? false : cargandoFicha || ficha?.estado === 'Aspirante';
+
   async function handleCambiarEmpresa(idEmpresa: number) {
     setCambiandoEmpresa(true);
     try {
@@ -51,7 +69,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }
 
-  const menu = obtenerMenu(rolActivo, usuario?.tipo_usuario ?? 'Interno');
+  const menu = obtenerMenu(rolActivo, usuario?.tipo_usuario ?? 'Interno', esAspirante);
 
   async function handleLogout() {
     await logout();

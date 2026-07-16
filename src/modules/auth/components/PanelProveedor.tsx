@@ -6,6 +6,7 @@ import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 import * as documentacionApi from '../../documentacion/api/documentacionApi';
+import * as productosApi from '../../fichaProductos/api/productosApi';
 import * as pedidosApi from '../../pedidos/api/pedidosApi';
 import type { FichaProveedor } from '../../miFicha/types';
 
@@ -145,6 +146,11 @@ function Alerta({
 export default function PanelProveedor() {
   const ficha = useQuery({ queryKey: ['mi-ficha'], queryFn: fichaApi.obtenerMiFicha, retry: false });
   const documentos = useQuery({ queryKey: ['mi-documentos'], queryFn: documentacionApi.obtenerChecklist, retry: false });
+  const productos = useQuery({
+    queryKey: ['resumen-registro'],
+    queryFn: productosApi.obtenerResumenRegistro,
+    retry: false,
+  });
   const pedidosAbiertos = useQuery({
     queryKey: ['pedidos-abiertos'],
     queryFn: pedidosApi.listarPedidosAbiertos,
@@ -161,6 +167,7 @@ export default function PanelProveedor() {
   const totalObligatorios = tiposDocumentos.filter((t) => t.obligatorio).length;
   const obligatoriosCargados = totalObligatorios - obligatoriosFaltantes.length;
   const documentacionRegistrada = documentos.data?.registrado ?? false;
+  const productosRegistrados = productos.data?.ya_bloqueado ?? false;
 
   // Documentos con fecha de caducidad próxima a vencer (<=30 días) o ya
   // vencidos -> junta todos los archivos de todos los tipos, no solo los
@@ -222,6 +229,15 @@ export default function PanelProveedor() {
               .join(', ')}${obligatoriosFaltantes.length > 3 ? '…' : ''}.`}
             to="/documentos"
             textoBoton="Cargar documentos"
+          />
+        )}
+        {documentacionRegistrada && !productosRegistrados && (
+          <Alerta
+            tono="yellow"
+            titulo="Sigue tu Ficha de Productos"
+            descripcion="Ya registraste tu documentación. El siguiente paso es cargar y registrar tus productos."
+            to="/productos"
+            textoBoton="Ir a Ficha Productos"
           />
         )}
         {pedidosVencidos.length > 0 && (

@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import * as documentacionApi from '../api/documentacionApi';
@@ -430,6 +431,19 @@ function BarraRegistro({
           {fechaRegistro && ` el ${formateaFecha(fechaRegistro)}`}. Ya no se puede editar ni cargar más archivos,
           solo puedes verlos.
         </p>
+        <p className="text-sm text-emerald-800 mt-1">
+          Ese es el segundo paso. Ahora sigue cargar tu <span className="font-semibold">Ficha de Productos</span>.
+        </p>
+        <Link
+          to="/productos"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
+        >
+          Ir a Ficha Productos
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </Link>
       </Card>
     );
   }

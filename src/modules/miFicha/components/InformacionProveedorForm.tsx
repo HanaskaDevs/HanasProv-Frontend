@@ -3,9 +3,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import CampoFicha from './CampoFicha';
+import CampoFichaSelect from './CampoFichaSelect';
 import Button from '../../../shared/components/Button';
 import LocationPicker from './LocationPicker';
 import { guardarSeccion1 } from '../api/fichaApi';
+import { CIUDADES_ECUADOR } from '../constants/ciudadesEcuador';
 import type { FichaProveedor, Seccion1Data } from '../types';
 
 const requerido = (mensaje = 'Requerido') => z.string().min(1, mensaje);
@@ -157,7 +159,12 @@ export default function InformacionProveedorForm({
             <CampoFicha label="Correo" type="email" {...register('email')} error={errors.email?.message} />
             <CampoFicha label="Teléfono" {...register('telefono')} error={errors.telefono?.message} />
             <CampoFicha label="Dirección" {...register('direccion')} error={errors.direccion?.message} />
-            <CampoFicha label="Ciudad" {...register('ciudad')} error={errors.ciudad?.message} />
+            <CampoFichaSelect
+              label="Ciudad"
+              opciones={CIUDADES_ECUADOR}
+              {...register('ciudad')}
+              error={errors.ciudad?.message}
+            />
             <CampoFicha label="Página web (opcional)" {...register('pagina_web')} />
           </div>
 

@@ -31,6 +31,12 @@ const MENU_PROVEEDOR: MenuItem[] = [
   { label: 'Políticas', to: '/politicas' },
 ];
 
+// Mientras el proveedor está "Aspirante" (todavía no aprobado), estas
+// secciones no le aplican -> ni siquiera puede tener pedidos, reclamos o
+// calificaciones todavía. Se muestran recién cuando pasa a otro estado
+// (aprobado por el equipo correspondiente).
+const ETIQUETAS_OCULTAS_PARA_ASPIRANTE = ['Calificación', 'Pedidos', 'Reclamos', 'Políticas'];
+
 const MENU_SISTEMAS: MenuItem[] = [
   { label: 'Empresas', to: '/empresas' },
   {
@@ -67,8 +73,17 @@ const MENU_ADMIN: MenuItem[] = [
 
 const MENU_CALIDAD_COMPRAS: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
 
-export function obtenerMenu(rolActivo: string | null, tipoUsuario: 'Interno' | 'Proveedor'): MenuItem[] {
-  if (tipoUsuario === 'Proveedor') return MENU_PROVEEDOR;
+export function obtenerMenu(
+  rolActivo: string | null,
+  tipoUsuario: 'Interno' | 'Proveedor',
+  esAspirante = false
+): MenuItem[] {
+  if (tipoUsuario === 'Proveedor') {
+    if (esAspirante) {
+      return MENU_PROVEEDOR.filter((item) => !ETIQUETAS_OCULTAS_PARA_ASPIRANTE.includes(item.label));
+    }
+    return MENU_PROVEEDOR;
+  }
 
   switch (rolActivo) {
     case ROLES.SISTEMAS:
