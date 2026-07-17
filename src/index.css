@@ -22,3 +22,21 @@ body {
 h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
 }
+
+/* Entrada suave al cambiar de página (ej. paginado de documentos) -> sin
+   librería de animación, solo CSS. Se dispara cambiando el "key" del
+   elemento en React, así cada cambio de página remonta y re-dispara esto. */
+@keyframes entrada-pagina {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animar-entrada-pagina {
+  animation: entrada-pagina 0.22s ease-out;
+}

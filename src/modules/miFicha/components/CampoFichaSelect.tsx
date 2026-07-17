@@ -1,3 +1,4 @@
+// src/modules/miFicha/components/CampoFichaSelect.tsx
 import { type SelectHTMLAttributes, forwardRef } from 'react';
 
 interface CampoFichaSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -5,6 +6,8 @@ interface CampoFichaSelectProps extends SelectHTMLAttributes<HTMLSelectElement> 
   error?: string;
   placeholder?: string;
   opciones: readonly string[];
+  /** Borde/fondo persistente -> "este campo lo rechazó el admin, corrígelo". */
+  resaltado?: boolean;
 }
 
 /**
@@ -13,7 +16,7 @@ interface CampoFichaSelectProps extends SelectHTMLAttributes<HTMLSelectElement> 
  * vez de un <input> de texto libre -> se usa para "Ciudad".
  */
 const CampoFichaSelect = forwardRef<HTMLSelectElement, CampoFichaSelectProps>(
-  ({ label, error, placeholder = 'Selecciona...', opciones, className = '', ...props }, ref) => {
+  ({ label, error, resaltado = false, placeholder = 'Selecciona...', opciones, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -38,7 +41,7 @@ const CampoFichaSelect = forwardRef<HTMLSelectElement, CampoFichaSelectProps>(
               focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700
               disabled:cursor-default disabled:bg-brand-900/[0.04] disabled:text-brand-900/70
               disabled:shadow-none disabled:border-brand-900/10
-              ${error ? 'border-brand-wine' : 'border-brand-900/20'} ${className}`}
+              ${resaltado ? 'border-brand-wine ring-1 ring-brand-wine/40 bg-brand-wine/[0.03]' : error ? 'border-brand-wine' : 'border-brand-900/20'} ${className}`}
             {...props}
           >
             <option value="">{placeholder}</option>

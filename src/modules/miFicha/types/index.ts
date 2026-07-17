@@ -1,3 +1,4 @@
+// src/modules/miFicha/types/index.ts
 export interface Seccion1Data {
   ruc: string | null;
   clase_contribuyente: string | null;
@@ -39,12 +40,11 @@ export interface FichaProveedor {
   seccion_actual: number | string;
   porcentaje_completado: number | string;
   estado: string | null;
-  calificacion_ficha: {
-    estado: 'Aprobado' | 'Rechazado' | null;
-    puntaje: 100 | 0 | null;
-    observacion: string | null;
-    fecha: string | null;
-  };
+  calificaciones_campos: Record<
+    string,
+    { estado: 'Aprobado' | 'Rechazado' | null; observacion: string | null; fecha: string | null }
+  >;
+  estado_calificacion_general: 'Aprobado' | 'Rechazado' | null;
   seccion_1: Seccion1Data;
   seccion_2: { clases: ClaseSeleccionada[] };
   seccion_3: { categorias: CategoriaSeleccionada[] };

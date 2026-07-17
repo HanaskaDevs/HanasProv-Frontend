@@ -4,6 +4,9 @@ export interface DocumentoSubido {
   fecha_caducidad: string | null;
   estado: string;
   fecha_creacion: string;
+  estado_calificacion: 'Aprobado' | 'Rechazado' | null;
+  comentario_calificacion: string | null;
+  fecha_calificacion: string | null;
 }
 
 export interface TipoDocumentoChecklist {

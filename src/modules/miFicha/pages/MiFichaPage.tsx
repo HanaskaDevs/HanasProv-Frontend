@@ -1,3 +1,4 @@
+// src/modules/miFicha/pages/MiFichaPage.tsx
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -23,9 +24,13 @@ function calcularPorcentaje(ficha: FichaProveedor): number {
   return Math.round((pasos.filter(Boolean).length / 4) * 100);
 }
 
-function badgeDeEstado(porcentaje: number) {
+function badgeDeEstado(porcentaje: number, estadoCalificacion: FichaProveedor['estado_calificacion_general']) {
   if (porcentaje === 0) return { tone: 'neutral' as const, texto: 'Sin iniciar' };
-  if (porcentaje === 100) return { tone: 'success' as const, texto: 'Completa' };
+  if (porcentaje === 100) {
+    if (estadoCalificacion === 'Aprobado') return { tone: 'success' as const, texto: 'Aprobada' };
+    if (estadoCalificacion === 'Rechazado') return { tone: 'danger' as const, texto: 'Rechazada' };
+    return { tone: 'success' as const, texto: 'Pendiente de revisión' };
+  }
   return { tone: 'warning' as const, texto: 'En progreso' };
 }
 
@@ -80,7 +85,10 @@ export default function MiFichaPage() {
   }
 
   const porcentaje = calcularPorcentaje(ficha);
-  const estado = badgeDeEstado(porcentaje);
+  const estadoCalificacion = ficha.estado_calificacion_general;
+  const estado = badgeDeEstado(porcentaje, estadoCalificacion);
+  const rechazada = estadoCalificacion === 'Rechazado';
+  const camposRechazados = Object.values(ficha.calificaciones_campos).filter((c) => c.estado === 'Rechazado').length;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -105,11 +113,29 @@ export default function MiFichaPage() {
         </div>
 
         <Button onClick={() => setModalAbierto(true)}>
-          {porcentaje === 0 ? 'Completar ficha' : 'Ver ficha'}
+          {porcentaje === 0 ? 'Completar ficha' : rechazada ? 'Corregir ficha' : 'Ver ficha'}
         </Button>
       </Card>
 
-      {porcentaje === 100 && (
+      {rechazada && (
+        <Card className="bg-brand-wine/5 border-brand-wine/20">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-brand-wine">El equipo rechazó tu ficha</p>
+              <p className="text-xs text-brand-900/60 mt-0.5">
+                {camposRechazados === 1
+                  ? 'Hay 1 campo por corregir. Ábrela para ver la observación.'
+                  : `Hay ${camposRechazados} campos por corregir. Ábrela para ver las observaciones.`}
+              </p>
+            </div>
+            <Button variant="danger" className="shrink-0" onClick={() => setModalAbierto(true)}>
+              Corregir ahora
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {porcentaje === 100 && !rechazada && (
         <Card className="bg-brand-700/5 border-brand-700/20">
           <div className="flex items-center justify-between gap-4">
             <div>

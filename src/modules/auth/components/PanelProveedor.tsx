@@ -1,3 +1,4 @@
+// src/modules/auth/components/PanelProveedor.tsx
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -161,6 +162,10 @@ export default function PanelProveedor() {
 
   const porcentajeFicha = ficha.data ? calcularPorcentajeFicha(ficha.data) : 0;
   const fichaCompleta = porcentajeFicha === 100;
+  const fichaRechazada = ficha.data?.estado_calificacion_general === 'Rechazado';
+  const camposFichaRechazados = ficha.data
+    ? Object.values(ficha.data.calificaciones_campos).filter((c) => c.estado === 'Rechazado').length
+    : 0;
 
   const tiposDocumentos = documentos.data?.documentos ?? [];
   const obligatoriosFaltantes = tiposDocumentos.filter((t) => t.obligatorio && t.documentos.length === 0);
@@ -168,6 +173,11 @@ export default function PanelProveedor() {
   const obligatoriosCargados = totalObligatorios - obligatoriosFaltantes.length;
   const documentacionRegistrada = documentos.data?.registrado ?? false;
   const productosRegistrados = productos.data?.ya_bloqueado ?? false;
+
+  const documentosRechazados = useMemo(
+    () => tiposDocumentos.flatMap((t) => t.documentos).filter((d) => d.estado_calificacion === 'Rechazado'),
+    [tiposDocumentos]
+  );
 
   // Documentos con fecha de caducidad próxima a vencer (<=30 días) o ya
   // vencidos -> junta todos los archivos de todos los tipos, no solo los
@@ -210,6 +220,30 @@ export default function PanelProveedor() {
     <div className="space-y-5">
       {/* Alertas: solo las que aplican */}
       <div className="space-y-2">
+        {fichaRechazada && (
+          <Alerta
+            tono="wine"
+            titulo="El equipo rechazó tu Ficha de Proveedor"
+            descripcion={
+              camposFichaRechazados === 1
+                ? 'Hay 1 campo por corregir.'
+                : `Hay ${camposFichaRechazados} campos por corregir.`
+            }
+            to="/mi-ficha"
+            textoBoton="Corregir ficha"
+          />
+        )}
+        {documentosRechazados.length > 0 && (
+          <Alerta
+            tono="wine"
+            titulo={`${documentosRechazados.length} documento(s) rechazado(s)`}
+            descripcion={`${documentosRechazados[0].nombre_original}: ${
+              documentosRechazados[0].comentario_calificacion ?? 'revisa y vuelve a cargarlo.'
+            }`}
+            to="/documentos"
+            textoBoton="Corregir documentos"
+          />
+        )}
         {!fichaCompleta && (
           <Alerta
             tono="yellow"

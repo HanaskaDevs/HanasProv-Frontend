@@ -6,6 +6,7 @@ import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import Badge from '../../../shared/components/Badge';
+import Avatar from '../../../shared/components/Avatar';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import * as proveedoresApi from '../api/proveedoresApi';
@@ -13,9 +14,30 @@ import type { ProveedorListado } from '../types';
 import ModalCalificarProveedor from '../components/ModalCalificarProveedor';
 
 function BadgeCalificacionFicha({ estado }: { estado: ProveedorListado['estado_calificacion_ficha'] }) {
-  if (estado === 'Aprobado') return <Badge tone="success">Aprobada (100)</Badge>;
-  if (estado === 'Rechazado') return <Badge tone="danger">Rechazada (0)</Badge>;
+  if (estado === 'Aprobado') return <Badge tone="success">Aprobada</Badge>;
+  if (estado === 'Rechazado') return <Badge tone="danger">Rechazada</Badge>;
   return <Badge tone="neutral">Sin calificar</Badge>;
+}
+
+/** true si esta fila tiene algo esperando revisión del admin. */
+function necesitaAtencion(p: ProveedorListado): boolean {
+  const fichaListaPeroSinCalificar = p.porcentaje_completado_ficha === 100 && !p.estado_calificacion_ficha;
+  return fichaListaPeroSinCalificar || p.documentos_pendientes_calificar > 0;
+}
+
+function TarjetaResumen({ valor, etiqueta, tono }: { valor: number; etiqueta: string; tono: 'neutral' | 'wine' }) {
+  return (
+    <div
+      className={`rounded-xl border px-4 py-3 ${
+        tono === 'wine' ? 'border-brand-wine/20 bg-brand-wine/5' : 'border-brand-900/10 bg-white'
+      }`}
+    >
+      <p className={`text-2xl font-display font-bold ${tono === 'wine' ? 'text-brand-wine' : 'text-brand-900'}`}>
+        {valor}
+      </p>
+      <p className="text-xs text-brand-900/50 mt-0.5">{etiqueta}</p>
+    </div>
+  );
 }
 
 function ProveedoresContent() {
@@ -39,11 +61,15 @@ function ProveedoresContent() {
 
       const coincideCalificacion =
         !filtroCalificacion ||
-        (filtroCalificacion === 'sin_calificar' ? !p.estado_calificacion_ficha : p.estado_calificacion_ficha === (filtroCalificacion === 'aprobada' ? 'Aprobado' : 'Rechazado'));
+        (filtroCalificacion === 'sin_calificar'
+          ? !p.estado_calificacion_ficha
+          : p.estado_calificacion_ficha === (filtroCalificacion === 'aprobada' ? 'Aprobado' : 'Rechazado'));
 
       return coincideBusqueda && coincideCalificacion;
     });
   }, [proveedores, busqueda, filtroCalificacion]);
+
+  const pendientes = useMemo(() => (proveedores ?? []).filter(necesitaAtencion).length, [proveedores]);
 
   return (
     <div className="space-y-6">
@@ -53,6 +79,23 @@ function ProveedoresContent() {
           Proveedores activos. Revisá y calificá su Ficha y su Documentación desde acá.
         </p>
       </div>
+
+      {!isLoading && proveedores && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <TarjetaResumen valor={proveedores.length} etiqueta="Proveedores activos" tono="neutral" />
+          <TarjetaResumen
+            valor={proveedores.filter((p) => p.estado_calificacion_ficha === 'Aprobado').length}
+            etiqueta="Fichas aprobadas"
+            tono="neutral"
+          />
+          <TarjetaResumen
+            valor={proveedores.filter((p) => p.documentacion_registrada).length}
+            etiqueta="Documentación registrada"
+            tono="neutral"
+          />
+          <TarjetaResumen valor={pendientes} etiqueta="Esperando tu revisión" tono="wine" />
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por razón social, nombre comercial o RUC..." />
@@ -90,43 +133,55 @@ function ProveedoresContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-900/8">
-              {proveedoresFiltrados.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3">
-                    <p className="text-brand-900 font-medium">{p.razon_social}</p>
-                    <p className="text-xs text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge tone={p.porcentaje_completado_ficha === 100 ? 'info' : 'neutral'}>
-                      {p.porcentaje_completado_ficha}%
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <BadgeCalificacionFicha estado={p.estado_calificacion_ficha} />
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.documentacion_registrada ? (
-                      <Badge tone="success">Registrada</Badge>
-                    ) : (
-                      <Badge tone="neutral">Pendiente</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.documentos_totales === 0 ? (
-                      <span className="text-xs text-brand-900/40">Sin cargar</span>
-                    ) : p.documentos_pendientes_calificar > 0 ? (
-                      <Badge tone="warning">{p.documentos_pendientes_calificar} por calificar</Badge>
-                    ) : (
-                      <Badge tone="success">Todos calificados</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => setProveedorCalificando(p)}>
-                      Calificar
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+              {proveedoresFiltrados.map((p) => {
+                const atencion = necesitaAtencion(p);
+                return (
+                  <tr key={p.id} className={`hover:bg-brand-900/[0.02] transition-colors ${atencion ? 'bg-brand-wine/[0.02]' : ''}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar nombre={p.razon_social} className="h-9 w-9" />
+                        <div className="min-w-0">
+                          <p className="text-brand-900 font-medium truncate">{p.razon_social}</p>
+                          <p className="text-xs text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge tone={p.porcentaje_completado_ficha === 100 ? 'info' : 'neutral'}>
+                        {p.porcentaje_completado_ficha}%
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <BadgeCalificacionFicha estado={p.estado_calificacion_ficha} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {p.documentacion_registrada ? (
+                        <Badge tone="success">Registrada</Badge>
+                      ) : (
+                        <Badge tone="neutral">Pendiente</Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {p.documentos_totales === 0 ? (
+                        <span className="text-xs text-brand-900/40">Sin cargar</span>
+                      ) : p.documentos_pendientes_calificar > 0 ? (
+                        <Badge tone="warning">{p.documentos_pendientes_calificar} por calificar</Badge>
+                      ) : (
+                        <Badge tone="success">Todos calificados</Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant={atencion ? 'primary' : 'ghost'}
+                        className="text-xs px-3 py-1.5"
+                        onClick={() => setProveedorCalificando(p)}
+                      >
+                        Calificar
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
