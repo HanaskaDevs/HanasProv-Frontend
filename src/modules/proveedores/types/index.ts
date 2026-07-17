@@ -1,3 +1,4 @@
+// src/modules/proveedores/types/index.ts
 export interface ProveedorListado {
   id: number;
   ruc: string | null;
@@ -11,13 +12,6 @@ export interface ProveedorListado {
   estado_calificacion_ficha: 'Aprobado' | 'Rechazado' | null;
   documentos_totales: number;
   documentos_pendientes_calificar: number;
-}
-
-export interface CalificacionFicha {
-  estado: 'Aprobado' | 'Rechazado' | null;
-  puntaje: 100 | 0 | null;
-  observacion: string | null;
-  fecha: string | null;
 }
 
 export interface DocumentoCalificable {

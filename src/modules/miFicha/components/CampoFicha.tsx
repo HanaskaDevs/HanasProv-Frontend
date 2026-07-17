@@ -1,8 +1,11 @@
+// src/modules/miFicha/components/CampoFicha.tsx
 import { type InputHTMLAttributes, forwardRef } from 'react';
 
 interface CampoFichaProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
+  /** Borde/fondo persistente (no solo al enfocar) -> se usa para marcar "este campo lo rechazó el admin, corrígelo". */
+  resaltado?: boolean;
 }
 
 /**
@@ -21,7 +24,7 @@ interface CampoFichaProps extends InputHTMLAttributes<HTMLInputElement> {
  * <Input /> genérico que usan el resto de formularios del sistema.
  */
 const CampoFicha = forwardRef<HTMLInputElement, CampoFichaProps>(
-  ({ label, error, className = '', ...props }, ref) => {
+  ({ label, error, resaltado = false, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -49,7 +52,7 @@ const CampoFicha = forwardRef<HTMLInputElement, CampoFichaProps>(
               focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700
               disabled:cursor-default disabled:bg-brand-900/[0.04] disabled:text-brand-900/70
               disabled:shadow-none disabled:border-brand-900/10
-              ${error ? 'border-brand-wine' : 'border-brand-900/20'} ${className}`}
+              ${resaltado ? 'border-brand-wine ring-1 ring-brand-wine/40 bg-brand-wine/[0.03]' : error ? 'border-brand-wine' : 'border-brand-900/20'} ${className}`}
             {...props}
           />
         </div>

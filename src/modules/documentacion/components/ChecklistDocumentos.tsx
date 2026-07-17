@@ -12,6 +12,20 @@ import Modal from '../../../shared/components/Modal';
 
 const TAMANO_MAXIMO_MB = 4;
 
+/**
+ * Para los tipos "permite_multiples" pedimos un nombre para cada archivo
+ * (ya que puede haber varios), pero "Nombre del documento" es genérico.
+ * Esto lo hace más natural según de qué tipo se trate -> se matchea por
+ * el nombre del catálogo, no por un id fijo, para no romper si cambia el
+ * orden de las filas en Tipo_Documento.
+ */
+function etiquetaNombreArchivo(nombreDocumento: string): string {
+  const texto = nombreDocumento.toLowerCase();
+  if (texto.includes('certificaci')) return 'Nombre del certificado';
+  if (texto.includes('hojas de seguridad') || texto.includes('hoja de seguridad')) return 'Nombre de la hoja';
+  return 'Nombre del documento';
+}
+
 function IconoDocumento({ className = '' }: { className?: string }) {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -143,8 +157,15 @@ function ArchivoSubido({
     reemplazar.mutate(archivo);
   }
 
+  // Aunque la documentación ya esté "registrada" (solo lectura), un
+  // documento puntual RECHAZADO por el admin se puede seguir corrigiendo
+  // -> el backend también lo permite específicamente para este caso (ver
+  // reemplazarDocumento). El resto de la documentación sigue bloqueada.
+  const rechazado = doc.estado_calificacion === 'Rechazado';
+  const puedeReemplazar = !soloLectura || rechazado;
+
   return (
-    <div className="pl-[22px] py-1">
+    <div className="py-1">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="text-xs font-medium text-brand-900 truncate" title={doc.nombre_original}>
@@ -155,6 +176,8 @@ function ArchivoSubido({
               Fecha_Exp_{doc.fecha_caducidad}
             </span>
           )}
+          {doc.estado_calificacion === 'Aprobado' && <Badge tone="success">Aprobado</Badge>}
+          {rechazado && <Badge tone="danger">Rechazado</Badge>}
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -164,7 +187,7 @@ function ArchivoSubido({
           >
             <IconoOjo /> Ver
           </button>
-          {!soloLectura && (
+          {puedeReemplazar && (
             <button
               onClick={() => setReemplazando((v) => !v)}
               disabled={reemplazar.isPending}
@@ -184,7 +207,13 @@ function ArchivoSubido({
         </div>
       </div>
 
-      {!soloLectura && reemplazando && (
+      {rechazado && doc.comentario_calificacion && (
+        <p className="mt-1 text-[11px] text-brand-wine bg-brand-wine/5 border border-brand-wine/15 rounded px-2 py-1">
+          <span className="font-semibold">El equipo lo rechazó:</span> {doc.comentario_calificacion}
+        </p>
+      )}
+
+      {puedeReemplazar && reemplazando && (
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
 
@@ -193,7 +222,7 @@ function ArchivoSubido({
               type="text"
               value={nuevoNombre}
               onChange={(e) => setNuevoNombre(e.target.value)}
-              placeholder="Nombre del documento"
+              placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
               className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
                 text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
             />
@@ -319,32 +348,25 @@ function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; so
   const mostrarCuadroCarga = !soloLectura && (tipo.permite_multiples || !yaSubido);
 
   return (
-    <div
-      className={`rounded-lg border p-3 transition-colors ${
-        faltaObligatorio
-          ? 'border-brand-wine/25 bg-brand-wine/[0.03]'
-          : yaSubido
-            ? 'border-emerald-600/15 bg-emerald-50/40'
-            : 'border-brand-900/10 bg-white'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <IconoDocumento className={yaSubido ? 'text-emerald-600 shrink-0' : 'text-brand-900/35 shrink-0'} />
-          <span className="text-sm font-medium text-brand-900 truncate">
-            {tipo.nombre_documento}
-            {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
-          </span>
-          {tipo.permite_multiples && (
-            <span className="text-[10.5px] text-brand-700/60 shrink-0 hidden sm:inline">(varios archivos)</span>
-          )}
-        </div>
+    <div className="rounded-2xl border border-brand-900/20 bg-white p-2.5 transition-all duration-150 hover:border-brand-900/35 hover:shadow-sm">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <IconoDocumento className={yaSubido ? 'text-emerald-600 shrink-0' : 'text-brand-900/35 shrink-0'} />
+        <span className="text-xs font-medium text-brand-900 truncate">
+          {tipo.nombre_documento}
+          {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
+        </span>
+        {tipo.permite_multiples && (
+          <span className="text-[10px] text-brand-700/60 shrink-0 hidden lg:inline">(varios)</span>
+        )}
+      </div>
+
+      <div className="mt-1">
         {yaSubido ? (
           <Badge tone="success">Cargado</Badge>
         ) : faltaObligatorio ? (
-          <Badge tone="danger">Falta</Badge>
+          <Badge tone="danger">Pendiente (Obligatorio)</Badge>
         ) : (
-          <Badge tone="neutral">Opcional</Badge>
+          <Badge tone="neutral">Pendiente (Opcional)</Badge>
         )}
       </div>
 
@@ -353,11 +375,11 @@ function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; so
       ))}
 
       {soloLectura && !yaSubido && (
-        <p className="pl-[22px] text-[11px] text-brand-900/35 italic">No se cargó ningún archivo.</p>
+        <p className="text-[11px] text-brand-900/35 italic mt-1">No se cargó ningún archivo.</p>
       )}
 
       {mostrarCuadroCarga && (
-        <div className="pl-[22px] mt-1 flex flex-wrap items-center gap-2">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
 
           {tipo.permite_multiples && (
@@ -365,7 +387,7 @@ function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; so
               type="text"
               value={nombreDocumento}
               onChange={(e) => setNombreDocumento(e.target.value)}
-              placeholder="Nombre del documento"
+              placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
               className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
                 text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
             />
@@ -383,18 +405,20 @@ function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; so
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={subir.isPending}
-            className={`inline-flex items-center gap-1 text-[11px] font-medium ${
-              faltaObligatorio ? 'text-brand-wine hover:text-brand-wine/80' : 'text-brand-700 hover:text-brand-900'
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+              faltaObligatorio
+                ? 'bg-brand-wine/10 text-brand-wine hover:bg-brand-wine/15'
+                : 'bg-brand-700/10 text-brand-700 hover:bg-brand-700/15'
             }`}
           >
             {subir.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir />}
-            {yaSubido ? 'Cargar otro archivo' : 'Subir archivo'}
+            {yaSubido ? 'Clic para cargar otro' : 'Clic para subir tu archivo'}
           </button>
           <span className="text-[10px] text-brand-900/35">PDF, máx. 4MB</span>
         </div>
       )}
 
-      {error && <span className="pl-[22px] text-[10px] text-brand-wine block mt-1">{error}</span>}
+      {error && <span className="text-[10px] text-brand-wine block mt-1">{error}</span>}
     </div>
   );
 }
@@ -403,17 +427,69 @@ function formateaFecha(iso: string): string {
   return new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function BarraRegistro({
+function AroProgreso({ porcentaje }: { porcentaje: number }) {
+  const radio = 18;
+  const circunferencia = 2 * Math.PI * radio;
+  const offset = circunferencia * (1 - porcentaje / 100);
+  const color = porcentaje >= 100 ? 'stroke-emerald-500' : porcentaje >= 50 ? 'stroke-brand-700' : 'stroke-brand-wine';
+
+  return (
+    <svg width="44" height="44" viewBox="0 0 44 44" className="shrink-0 -rotate-90">
+      <circle cx="22" cy="22" r={radio} fill="none" strokeWidth="4.5" className="stroke-brand-900/8" />
+      <circle
+        cx="22"
+        cy="22"
+        r={radio}
+        fill="none"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeDasharray={circunferencia}
+        strokeDashoffset={offset}
+        className={`transition-all duration-500 ${color}`}
+      />
+      <text
+        x="22"
+        y="22"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="rotate-90 fill-brand-900 text-[10px] font-bold"
+        style={{ transformOrigin: '22px 22px' }}
+      >
+        {porcentaje}%
+      </text>
+    </svg>
+  );
+}
+
+/**
+ * Antes eran 2 Cards apiladas (resumen de progreso + barra de registro).
+ * Se fusionaron en una sola franja compacta -> ahorra el padding/margen
+ * de una tarjeta entera, clave para que la vista completa quepa sin
+ * scroll.
+ */
+function FranjaSuperior({
+  totalObligatorios,
+  cargadosObligatorios,
+  totalDocumentos,
+  cargadosDocumentos,
   registrado,
   fechaRegistro,
   faltantes,
 }: {
+  totalObligatorios: number;
+  cargadosObligatorios: number;
+  totalDocumentos: number;
+  cargadosDocumentos: number;
   registrado: boolean;
   fechaRegistro: string | null;
   faltantes: string[];
 }) {
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
+
+  const porcentaje =
+    totalObligatorios > 0 ? Math.round((cargadosObligatorios / totalObligatorios) * 100) : 100;
+  const faltanObligatorios = totalObligatorios - cargadosObligatorios;
 
   const registrar = useMutation({
     mutationFn: documentacionApi.registrarDocumentacion,
@@ -423,50 +499,58 @@ function BarraRegistro({
     },
   });
 
-  if (registrado) {
-    return (
-      <Card className="bg-emerald-50 border-emerald-200">
-        <p className="text-sm text-emerald-800">
-          <span className="font-semibold">Documentación registrada</span>
-          {fechaRegistro && ` el ${formateaFecha(fechaRegistro)}`}. Ya no se puede editar ni cargar más archivos,
-          solo puedes verlos.
-        </p>
-        <p className="text-sm text-emerald-800 mt-1">
-          Ese es el segundo paso. Ahora sigue cargar tu <span className="font-semibold">Ficha de Productos</span>.
-        </p>
-        <Link
-          to="/productos"
-          className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
-        >
-          Ir a Ficha Productos
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </Link>
-      </Card>
-    );
-  }
-
   return (
-    <>
-      <Card>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-brand-900">
-              Cuando termines de cargar todo, registra tu documentación.
+    <Card className="!p-2.5 sm:!p-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <AroProgreso porcentaje={porcentaje} />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-brand-900 truncate">
+              {registrado
+                ? 'Documentación registrada'
+                : porcentaje === 0
+                  ? 'Vamos a cargar tu documentación'
+                  : faltanObligatorios > 0
+                    ? `¡Vas bien! Te ${faltanObligatorios === 1 ? 'falta' : 'faltan'} ${faltanObligatorios} obligatorio${faltanObligatorios === 1 ? '' : 's'}`
+                    : '¡Todos los obligatorios están cargados!'}
+              {registrado && fechaRegistro && ` · ${formateaFecha(fechaRegistro)}`}
+            </p>
+            <p className="text-[10.5px] text-brand-900/50 mt-0.5">
+              {cargadosObligatorios}/{totalObligatorios} obligatorios · {cargadosDocumentos}/{totalDocumentos} en total
+              {registrado && ' · Solo lectura'}
             </p>
           </div>
-          <Button
-            variant="primary"
-            disabled={faltantes.length > 0}
-            onClick={() => setModalAbierto(true)}
-            className="shrink-0"
-          >
-            Registrar documentación
-          </Button>
         </div>
-      </Card>
+
+        {registrado ? (
+          <Link
+            to="/productos"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
+          >
+            Ir a Ficha Productos
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </Link>
+        ) : (
+          <div className="shrink-0 text-right">
+            <Button
+              variant="primary"
+              className="!text-xs !px-3 !py-1.5"
+              disabled={faltantes.length > 0}
+              onClick={() => setModalAbierto(true)}
+            >
+              Registrar documentación
+            </Button>
+            {faltantes.length > 0 && (
+              <p className="text-[10px] text-brand-900/40 mt-1">
+                Se habilita al cargar los {faltantes.length === 1 ? 'obligatorio' : 'obligatorios'} que faltan
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {modalAbierto && (
         <Modal onClose={() => !registrar.isPending && setModalAbierto(false)} title="Registrar documentación">
@@ -500,74 +584,6 @@ function BarraRegistro({
           </div>
         </Modal>
       )}
-    </>
-  );
-}
-
-function AroProgreso({ porcentaje }: { porcentaje: number }) {
-  const radio = 26;
-  const circunferencia = 2 * Math.PI * radio;
-  const offset = circunferencia * (1 - porcentaje / 100);
-  const color = porcentaje >= 100 ? 'stroke-emerald-500' : porcentaje >= 50 ? 'stroke-brand-700' : 'stroke-brand-wine';
-
-  return (
-    <svg width="64" height="64" viewBox="0 0 64 64" className="shrink-0 -rotate-90">
-      <circle cx="32" cy="32" r={radio} fill="none" strokeWidth="6" className="stroke-brand-900/8" />
-      <circle
-        cx="32"
-        cy="32"
-        r={radio}
-        fill="none"
-        strokeWidth="6"
-        strokeLinecap="round"
-        strokeDasharray={circunferencia}
-        strokeDashoffset={offset}
-        className={`transition-all duration-500 ${color}`}
-      />
-      <text
-        x="32"
-        y="32"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="rotate-90 fill-brand-900 text-[13px] font-bold"
-        style={{ transformOrigin: '32px 32px' }}
-      >
-        {porcentaje}%
-      </text>
-    </svg>
-  );
-}
-
-function ResumenProgreso({
-  totalObligatorios,
-  cargadosObligatorios,
-  totalDocumentos,
-  cargadosDocumentos,
-}: {
-  totalObligatorios: number;
-  cargadosObligatorios: number;
-  totalDocumentos: number;
-  cargadosDocumentos: number;
-}) {
-  const porcentaje =
-    totalObligatorios > 0 ? Math.round((cargadosObligatorios / totalObligatorios) * 100) : 100;
-  const faltanObligatorios = totalObligatorios - cargadosObligatorios;
-
-  return (
-    <Card className="!p-4 sm:!p-5">
-      <div className="flex items-center gap-4 sm:gap-5">
-        <AroProgreso porcentaje={porcentaje} />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-brand-900">
-            {faltanObligatorios > 0
-              ? `Te ${faltanObligatorios === 1 ? 'falta' : 'faltan'} ${faltanObligatorios} documento${faltanObligatorios === 1 ? '' : 's'} obligatorio${faltanObligatorios === 1 ? '' : 's'}`
-              : '¡Todos los documentos obligatorios están cargados!'}
-          </p>
-          <p className="text-xs text-brand-900/50 mt-0.5">
-            {cargadosObligatorios}/{totalObligatorios} obligatorios · {cargadosDocumentos}/{totalDocumentos} en total
-          </p>
-        </div>
-      </div>
     </Card>
   );
 }
@@ -592,7 +608,7 @@ function TabCategoria({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 whitespace-nowrap rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+      className={`flex items-center gap-2 whitespace-nowrap rounded-t-lg border-b-2 px-3 py-1.5 text-xs font-medium transition-colors ${
         activa
           ? 'border-brand-700 text-brand-900 bg-white'
           : 'border-transparent text-brand-900/50 hover:text-brand-900 hover:bg-brand-900/[0.03]'
@@ -611,16 +627,82 @@ function TabCategoria({
   );
 }
 
+const DOCUMENTOS_POR_PAGINA = 4;
+
+function IconoFlechaChica({ className = '' }: { className?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+/**
+ * Minimalista a propósito: flechas + puntos, nada de números de página
+ * ni "Anterior/Siguiente" en texto. El punto activo se agranda un poco
+ * (no solo cambia de color) para que se note incluso sin mirar con
+ * atención.
+ */
+function FlechaPaginador({
+  direccion,
+  onClick,
+  deshabilitada,
+}: {
+  direccion: 'izquierda' | 'derecha';
+  onClick: () => void;
+  deshabilitada: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={deshabilitada}
+      aria-label={direccion === 'izquierda' ? 'Página anterior' : 'Página siguiente'}
+      className="h-11 w-11 rounded-full flex items-center justify-center bg-brand-700 text-white shadow-lg
+        hover:bg-brand-900 disabled:opacity-0 disabled:pointer-events-none transition-all"
+    >
+      <IconoFlechaChica className={direccion === 'izquierda' ? 'rotate-180 h-4 w-4' : 'h-4 w-4'} />
+    </button>
+  );
+}
+
+function PuntosPaginador({
+  pagina,
+  totalPaginas,
+  onCambiar,
+}: {
+  pagina: number;
+  totalPaginas: number;
+  onCambiar: (pagina: number) => void;
+}) {
+  if (totalPaginas <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 pt-2">
+      {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+        <button
+          key={n}
+          onClick={() => onCambiar(n)}
+          aria-label={`Ir a la página ${n}`}
+          className={`rounded-full transition-all duration-200 ${
+            n === pagina ? 'h-2 w-5 bg-brand-700' : 'h-2 w-2 bg-brand-900/15 hover:bg-brand-900/30'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function ChecklistDocumentos() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['mi-documentos'],
     queryFn: documentacionApi.obtenerChecklist,
   });
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(1);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
+      <div className="flex-1 flex items-center justify-center">
         <Spinner className="h-6 w-6" />
       </div>
     );
@@ -628,7 +710,7 @@ export default function ChecklistDocumentos() {
 
   if (isError) {
     return (
-      <Card>
+      <Card className="max-w-6xl mx-auto w-full">
         <p className="text-sm text-brand-wine">
           No se pudo cargar la documentación.{' '}
           {axios.isAxiosError(error) && error.response?.data?.message
@@ -643,7 +725,7 @@ export default function ChecklistDocumentos() {
 
   if (tipos.length === 0) {
     return (
-      <Card>
+      <Card className="max-w-6xl mx-auto w-full">
         <p className="text-sm text-brand-900/60 text-center py-6">No hay documentos configurados todavía.</p>
       </Card>
     );
@@ -668,51 +750,116 @@ export default function ChecklistDocumentos() {
     categoriaActiva && categorias.includes(categoriaActiva) ? categoriaActiva : categorias[0];
   const statsActivos = statsPorCategoria.find((s) => s.categoria === categoriaSeleccionada)!;
 
+  const totalPaginas = Math.max(1, Math.ceil(statsActivos.tiposCategoria.length / DOCUMENTOS_POR_PAGINA));
+  // Si la categoría tiene menos páginas que la actual (ej. venías en la
+  // página 3 de "General" y cambiaste a "Certificaciones", que solo
+  // tiene 1) o si la propia categoría cambió, ajustamos sin que se note
+  // como un salto raro -> Math.min la deja quieta cuando sí es válida.
+  const paginaSegura = Math.min(pagina, totalPaginas);
+  const inicio = (paginaSegura - 1) * DOCUMENTOS_POR_PAGINA;
+  const tiposPagina = statsActivos.tiposCategoria.slice(inicio, inicio + DOCUMENTOS_POR_PAGINA);
+
+  function cambiarCategoria(categoria: string) {
+    setCategoriaActiva(categoria);
+    setPagina(1);
+  }
+
   const totalObligatorios = tipos.filter((t) => t.obligatorio).length;
   const cargadosObligatorios = totalObligatorios - faltantes.length;
   const cargadosDocumentos = tipos.filter((t) => t.documentos.length > 0).length;
 
   return (
-    <div className="space-y-4">
-      <ResumenProgreso
-        totalObligatorios={totalObligatorios}
-        cargadosObligatorios={cargadosObligatorios}
-        totalDocumentos={tipos.length}
-        cargadosDocumentos={cargadosDocumentos}
-      />
+    <div className="flex-1 min-h-0 flex flex-col space-y-2.5 max-w-6xl mx-auto w-full">
+      <div className="shrink-0">
+        <FranjaSuperior
+          totalObligatorios={totalObligatorios}
+          cargadosObligatorios={cargadosObligatorios}
+          totalDocumentos={tipos.length}
+          cargadosDocumentos={cargadosDocumentos}
+          registrado={data?.registrado ?? false}
+          fechaRegistro={data?.fecha_registro ?? null}
+          faltantes={faltantes}
+        />
+      </div>
 
-      {/* Se movió la barra de registro aquí arriba y dejó de ser sticky */}
-      <BarraRegistro
-        registrado={data?.registrado ?? false}
-        fechaRegistro={data?.fecha_registro ?? null}
-        faltantes={faltantes}
-      />
-
-      <Card className="!p-0 overflow-hidden">
-        <div className="flex gap-0.5 overflow-x-auto border-b border-brand-900/8 bg-brand-900/[0.02] px-2 pt-1">
-          {statsPorCategoria.map(({ categoria, tiposCategoria, cargados, faltanObligatorios }) => (
-            <TabCategoria
-              key={categoria}
-              nombre={categoria}
-              activa={categoria === categoriaSeleccionada}
-              cargados={cargados}
-              total={tiposCategoria.length}
-              faltanObligatorios={faltanObligatorios}
-              onClick={() => setCategoriaActiva(categoria)}
+      <div className="relative flex-1 min-h-0 flex flex-col">
+        {totalPaginas > 1 && (
+          <div className="hidden sm:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
+            <FlechaPaginador
+              direccion="izquierda"
+              deshabilitada={paginaSegura === 1}
+              onClick={() => setPagina(paginaSegura - 1)}
             />
-          ))}
-        </div>
+          </div>
+        )}
 
-        <div className="p-5">
-          <div className="columns-1 lg:columns-2 gap-4 [&>*]:mb-3">
-            {statsActivos.tiposCategoria.map((tipo) => (
-              <div key={tipo.id_tipo_documento} className="break-inside-avoid">
-                <FilaDocumento tipo={tipo} soloLectura={data?.registrado ?? false} />
-              </div>
+        <Card className="!p-0 overflow-hidden flex-1 min-h-0 flex flex-col">
+          <div className="shrink-0 flex gap-0.5 overflow-x-auto border-b border-brand-900/8 bg-brand-900/[0.02] px-2 pt-1">
+            {statsPorCategoria.map(({ categoria, tiposCategoria, cargados, faltanObligatorios }) => (
+              <TabCategoria
+                key={categoria}
+                nombre={categoria}
+                activa={categoria === categoriaSeleccionada}
+                cargados={cargados}
+                total={tiposCategoria.length}
+                faltanObligatorios={faltanObligatorios}
+                onClick={() => cambiarCategoria(categoria)}
+              />
             ))}
           </div>
-        </div>
-      </Card>
+
+          {/* flex-1 -> este bloque siempre ocupa el mismo alto disponible,
+              sin importar cuántos documentos tenga la página actual. Eso es
+              lo que evita que el contenedor salte de alto entre páginas
+              (las flechas ya no dependen de este bloque, están afuera del
+              Card para no recortarse con su overflow-hidden). */}
+          <div className="flex-1 min-h-0 p-3">
+            <div
+              key={`${categoriaSeleccionada}-${paginaSegura}`}
+              className="animar-entrada-pagina sm:px-11 h-full flex flex-col justify-center"
+            >
+              {/* content-center: si la página tiene menos de 4 documentos
+                  (ej. la última), las filas se centran en el alto disponible
+                  en vez de quedar pegadas arriba con un hueco vacío abajo. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 auto-rows-min content-center gap-3">
+                {tiposPagina.map((tipo) => (
+                  <FilaDocumento key={tipo.id_tipo_documento} tipo={tipo} soloLectura={data?.registrado ?? false} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="shrink-0 pb-2.5">
+            <PuntosPaginador pagina={paginaSegura} totalPaginas={totalPaginas} onCambiar={setPagina} />
+
+            {/* En mobile no hay espacio a los costados -> ahí sí mostramos flechas normales, junto a los puntitos */}
+            {totalPaginas > 1 && (
+              <div className="flex sm:hidden items-center justify-center gap-3 mt-1.5">
+                <FlechaPaginador
+                  direccion="izquierda"
+                  deshabilitada={paginaSegura === 1}
+                  onClick={() => setPagina(paginaSegura - 1)}
+                />
+                <FlechaPaginador
+                  direccion="derecha"
+                  deshabilitada={paginaSegura === totalPaginas}
+                  onClick={() => setPagina(paginaSegura + 1)}
+                />
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {totalPaginas > 1 && (
+          <div className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
+            <FlechaPaginador
+              direccion="derecha"
+              deshabilitada={paginaSegura === totalPaginas}
+              onClick={() => setPagina(paginaSegura + 1)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

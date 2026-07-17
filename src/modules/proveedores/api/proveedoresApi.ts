@@ -1,3 +1,4 @@
+// src/modules/proveedores/api/proveedoresApi.ts
 import apiClient from '../../../shared/api/apiClient';
 import type { FichaProveedor } from '../../miFicha/types';
 import type { ChecklistCalificacion, PayloadCalificar, ProveedorListado } from '../types';
@@ -12,8 +13,15 @@ export async function obtenerFichaCalificacion(idProveedor: number): Promise<Fic
   return data;
 }
 
-export async function calificarFicha(idProveedor: number, payload: PayloadCalificar): Promise<FichaProveedor> {
-  const { data } = await apiClient.post<FichaProveedor>(`/proveedores/${idProveedor}/ficha-calificacion`, payload);
+export async function calificarCampoFicha(
+  idProveedor: number,
+  campo: string,
+  payload: PayloadCalificar
+): Promise<FichaProveedor> {
+  const { data } = await apiClient.post<FichaProveedor>(
+    `/proveedores/${idProveedor}/ficha-calificacion/${campo}`,
+    payload
+  );
   return data;
 }
 

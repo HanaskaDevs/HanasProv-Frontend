@@ -1,3 +1,4 @@
+// src/modules/miFicha/components/ModalFichaProveedor.tsx
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ProgressSteps from './ProgressSteps';
@@ -5,6 +6,7 @@ import InformacionProveedorForm from './InformacionProveedorForm';
 import Seccion2Form from './Seccion2Form';
 import Seccion3Form from './Seccion3Form';
 import VistaFichaCompleta from './VistaFichaCompleta';
+import FormularioCorreccionFicha from './FormularioCorreccionFicha';
 import type { FichaProveedor } from '../types';
 
 function IconoExpandir() {
@@ -41,6 +43,15 @@ function esFichaCompleta(ficha: FichaProveedor): boolean {
   );
 }
 
+/**
+ * 3 modos posibles, según el estado con el que se abre el modal:
+ * 1. Wizard normal (pasos 1-4) -> primera vez llenando la ficha.
+ * 2. Corrección (FormularioCorreccionFicha, ficha completa en una sola
+ *    vista) -> el admin rechazó al menos un campo puntual. Se ve TODA la
+ *    ficha, pero solo los campos rechazados son editables.
+ * 3. Solo lectura (VistaFichaCompleta) -> completa y sin nada rechazado
+ *    (aprobada o esperando revisión).
+ */
 export default function ModalFichaProveedor({
   fichaInicial,
   onClose,
@@ -53,17 +64,21 @@ export default function ModalFichaProveedor({
   const [ficha, setFicha] = useState(fichaInicial);
   const [expandido, setExpandido] = useState(false);
 
-  // Se calcula UNA sola vez, sobre el estado con el que se abrió el modal:
-  // si ya estaba completa, queda en modo solo-lectura durante toda la
-  // sesión del modal (aunque técnicamente nada cambiaría el resultado,
-  // ya que en modo lectura no hay forma de editar nada).
-  const [soloLectura] = useState(() => esFichaCompleta(fichaInicial));
+  // Se calculan UNA sola vez, sobre el estado con el que se abrió el
+  // modal -> el modo no cambia a mitad de sesión aunque, por ejemplo,
+  // corrigiendo un campo la ficha "deje" de estar rechazada.
+  const [fueRechazada] = useState(() => fichaInicial.estado_calificacion_general === 'Rechazado');
+  const [soloLectura] = useState(() => esFichaCompleta(fichaInicial) && !fueRechazada);
+  const [modoCorreccion] = useState(() => esFichaCompleta(fichaInicial) && fueRechazada);
+
+  // Evita mostrar "¡ficha corregida!" antes de que el proveedor guarde
+  // algo de verdad en esta sesión (los datos ya estaban completos desde
+  // antes del rechazo, así que "completo" es cierto desde el vamos).
+  const [yaGuardoAlgo, setYaGuardoAlgo] = useState(false);
 
   const datosCompletos = esDatosGeneralesCompleta(ficha);
   const claseCompleta = ficha.seccion_2.clases.length > 0;
-  const [pasoVisible, setPasoVisible] = useState<number>(
-    !datosCompletos ? 1 : !claseCompleta ? 3 : 4
-  );
+  const [pasoVisible, setPasoVisible] = useState<number>(!datosCompletos ? 1 : !claseCompleta ? 3 : 4);
 
   const datosGeneralesCompleta = esDatosGeneralesCompleta(ficha);
   const clase = ficha.seccion_2.clases.length > 0;
@@ -84,6 +99,7 @@ export default function ModalFichaProveedor({
 
   function actualizar(fichaActualizada: FichaProveedor) {
     setFicha(fichaActualizada);
+    setYaGuardoAlgo(true);
     onFichaActualizada(fichaActualizada);
   }
 
@@ -98,6 +114,10 @@ export default function ModalFichaProveedor({
   }
 
   function handleGuardadoCategoria(fichaActualizada: FichaProveedor) {
+    actualizar(fichaActualizada);
+  }
+
+  function handleGuardadoCorreccion(fichaActualizada: FichaProveedor) {
     actualizar(fichaActualizada);
   }
 
@@ -133,11 +153,40 @@ export default function ModalFichaProveedor({
           </div>
         </div>
 
-        {soloLectura ? (
+        {soloLectura && (
           <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
             <VistaFichaCompleta ficha={ficha} />
           </div>
-        ) : (
+        )}
+
+        {modoCorreccion && (
+          <>
+            <div className="shrink-0 px-6 pt-4">
+              {!yaGuardoAlgo ? (
+                <div className="mb-4 rounded-md bg-brand-wine/5 border border-brand-wine/20 px-4 py-3">
+                  <p className="text-sm text-brand-wine">
+                    <span className="font-semibold">El equipo rechazó algunos campos de tu ficha.</span> Están
+                    marcados en rojo abajo, con la observación de qué corregir. El resto de la ficha ya está
+                    aprobada y no se puede editar.
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-4 rounded-md bg-brand-700/5 border border-brand-700/20 px-4 py-3">
+                  <p className="text-sm text-brand-900">
+                    <span className="font-semibold">Corrección guardada.</span> Los campos que ajustaste vuelven a
+                    quedar en revisión del equipo — no hace falta que hagas nada más acá.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">
+              <FormularioCorreccionFicha ficha={ficha} onGuardado={handleGuardadoCorreccion} />
+            </div>
+          </>
+        )}
+
+        {!soloLectura && !modoCorreccion && (
           <>
             <div className="shrink-0 px-6 pt-4">
               <ProgressSteps
