@@ -99,41 +99,32 @@ export default function MiFichaPage() {
         </p>
       </div>
 
-      <Card className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-brand-200/40 flex items-center justify-center text-brand-900 font-display font-semibold">
-            {porcentaje}%
-          </div>
-          <div>
-            <p className="font-medium text-brand-900">Ficha de Proveedor</p>
-            <div className="mt-1">
-              <Badge tone={estado.tone}>{estado.texto}</Badge>
+      <Card className={rechazada ? 'bg-brand-wine/5 border-brand-wine/20' : ''}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-brand-200/40 flex items-center justify-center text-brand-900 font-display font-semibold shrink-0">
+              {porcentaje}%
             </div>
-          </div>
-        </div>
-
-        <Button onClick={() => setModalAbierto(true)}>
-          {porcentaje === 0 ? 'Completar ficha' : rechazada ? 'Corregir ficha' : 'Ver ficha'}
-        </Button>
-      </Card>
-
-      {rechazada && (
-        <Card className="bg-brand-wine/5 border-brand-wine/20">
-          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-brand-wine">El equipo rechazó tu ficha</p>
-              <p className="text-xs text-brand-900/60 mt-0.5">
-                {camposRechazados === 1
-                  ? 'Hay 1 campo por corregir. Ábrela para ver la observación.'
-                  : `Hay ${camposRechazados} campos por corregir. Ábrela para ver las observaciones.`}
-              </p>
+              <p className="font-medium text-brand-900">Ficha de Proveedor</p>
+              <div className="mt-1">
+                <Badge tone={estado.tone}>{estado.texto}</Badge>
+              </div>
+              {rechazada && (
+                <p className="text-xs text-brand-wine/80 mt-1.5">
+                  {camposRechazados === 1
+                    ? 'Hay 1 campo por corregir. Ábrela para ver la observación.'
+                    : `Hay ${camposRechazados} campos por corregir. Ábrela para ver las observaciones.`}
+                </p>
+              )}
             </div>
-            <Button variant="danger" className="shrink-0" onClick={() => setModalAbierto(true)}>
-              Corregir ahora
-            </Button>
           </div>
-        </Card>
-      )}
+
+          <Button variant={rechazada ? 'danger' : 'primary'} className="shrink-0" onClick={() => setModalAbierto(true)}>
+            {porcentaje === 0 ? 'Completar ficha' : rechazada ? 'Corregir ficha' : 'Ver ficha'}
+          </Button>
+        </div>
+      </Card>
 
       {porcentaje === 100 && !rechazada && (
         <Card className="bg-brand-700/5 border-brand-700/20">

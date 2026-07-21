@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import * as documentacionApi from '../api/documentacionApi';
-import type { TipoDocumentoChecklist } from '../types';
+import type { DocumentoSubido, TipoDocumentoChecklist } from '../types';
 import Card from '../../../shared/components/Card';
 import Spinner from '../../../shared/components/Spinner';
 import Button from '../../../shared/components/Button';
@@ -88,10 +88,12 @@ function ArchivoSubido({
   doc,
   tipo,
   soloLectura,
+  correccionesPendientes,
 }: {
   doc: TipoDocumentoChecklist['documentos'][number];
   tipo: TipoDocumentoChecklist;
   soloLectura: boolean;
+  correccionesPendientes: boolean;
 }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -158,11 +160,14 @@ function ArchivoSubido({
   }
 
   // Aunque la documentación ya esté "registrada" (solo lectura), un
-  // documento puntual RECHAZADO por el admin se puede seguir corrigiendo
-  // -> el backend también lo permite específicamente para este caso (ver
-  // reemplazarDocumento). El resto de la documentación sigue bloqueada.
+  // documento puntual se puede seguir corrigiendo (reemplazar o borrar)
+  // MIENTRAS HAYA CORRECCIONES PENDIENTES DE CONFIRMAR (el admin rechazó
+  // algo y todavía no dijiste "ya terminé de corregir" con el botón de
+  // abajo) Y ese documento en particular no esté ya Aprobado. Una vez que
+  // confirmás, todo vuelve a quedar bloqueado hasta que el admin revise
+  // de nuevo. El backend aplica exactamente esta misma regla.
   const rechazado = doc.estado_calificacion === 'Rechazado';
-  const puedeReemplazar = !soloLectura || rechazado;
+  const puedeEditar = !soloLectura || (correccionesPendientes && doc.estado_calificacion !== 'Aprobado');
 
   return (
     <div className="py-1">
@@ -187,7 +192,7 @@ function ArchivoSubido({
           >
             <IconoOjo /> Ver
           </button>
-          {puedeReemplazar && (
+          {puedeEditar && (
             <button
               onClick={() => setReemplazando((v) => !v)}
               disabled={reemplazar.isPending}
@@ -196,7 +201,7 @@ function ArchivoSubido({
               <IconoRepetir /> Reemplazar
             </button>
           )}
-          {!soloLectura && (
+          {puedeEditar && (
             <button
               onClick={() => setConfirmandoBorrar(true)}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-wine/70 hover:text-brand-wine"
@@ -213,7 +218,7 @@ function ArchivoSubido({
         </p>
       )}
 
-      {puedeReemplazar && reemplazando && (
+      {puedeEditar && reemplazando && (
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
 
@@ -293,7 +298,15 @@ function ArchivoSubido({
   );
 }
 
-function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; soloLectura: boolean }) {
+function FilaDocumento({
+  tipo,
+  soloLectura,
+  correccionesPendientes,
+}: {
+  tipo: TipoDocumentoChecklist;
+  soloLectura: boolean;
+  correccionesPendientes: boolean;
+}) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [fechaCaducidad, setFechaCaducidad] = useState('');
@@ -371,7 +384,13 @@ function FilaDocumento({ tipo, soloLectura }: { tipo: TipoDocumentoChecklist; so
       </div>
 
       {tipo.documentos.map((doc) => (
-        <ArchivoSubido key={doc.id_documento_proveedor} doc={doc} tipo={tipo} soloLectura={soloLectura} />
+        <ArchivoSubido
+          key={doc.id_documento_proveedor}
+          doc={doc}
+          tipo={tipo}
+          soloLectura={soloLectura}
+          correccionesPendientes={correccionesPendientes}
+        />
       ))}
 
       {soloLectura && !yaSubido && (
@@ -467,6 +486,29 @@ function AroProgreso({ porcentaje }: { porcentaje: number }) {
  * de una tarjeta entera, clave para que la vista completa quepa sin
  * scroll.
  */
+/** Detalle organizado de los documentos rechazados -> lo que ve el proveedor al pulsar "Más información". */
+function ModalDetalleRechazoDocumentos({
+  documentos,
+  onClose,
+}: {
+  documentos: { tipo: TipoDocumentoChecklist; doc: DocumentoSubido }[];
+  onClose: () => void;
+}) {
+  return (
+    <Modal onClose={onClose} title={`Documentos por corregir (${documentos.length})`} maxWidth="max-w-lg">
+      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+        {documentos.map(({ tipo, doc }) => (
+          <div key={doc.id_documento_proveedor} className="rounded-lg border border-brand-wine/15 bg-brand-wine/[0.03] p-3">
+            <p className="text-[10.5px] text-brand-900/50">{tipo.nombre_documento}</p>
+            <p className="text-xs font-semibold text-brand-900">{doc.nombre_original}</p>
+            <p className="text-sm text-brand-900/75 mt-1">{doc.comentario_calificacion}</p>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
 function FranjaSuperior({
   totalObligatorios,
   cargadosObligatorios,
@@ -475,6 +517,8 @@ function FranjaSuperior({
   registrado,
   fechaRegistro,
   faltantes,
+  documentosRechazados,
+  correccionesPendientes,
 }: {
   totalObligatorios: number;
   cargadosObligatorios: number;
@@ -483,13 +527,17 @@ function FranjaSuperior({
   registrado: boolean;
   fechaRegistro: string | null;
   faltantes: string[];
+  documentosRechazados: { tipo: TipoDocumentoChecklist; doc: DocumentoSubido }[];
+  correccionesPendientes: boolean;
 }) {
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
 
   const porcentaje =
     totalObligatorios > 0 ? Math.round((cargadosObligatorios / totalObligatorios) * 100) : 100;
   const faltanObligatorios = totalObligatorios - cargadosObligatorios;
+  const hayRechazados = documentosRechazados.length > 0;
 
   const registrar = useMutation({
     mutationFn: documentacionApi.registrarDocumentacion,
@@ -499,58 +547,124 @@ function FranjaSuperior({
     },
   });
 
+  const confirmarCorrecciones = useMutation({
+    mutationFn: documentacionApi.confirmarCorrecciones,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mi-documentos'] });
+    },
+  });
+
   return (
     <Card className="!p-2.5 sm:!p-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
           <AroProgreso porcentaje={porcentaje} />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-brand-900 truncate">
-              {registrado
-                ? 'Documentación registrada'
-                : porcentaje === 0
-                  ? 'Vamos a cargar tu documentación'
-                  : faltanObligatorios > 0
-                    ? `¡Vas bien! Te ${faltanObligatorios === 1 ? 'falta' : 'faltan'} ${faltanObligatorios} obligatorio${faltanObligatorios === 1 ? '' : 's'}`
-                    : '¡Todos los obligatorios están cargados!'}
-              {registrado && fechaRegistro && ` · ${formateaFecha(fechaRegistro)}`}
+            <p className="text-xs font-semibold text-brand-900 truncate flex items-center gap-2 flex-wrap">
+              {registrado ? (
+                hayRechazados ? (
+                  <>
+                    <Badge tone="danger">Documentación en revisión</Badge>
+                    <span className="text-brand-900/60 font-normal">
+                      {documentosRechazados.length === 1
+                        ? '1 documento por corregir'
+                        : `${documentosRechazados.length} documentos por corregir`}
+                    </span>
+                  </>
+                ) : (
+                  <Badge tone="info">Documentación en revisión</Badge>
+                )
+              ) : porcentaje === 0 ? (
+                'Vamos a cargar tu documentación'
+              ) : faltanObligatorios > 0 ? (
+                `¡Vas bien! Te ${faltanObligatorios === 1 ? 'falta' : 'faltan'} ${faltanObligatorios} obligatorio${faltanObligatorios === 1 ? '' : 's'}`
+              ) : (
+                '¡Todos los obligatorios están cargados!'
+              )}
+              {registrado && fechaRegistro && (
+                <span className="text-brand-900/40 font-normal text-[10.5px]">
+                  {formateaFecha(fechaRegistro)}
+                </span>
+              )}
             </p>
             <p className="text-[10.5px] text-brand-900/50 mt-0.5">
               {cargadosObligatorios}/{totalObligatorios} obligatorios · {cargadosDocumentos}/{totalDocumentos} en total
-              {registrado && ' · Solo lectura'}
             </p>
           </div>
         </div>
 
-        {registrado ? (
-          <Link
-            to="/productos"
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
-          >
-            Ir a Ficha Productos
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </Link>
-        ) : (
-          <div className="shrink-0 text-right">
+        <div className="flex items-center gap-2 shrink-0">
+          {registrado && hayRechazados && (
             <Button
-              variant="primary"
-              className="!text-xs !px-3 !py-1.5"
-              disabled={faltantes.length > 0}
-              onClick={() => setModalAbierto(true)}
+              variant="ghost"
+              className="!bg-brand-200/40 hover:!bg-brand-200/60 !text-xs !px-3 !py-1.5"
+              onClick={() => setModalDetalleAbierto(true)}
             >
-              Registrar documentación
+              Más información
             </Button>
-            {faltantes.length > 0 && (
-              <p className="text-[10px] text-brand-900/40 mt-1">
-                Se habilita al cargar los {faltantes.length === 1 ? 'obligatorio' : 'obligatorios'} que faltan
-              </p>
-            )}
-          </div>
-        )}
+          )}
+
+          {registrado && correccionesPendientes ? (
+            <div className="text-right">
+              <Button
+                variant="primary"
+                className="!text-xs !px-3 !py-1.5"
+                disabled={hayRechazados}
+                isLoading={confirmarCorrecciones.isPending}
+                onClick={() => confirmarCorrecciones.mutate()}
+              >
+                Registrar documentación actualizada
+              </Button>
+              {hayRechazados && (
+                <p className="text-[10px] text-brand-900/40 mt-1">
+                  Se habilita al corregir los {documentosRechazados.length === 1 ? 'documento' : 'documentos'} rechazado{documentosRechazados.length === 1 ? '' : 's'}
+                </p>
+              )}
+              {confirmarCorrecciones.isError && (
+                <p className="text-[10px] text-brand-wine mt-1">
+                  {axios.isAxiosError(confirmarCorrecciones.error) && confirmarCorrecciones.error.response?.data?.errors
+                    ? Object.values(confirmarCorrecciones.error.response.data.errors).flat().join(' ')
+                    : 'No se pudo confirmar. Intenta de nuevo.'}
+                </p>
+              )}
+            </div>
+          ) : registrado ? (
+            <Link
+              to="/productos"
+              className="inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
+            >
+              Ir a Ficha Productos
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          ) : (
+            <div className="text-right">
+              <Button
+                variant="primary"
+                className="!text-xs !px-3 !py-1.5"
+                disabled={faltantes.length > 0}
+                onClick={() => setModalAbierto(true)}
+              >
+                Registrar documentación
+              </Button>
+              {faltantes.length > 0 && (
+                <p className="text-[10px] text-brand-900/40 mt-1">
+                  Se habilita al cargar los {faltantes.length === 1 ? 'obligatorio' : 'obligatorios'} que faltan
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {modalDetalleAbierto && (
+        <ModalDetalleRechazoDocumentos
+          documentos={documentosRechazados}
+          onClose={() => setModalDetalleAbierto(false)}
+        />
+      )}
 
       {modalAbierto && (
         <Modal onClose={() => !registrar.isPending && setModalAbierto(false)} title="Registrar documentación">
@@ -767,6 +881,11 @@ export default function ChecklistDocumentos() {
   const totalObligatorios = tipos.filter((t) => t.obligatorio).length;
   const cargadosObligatorios = totalObligatorios - faltantes.length;
   const cargadosDocumentos = tipos.filter((t) => t.documentos.length > 0).length;
+  const documentosRechazados = tipos.flatMap((tipo) =>
+    tipo.documentos
+      .filter((doc) => doc.estado_calificacion === 'Rechazado')
+      .map((doc) => ({ tipo, doc }))
+  );
 
   return (
     <div className="flex-1 min-h-0 flex flex-col space-y-2.5 max-w-6xl mx-auto w-full">
@@ -779,6 +898,8 @@ export default function ChecklistDocumentos() {
           registrado={data?.registrado ?? false}
           fechaRegistro={data?.fecha_registro ?? null}
           faltantes={faltantes}
+          documentosRechazados={documentosRechazados}
+          correccionesPendientes={data?.correcciones_pendientes ?? false}
         />
       </div>
 
@@ -808,22 +929,24 @@ export default function ChecklistDocumentos() {
             ))}
           </div>
 
-          {/* flex-1 -> este bloque siempre ocupa el mismo alto disponible,
-              sin importar cuántos documentos tenga la página actual. Eso es
-              lo que evita que el contenedor salte de alto entre páginas
-              (las flechas ya no dependen de este bloque, están afuera del
-              Card para no recortarse con su overflow-hidden). */}
-          <div className="flex-1 min-h-0 p-3">
-            <div
-              key={`${categoriaSeleccionada}-${paginaSegura}`}
-              className="animar-entrada-pagina sm:px-11 h-full flex flex-col justify-center"
-            >
-              {/* content-center: si la página tiene menos de 4 documentos
-                  (ej. la última), las filas se centran en el alto disponible
-                  en vez de quedar pegadas arriba con un hueco vacío abajo. */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 auto-rows-min content-center gap-3">
+          {/* Antes esto tenía altura fija (flex-1) + contenido centrado
+              verticalmente, para que el paginado no "saltara" entre
+              páginas con distinta cantidad de documentos. Pero con
+              tarjetas que ahora pueden crecer mucho (rechazo + observación
+              + formulario de reemplazo abierto), una altura fija hacía que
+              el contenido se desbordara y tapara lo de al lado. Ahora
+              crece de forma natural; overflow-y-auto es solo un respaldo
+              por si en una pantalla muy baja igual no entra todo. */}
+          <div className="p-3 overflow-y-auto">
+            <div key={`${categoriaSeleccionada}-${paginaSegura}`} className="animar-entrada-pagina sm:px-11">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {tiposPagina.map((tipo) => (
-                  <FilaDocumento key={tipo.id_tipo_documento} tipo={tipo} soloLectura={data?.registrado ?? false} />
+                  <FilaDocumento
+                    key={tipo.id_tipo_documento}
+                    tipo={tipo}
+                    soloLectura={data?.registrado ?? false}
+                    correccionesPendientes={data?.correcciones_pendientes ?? false}
+                  />
                 ))}
               </div>
             </div>
