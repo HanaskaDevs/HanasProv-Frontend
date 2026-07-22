@@ -54,6 +54,7 @@ const MENU_SISTEMAS: MenuItem[] = [
   { label: 'Políticas', to: '/politicas' },
   { label: 'Calendario', to: '/calendario' },
   { label: 'Reportes', to: '/reportes' },
+  { label: 'Configuraciones', to: '/configuraciones' },
 ];
 
 const MENU_ADMIN: MenuItem[] = [
