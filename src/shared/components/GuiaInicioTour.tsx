@@ -1,26 +1,21 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { obtenerGuiaPasos, type GuiaPasoPublico } from '../api/publicConfigApi';
 
-interface PasoTour {
-    targetId: string;
-    titulo: string;
-    texto: string;
-}
-
-const PASOS: PasoTour[] = [
+const PASOS_RESPALDO: GuiaPasoPublico[] = [
     {
-        targetId: 'tour-mi-ficha',
-        titulo: 'Paso 1 · Ficha de Proveedor',
-        texto: 'Aquí debes llenar los datos de tu empresa: información general, clase de proveedor y categoría de productos o servicios.',
+        Target_Id: 'tour-mi-ficha',
+        Titulo: 'Paso 1 · Ficha de Proveedor',
+        Texto: 'Aquí debes llenar los datos de tu empresa: información general, clase de proveedor y categoría de productos o servicios.',
     },
     {
-        targetId: 'tour-documentacion',
-        titulo: 'Paso 2 · Documentación',
-        texto: 'Aquí deberás subir en formato PDF toda la documentación requerida. Tienes documentos obligatorios y opcionales.',
+        Target_Id: 'tour-documentacion',
+        Titulo: 'Paso 2 · Documentación',
+        Texto: 'Aquí deberás subir en formato PDF toda la documentación requerida. Tienes documentos obligatorios y opcionales.',
     },
     {
-        targetId: 'tour-productos',
-        titulo: 'Paso 3 · Ficha de Productos',
-        texto: 'Aquí registras tus productos con su ficha técnica, análisis y carta de alérgenos. Cuando termines, podrás enviarlos a calificación.',
+        Target_Id: 'tour-productos',
+        Titulo: 'Paso 3 · Ficha de Productos',
+        Texto: 'Aquí registras tus productos con su ficha técnica, análisis y carta de alérgenos. Cuando termines, podrás enviarlos a calificación.',
     },
 ];
 
@@ -29,8 +24,19 @@ const ESPACIO_RESALTADO = 8;
 const ESPACIO_TARJETA = 14;
 
 export default function GuiaInicioTour({ visible, onCerrar }: { visible: boolean; onCerrar: () => void }) {
+    const [pasos, setPasos] = useState<GuiaPasoPublico[]>(PASOS_RESPALDO);
     const [paso, setPaso] = useState(0);
     const [rect, setRect] = useState<DOMRect | null>(null);
+
+    useEffect(() => {
+        obtenerGuiaPasos()
+            .then((data) => {
+                if (data.length > 0) setPasos(data);
+            })
+            .catch(() => {
+                // Se queda con PASOS_RESPALDO si falla.
+            });
+    }, []);
 
     useEffect(() => {
         if (visible) setPaso(0);
@@ -40,19 +46,19 @@ export default function GuiaInicioTour({ visible, onCerrar }: { visible: boolean
         if (!visible) return;
 
         function actualizarPosicion() {
-            const el = document.getElementById(PASOS[paso].targetId);
+            const el = document.getElementById(pasos[paso]?.Target_Id);
             if (el) setRect(el.getBoundingClientRect());
         }
 
         actualizarPosicion();
         window.addEventListener('resize', actualizarPosicion);
         return () => window.removeEventListener('resize', actualizarPosicion);
-    }, [visible, paso]);
+    }, [visible, paso, pasos]);
 
-    if (!visible || !rect) return null;
+    if (!visible || !rect || pasos.length === 0) return null;
 
-    const esUltimo = paso === PASOS.length - 1;
-    const pasoActual = PASOS[paso];
+    const esUltimo = paso === pasos.length - 1;
+    const pasoActual = pasos[paso];
 
     const centroTarget = rect.left + rect.width / 2;
     let izquierdaTarjeta = centroTarget - ANCHO_TARJETA / 2;
@@ -104,18 +110,18 @@ export default function GuiaInicioTour({ visible, onCerrar }: { visible: boolean
                 <div className="p-4">
                     <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-yellow">
-                            {pasoActual.titulo}
+                            {pasoActual.Titulo}
                         </span>
                         <button onClick={onCerrar} className="text-white/40 hover:text-white text-xs">
                             Saltar
                         </button>
                     </div>
 
-                    <p className="text-sm text-white/90 leading-relaxed mb-4">{pasoActual.texto}</p>
+                    <p className="text-sm text-white/90 leading-relaxed mb-4">{pasoActual.Texto}</p>
 
                     <div className="flex items-center justify-between">
                         <div className="flex gap-1.5">
-                            {PASOS.map((_, i) => (
+                            {pasos.map((_, i) => (
                                 <span
                                     key={i}
                                     className={`h-1.5 rounded-full transition-all ${i === paso ? 'w-4 bg-brand-yellow' : 'w-1.5 bg-white/25'

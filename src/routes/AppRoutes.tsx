@@ -17,6 +17,7 @@ import PedidosPage from '../modules/pedidos/pages/PedidosPage';
 import ProveedoresPage from '../modules/proveedores/pages/ProveedoresPage';
 import ReclamosAbiertosPage from '../modules/reclamos/pages/ReclamosAbiertosPage';
 import ReclamosCerradosPage from '../modules/reclamos/pages/ReclamosCerradosPage';
+import ConfiguracionesPage from '../modules/configuraciones/pages/ConfiguracionesPage';
 
 export default function AppRoutes() {
   return (
@@ -47,6 +48,7 @@ export default function AppRoutes() {
         <Route path="/politicas" element={<ProximamentePage titulo="Políticas" />} />
         <Route path="/calendario" element={<ProximamentePage titulo="Calendario" />} />
         <Route path="/reportes" element={<ProximamentePage titulo="Reportes" />} />
+        <Route path="/configuraciones" element={<ConfiguracionesPage />} />
       </Route>
     </Routes>
   );

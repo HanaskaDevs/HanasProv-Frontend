@@ -1,17 +1,32 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import LogoLink from '../components/LogoLink';
+import { obtenerImagenLoginPublica } from '../api/publicConfigApi';
+
+const IMAGEN_RESPALDO = '/hanaska.jpg';
 
 export default function AuthLayout({ title, subtitle, children }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
 }) {
+  const [imagenFondo, setImagenFondo] = useState(IMAGEN_RESPALDO);
+
+  useEffect(() => {
+    obtenerImagenLoginPublica()
+      .then((url) => {
+        if (url) setImagenFondo(url);
+      })
+      .catch(() => {
+        // Si falla la petición, se queda con la imagen de respaldo local.
+      });
+  }, []);
+
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
       {/* Fondo */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/hanaska.jpg')" }}
+        className="absolute inset-0 bg-cover bg-center transition-all duration-500"
+        style={{ backgroundImage: `url('${imagenFondo}')` }}
       >
         <div className="absolute inset-0 bg-brand-900/60" />
       </div>
