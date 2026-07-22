@@ -182,7 +182,11 @@ function ArchivoSubido({
             </span>
           )}
           {doc.estado_calificacion === 'Aprobado' && <Badge tone="success">Aprobado</Badge>}
-          {rechazado && <Badge tone="danger">Rechazado</Badge>}
+          {rechazado && (
+            <Badge tone="danger" className="!bg-amber-100 !text-amber-800">
+              Rechazado
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-3 shrink-0">

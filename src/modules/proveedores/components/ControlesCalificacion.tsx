@@ -61,9 +61,11 @@ export default function ControlesCalificacion({
       <div className={compacto ? 'flex items-center gap-2' : 'space-y-1.5'}>
         <div className="flex items-center gap-2 flex-wrap">
           {estado === 'Aprobado' ? (
-            <Badge tone="success">✓ Aprobado</Badge>
+            <Badge tone="success">Aprobado</Badge>
           ) : (
-            <Badge tone="danger">✗ Rechazado</Badge>
+            <Badge tone="danger" className="!bg-amber-100 !text-amber-800">
+              Rechazado
+            </Badge>
           )}
           {fecha && <span className="text-[11px] text-brand-900/40">{formateaFecha(fecha)}</span>}
           {!soloLectura && (

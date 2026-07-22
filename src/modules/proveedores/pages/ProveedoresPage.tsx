@@ -19,7 +19,12 @@ const POR_PAGINA = 8;
 
 function BadgeCalificacion({ estado }: { estado: 'Aprobado' | 'Rechazado' | null }) {
   if (estado === 'Aprobado') return <Badge tone="success">Aprobada</Badge>;
-  if (estado === 'Rechazado') return <Badge tone="danger">Rechazada</Badge>;
+  if (estado === 'Rechazado')
+    return (
+      <Badge tone="danger" className="!bg-amber-100 !text-amber-800">
+        Rechazada
+      </Badge>
+    );
   return <Badge tone="neutral">Sin calificar</Badge>;
 }
 
