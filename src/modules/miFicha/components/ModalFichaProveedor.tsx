@@ -165,9 +165,8 @@ export default function ModalFichaProveedor({
               {!yaGuardoAlgo ? (
                 <div className="mb-4 rounded-md bg-brand-wine/5 border border-brand-wine/20 px-4 py-3">
                   <p className="text-sm text-brand-wine">
-                    <span className="font-semibold">El equipo rechazó algunos campos de tu ficha.</span> Están
-                    marcados en rojo abajo, con la observación de qué corregir. El resto de la ficha ya está
-                    aprobada y no se puede editar.
+                    <span className="font-semibold">El equipo rechazó algunos campos de tu ficha.</span> Por favor
+                    verifica la información y corrígelo.
                   </p>
                 </div>
               ) : (

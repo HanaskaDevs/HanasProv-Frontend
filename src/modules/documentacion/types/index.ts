@@ -22,5 +22,6 @@ export interface TipoDocumentoChecklist {
 export interface ChecklistDocumentacion {
   registrado: boolean;
   fecha_registro: string | null;
+  correcciones_pendientes: boolean;
   documentos: TipoDocumentoChecklist[];
 }

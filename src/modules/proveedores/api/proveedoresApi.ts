@@ -13,15 +13,21 @@ export async function obtenerFichaCalificacion(idProveedor: number): Promise<Fic
   return data;
 }
 
-export async function calificarCampoFicha(
+export interface CampoRechazado {
+  campo: string;
+  observacion: string;
+}
+
+export interface PayloadCalificarFichaGeneral {
+  aprobado: boolean;
+  campos_rechazados?: CampoRechazado[];
+}
+
+export async function calificarFichaGeneral(
   idProveedor: number,
-  campo: string,
-  payload: PayloadCalificar
+  payload: PayloadCalificarFichaGeneral
 ): Promise<FichaProveedor> {
-  const { data } = await apiClient.post<FichaProveedor>(
-    `/proveedores/${idProveedor}/ficha-calificacion/${campo}`,
-    payload
-  );
+  const { data } = await apiClient.post<FichaProveedor>(`/proveedores/${idProveedor}/ficha-calificacion`, payload);
   return data;
 }
 
@@ -46,6 +52,10 @@ export async function calificarDocumento(
     payload
   );
   return data;
+}
+
+export async function registrarCalificacionDocumentos(idProveedor: number): Promise<void> {
+  await apiClient.post(`/proveedores/${idProveedor}/documentos-calificacion/registrar`);
 }
 
 /**

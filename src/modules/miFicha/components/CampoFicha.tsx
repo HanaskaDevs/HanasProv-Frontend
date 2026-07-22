@@ -6,6 +6,8 @@ interface CampoFichaProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   /** Borde/fondo persistente (no solo al enfocar) -> se usa para marcar "este campo lo rechazó el admin, corrígelo". */
   resaltado?: boolean;
+  /** Se renderiza pegado al input (ej. el ícono de observación) -> a diferencia de ponerlo afuera del componente, así queda siempre junto al campo sin importar el ancho del contenedor. */
+  accesorio?: React.ReactNode;
 }
 
 /**
@@ -24,7 +26,7 @@ interface CampoFichaProps extends InputHTMLAttributes<HTMLInputElement> {
  * <Input /> genérico que usan el resto de formularios del sistema.
  */
 const CampoFicha = forwardRef<HTMLInputElement, CampoFichaProps>(
-  ({ label, error, resaltado = false, className = '', ...props }, ref) => {
+  ({ label, error, resaltado = false, accesorio, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -55,6 +57,7 @@ const CampoFicha = forwardRef<HTMLInputElement, CampoFichaProps>(
               ${resaltado ? 'border-brand-wine ring-1 ring-brand-wine/40 bg-brand-wine/[0.03]' : error ? 'border-brand-wine' : 'border-brand-900/20'} ${className}`}
             {...props}
           />
+          {accesorio}
         </div>
         {error && <span className="pl-0.5 text-[11px] text-brand-wine">{error}</span>}
       </div>

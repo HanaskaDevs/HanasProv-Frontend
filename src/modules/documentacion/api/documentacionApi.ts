@@ -46,6 +46,10 @@ export async function registrarDocumentacion(): Promise<void> {
   await apiClient.post('/mi-documentos/registrar');
 }
 
+export async function confirmarCorrecciones(): Promise<void> {
+  await apiClient.post('/mi-documentos/confirmar-correcciones');
+}
+
 export async function descargarDocumento(idDocumentoProveedor: number): Promise<void> {
   const { data } = await apiClient.get(`/mi-documentos/${idDocumentoProveedor}/descargar`, {
     responseType: 'blob',
