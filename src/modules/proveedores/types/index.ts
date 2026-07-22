@@ -12,12 +12,15 @@ export interface ProveedorListado {
   estado_calificacion_ficha: 'Aprobado' | 'Rechazado' | null;
   documentos_totales: number;
   documentos_pendientes_calificar: number;
+  documentos_rechazados: number;
+  estado_calificacion_documentacion: 'Aprobado' | 'Rechazado' | null;
 }
 
 export interface DocumentoCalificable {
   id_documento_proveedor: number;
   nombre_original: string;
   fecha_caducidad: string | null;
+  fecha_subida: string | null;
   estado_calificacion: 'Aprobado' | 'Rechazado' | null;
   comentario_calificacion: string | null;
   fecha_calificacion: string | null;
@@ -34,6 +37,7 @@ export interface TipoDocumentoCalificable {
 export interface ChecklistCalificacion {
   razon_social: string;
   documentacion_registrada: boolean;
+  calificacion_documentos_registrada: boolean;
   documentos: TipoDocumentoCalificable[];
 }
 

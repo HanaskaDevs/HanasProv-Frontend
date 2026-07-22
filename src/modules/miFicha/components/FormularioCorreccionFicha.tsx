@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import CampoFicha from './CampoFicha';
 import CampoFichaSelect from './CampoFichaSelect';
+import TooltipObservacion from './TooltipObservacion';
 import Button from '../../../shared/components/Button';
 import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
@@ -52,16 +53,6 @@ function aTexto(valor: string | number | null | undefined): string {
 
 function Divisor() {
   return <hr className="border-t border-brand-900/10" />;
-}
-
-/** Debajo de cada campo rechazado, la observación del admin -> es la guía de qué corregir. */
-function ObservacionCampo({ texto }: { texto: string | null }) {
-  if (!texto) return null;
-  return (
-    <p className="text-[11px] text-brand-wine bg-brand-wine/5 border border-brand-wine/15 rounded px-2 py-1 -mt-1.5 max-w-[220px]">
-      {texto}
-    </p>
-  );
 }
 
 interface CampoProps {
@@ -165,8 +156,15 @@ export default function FormularioCorreccionFicha({
     try {
       // Sección 1 siempre se re-envía (siempre está visible en esta
       // vista) -> los campos bloqueados van con su mismo valor de
-      // siempre, así que no cambia nada para ellos.
-      let fichaActualizada = await guardarSeccion1(values);
+      // siempre, así que no cambia nada para ellos. latitud/longitud no
+      // están en este formulario (no son campos calificables, no hay
+      // mapa acá), pero el endpoint los pide obligatorios -> se mandan
+      // tal cual ya estaban guardados, sin tocarlos.
+      let fichaActualizada = await guardarSeccion1({
+        ...values,
+        latitud: ficha.seccion_1.latitud,
+        longitud: ficha.seccion_1.longitud,
+      });
 
       if (claseEditable) {
         fichaActualizada = await guardarSeccion2(clasesSeleccionadas);
@@ -186,17 +184,15 @@ export default function FormularioCorreccionFicha({
   function Campo({ campo, label, tipo }: CampoProps) {
     const editable = esEditable(campo);
     return (
-      <div className="space-y-1">
-        <CampoFicha
-          label={label}
-          type={tipo}
-          disabled={!editable}
-          resaltado={editable}
-          {...register(campo)}
-          error={errors[campo]?.message}
-        />
-        {editable && <ObservacionCampo texto={observacionDe(campo)} />}
-      </div>
+      <CampoFicha
+        label={label}
+        type={tipo}
+        disabled={!editable}
+        resaltado={editable}
+        accesorio={editable ? <TooltipObservacion texto={observacionDe(campo)} /> : undefined}
+        {...register(campo)}
+        error={errors[campo]?.message}
+      />
     );
   }
 
@@ -212,26 +208,22 @@ export default function FormularioCorreccionFicha({
           <Campo campo="email" label="Correo" tipo="email" />
           <Campo campo="telefono" label="Teléfono" />
           <Campo campo="direccion" label="Dirección" />
-          <div className="space-y-1">
-            <CampoFichaSelect
-              label="Ciudad"
-              opciones={CIUDADES_ECUADOR}
-              disabled={!esEditable('ciudad')}
-              resaltado={esEditable('ciudad')}
-              {...register('ciudad')}
-              error={errors.ciudad?.message}
-            />
-            {esEditable('ciudad') && <ObservacionCampo texto={observacionDe('ciudad')} />}
-          </div>
-          <div className="space-y-1">
-            <CampoFicha
-              label="Página web (opcional)"
-              disabled={!esEditable('pagina_web')}
-              resaltado={esEditable('pagina_web')}
-              {...register('pagina_web')}
-            />
-            {esEditable('pagina_web') && <ObservacionCampo texto={observacionDe('pagina_web')} />}
-          </div>
+          <CampoFichaSelect
+            label="Ciudad"
+            opciones={CIUDADES_ECUADOR}
+            disabled={!esEditable('ciudad')}
+            resaltado={esEditable('ciudad')}
+            accesorio={esEditable('ciudad') ? <TooltipObservacion texto={observacionDe('ciudad')} /> : undefined}
+            {...register('ciudad')}
+            error={errors.ciudad?.message}
+          />
+          <CampoFicha
+            label="Página web (opcional)"
+            disabled={!esEditable('pagina_web')}
+            resaltado={esEditable('pagina_web')}
+            accesorio={esEditable('pagina_web') ? <TooltipObservacion texto={observacionDe('pagina_web')} /> : undefined}
+            {...register('pagina_web')}
+          />
         </div>
       </section>
 
@@ -289,8 +281,8 @@ export default function FormularioCorreccionFicha({
             Clase de Proveedor
           </h3>
           {claseEditable && <Badge tone="danger">Corregir</Badge>}
+          {claseEditable && <TooltipObservacion texto={observacionDe(CAMPO_CLASE)} />}
         </div>
-        {claseEditable && <ObservacionCampo texto={observacionDe(CAMPO_CLASE)} />}
         {claseEditable ? (
           cargandoCatalogos ? (
             <Spinner className="h-4 w-4" />
@@ -331,8 +323,8 @@ export default function FormularioCorreccionFicha({
             Categoría de Productos
           </h3>
           {categoriaEditable && <Badge tone="danger">Corregir</Badge>}
+          {categoriaEditable && <TooltipObservacion texto={observacionDe(CAMPO_CATEGORIA)} />}
         </div>
-        {categoriaEditable && <ObservacionCampo texto={observacionDe(CAMPO_CATEGORIA)} />}
         {categoriaEditable ? (
           cargandoCatalogos ? (
             <Spinner className="h-4 w-4" />

@@ -8,6 +8,8 @@ interface CampoFichaSelectProps extends SelectHTMLAttributes<HTMLSelectElement> 
   opciones: readonly string[];
   /** Borde/fondo persistente -> "este campo lo rechazó el admin, corrígelo". */
   resaltado?: boolean;
+  /** Se renderiza pegado al select (ej. el ícono de observación). */
+  accesorio?: React.ReactNode;
 }
 
 /**
@@ -16,7 +18,7 @@ interface CampoFichaSelectProps extends SelectHTMLAttributes<HTMLSelectElement> 
  * vez de un <input> de texto libre -> se usa para "Ciudad".
  */
 const CampoFichaSelect = forwardRef<HTMLSelectElement, CampoFichaSelectProps>(
-  ({ label, error, resaltado = false, placeholder = 'Selecciona...', opciones, className = '', ...props }, ref) => {
+  ({ label, error, resaltado = false, accesorio, placeholder = 'Selecciona...', opciones, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -51,6 +53,7 @@ const CampoFichaSelect = forwardRef<HTMLSelectElement, CampoFichaSelectProps>(
               </option>
             ))}
           </select>
+          {accesorio}
         </div>
         {error && <span className="pl-0.5 text-[11px] text-brand-wine">{error}</span>}
       </div>

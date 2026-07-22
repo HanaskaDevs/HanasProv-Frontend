@@ -56,9 +56,10 @@ export default function ModalCalificarProveedor({
         }`}
       >
         <div className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-brand-900/8">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-brand-900">Calificar proveedor</h2>
-            <p className="text-xs text-brand-900/50">{razonSocial}</p>
+          <div className="flex items-baseline gap-2 min-w-0">
+            <h2 className="font-display text-lg font-semibold text-brand-900 shrink-0">Calificar Proveedor</h2>
+            <span className="text-brand-900/40">·</span>
+            <p className="text-sm text-brand-900/60 truncate">{razonSocial}</p>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -82,8 +83,8 @@ export default function ModalCalificarProveedor({
         <div className="shrink-0 flex items-center gap-1 px-6 pt-3 border-b border-brand-900/8">
           {(
             [
-              ['ficha', 'Ficha de Proveedor'],
-              ['documentos', 'Documentos'],
+              ['ficha', 'Calificar Ficha'],
+              ['documentos', 'Calificar Documentos'],
             ] as [Pestana, string][]
           ).map(([valor, etiqueta]) => (
             <button

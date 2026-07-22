@@ -31,6 +31,8 @@ interface ControlesCalificacionProps {
   calificando: boolean;
   /** Compacta los botones para usarlos dentro de una fila de lista (documentos) en vez del bloque grande (ficha). */
   compacto?: boolean;
+  /** true cuando ya se "Registró" la calificación completa -> ni siquiera se puede volver a calificar hasta que el proveedor corrija algo. */
+  soloLectura?: boolean;
 }
 
 /**
@@ -46,6 +48,7 @@ export default function ControlesCalificacion({
   onCalificar,
   calificando,
   compacto = false,
+  soloLectura = false,
 }: ControlesCalificacionProps) {
   const [modoRechazo, setModoRechazo] = useState(false);
   const [modoRecalificar, setModoRecalificar] = useState(false);
@@ -56,31 +59,39 @@ export default function ControlesCalificacion({
   if (yaCalificado) {
     return (
       <div className={compacto ? 'flex items-center gap-2' : 'space-y-1.5'}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {estado === 'Aprobado' ? (
-            <Badge tone="success">✓ Aprobado (100)</Badge>
+            <Badge tone="success">Aprobado</Badge>
           ) : (
-            <Badge tone="danger">✗ Rechazado (0)</Badge>
+            <Badge tone="danger" className="!bg-amber-100 !text-amber-800">
+              Rechazado
+            </Badge>
           )}
           {fecha && <span className="text-[11px] text-brand-900/40">{formateaFecha(fecha)}</span>}
-          <button
-            onClick={() => {
-              setModoRecalificar(true);
-              setModoRechazo(false);
-              setTextoObservacion(observacion ?? '');
-            }}
-            className="text-[11px] font-medium text-brand-700 hover:underline"
-          >
-            Volver a calificar
-          </button>
+          {!soloLectura && (
+            <button
+              onClick={() => {
+                setModoRecalificar(true);
+                setModoRechazo(false);
+                setTextoObservacion(observacion ?? '');
+              }}
+              className="text-[11px] font-medium text-brand-700 hover:underline"
+            >
+              Volver a calificar
+            </button>
+          )}
         </div>
         {estado === 'Rechazado' && observacion && !compacto && (
-          <p className="text-xs text-brand-900/60 bg-brand-wine/5 border border-brand-wine/10 rounded px-2 py-1">
-            {observacion}
+          <p className="text-xs text-brand-900/70 bg-brand-wine/5 border border-brand-wine/15 rounded-md px-2.5 py-1.5">
+            <span className="font-semibold text-brand-wine">Motivo:</span> {observacion}
           </p>
         )}
       </div>
     );
+  }
+
+  if (soloLectura) {
+    return <Badge tone="neutral">Sin calificar</Badge>;
   }
 
   if (modoRechazo || (modoRecalificar && estado !== 'Aprobado')) {
@@ -125,7 +136,7 @@ export default function ControlesCalificacion({
       <button
         onClick={() => onCalificar(true)}
         disabled={calificando}
-        title="Aprobar (100)"
+        title="Aprobar"
         className="h-7 w-7 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
       >
         <IconoCheck />
@@ -133,7 +144,7 @@ export default function ControlesCalificacion({
       <button
         onClick={() => setModoRechazo(true)}
         disabled={calificando}
-        title="Rechazar (0)"
+        title="Rechazar"
         className="h-7 w-7 rounded-full flex items-center justify-center bg-brand-wine/10 text-brand-wine hover:bg-brand-wine/20 transition-colors disabled:opacity-50"
       >
         <IconoX />
