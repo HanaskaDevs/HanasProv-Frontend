@@ -8,6 +8,7 @@ import UsuariosInternosPage from '../modules/usuarios/pages/UsuariosInternosPage
 import UsuariosExternosPage from '../modules/usuarios/pages/UsuariosExternosPage';
 import MiFichaPage from '../modules/miFicha/pages/MiFichaPage';
 import DocumentosPage from '../modules/documentacion/pages/DocumentosPage';
+import CalificacionPage from '../modules/calificacion/pages/CalificacionPage';
 import ProductosPage from '../modules/fichaProductos/pages/ProductosPage';
 import ProximamentePage from '../shared/pages/ProximamentePage';
 import ProtectedRoute from './ProtectedRoute';
@@ -40,7 +41,7 @@ export default function AppRoutes() {
         <Route path="/usuarios/proveedores" element={<UsuariosExternosPage />} />
         <Route path="/proveedores" element={<ProveedoresPage />} />
 
-        <Route path="/calificacion" element={<ProximamentePage titulo="Calificación" />} />
+        <Route path="/calificacion" element={<CalificacionPage />} />
         <Route path="/pedidos" element={<PedidosPage />} />
         <Route path="/reclamos/abiertos" element={<ReclamosAbiertosPage />} />
         <Route path="/reclamos/cerrados" element={<ReclamosCerradosPage />} />

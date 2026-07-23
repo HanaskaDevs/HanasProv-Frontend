@@ -30,8 +30,8 @@ function BadgeCalificacion({ estado }: { estado: 'Aprobado' | 'Rechazado' | null
 
 /** true si esta fila tiene algo esperando una primera revisión del admin. */
 function necesitaAtencion(p: ProveedorListado): boolean {
-  const fichaListaPeroSinCalificar = p.porcentaje_completado_ficha === 100 && !p.estado_calificacion_ficha;
-  return fichaListaPeroSinCalificar || p.documentos_pendientes_calificar > 0;
+  const fichaListaPeroSinCalificar = Number(p.porcentaje_completado_ficha) === 100 && !p.estado_calificacion_ficha;
+  return fichaListaPeroSinCalificar || Number(p.documentos_pendientes_calificar) > 0;
 }
 
 /**
@@ -44,8 +44,8 @@ function necesitaAtencion(p: ProveedorListado): boolean {
  * pendiente (eso lo resetea el propio flujo de corrección).
  */
 function todoRevisado(p: ProveedorListado): boolean {
-  const fichaRevisada = p.porcentaje_completado_ficha === 100 && p.estado_calificacion_ficha !== null;
-  const documentosRevisados = p.documentos_pendientes_calificar === 0;
+  const fichaRevisada = Number(p.porcentaje_completado_ficha) === 100 && p.estado_calificacion_ficha !== null;
+  const documentosRevisados = Number(p.documentos_pendientes_calificar) === 0;
   return fichaRevisada && documentosRevisados;
 }
 
@@ -200,9 +200,11 @@ function ProveedoresContent() {
                         </div>
                       </td>
                       <td className="px-4 py-2.5">
-                        <Badge tone={p.porcentaje_completado_ficha === 100 ? 'info' : 'neutral'}>
-                          {p.porcentaje_completado_ficha}%
-                        </Badge>
+                        {Number(p.porcentaje_completado_ficha) === 100 ? (
+                          <Badge tone="success">Registrada</Badge>
+                        ) : (
+                          <Badge tone="neutral">No registrada</Badge>
+                        )}
                       </td>
                       <td className="px-4 py-2.5">
                         <BadgeCalificacion estado={p.estado_calificacion_ficha} />
@@ -215,7 +217,7 @@ function ProveedoresContent() {
                         )}
                       </td>
                       <td className="px-4 py-2.5">
-                        {p.documentos_totales === 0 ? (
+                        {Number(p.documentos_totales) === 0 ? (
                           <span className="text-xs text-brand-900/40">Sin documentos</span>
                         ) : (
                           <BadgeCalificacion estado={p.estado_calificacion_documentacion} />
@@ -224,7 +226,9 @@ function ProveedoresContent() {
                       <td className="px-4 py-2.5 text-right">
                         <Button
                           variant={revisado ? 'ghost' : atencion ? 'primary' : 'ghost'}
-                          className="text-xs px-3 py-1.5"
+                          className={`text-xs px-3 py-1.5 ${
+                            revisado ? '!bg-brand-200/40 hover:!bg-brand-200/60' : ''
+                          }`}
                           onClick={() => setProveedorCalificando(p)}
                         >
                           {revisado ? 'Ver calificación' : 'Calificar'}

@@ -64,3 +64,17 @@ export async function descargarDocumento(idDocumentoProveedor: number): Promise<
   // Se libera un poco después para darle tiempo a la pestaña nueva a cargarlo.
   setTimeout(() => window.URL.revokeObjectURL(url), 10_000);
 }
+
+/**
+ * Igual que descargarDocumento, pero devuelve la URL del blob en vez de
+ * abrirla en una pestaña nueva -> la usa ModalVisorPdf para mostrar el
+ * PDF embebido dentro de un <iframe>, mismo patrón que ya usamos en la
+ * vista de calificación del admin.
+ */
+export async function obtenerUrlVisorDocumento(idDocumentoProveedor: number): Promise<string> {
+  const { data } = await apiClient.get(`/mi-documentos/${idDocumentoProveedor}/descargar`, {
+    responseType: 'blob',
+  });
+  const blobPdf = new Blob([data], { type: 'application/pdf' });
+  return window.URL.createObjectURL(blobPdf);
+}

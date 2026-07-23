@@ -9,6 +9,7 @@ import Spinner from '../../../shared/components/Spinner';
 import Button from '../../../shared/components/Button';
 import Badge from '../../../shared/components/Badge';
 import Modal from '../../../shared/components/Modal';
+import ModalVisorPdf from './ModalVisorPdf';
 
 const TAMANO_MAXIMO_MB = 4;
 
@@ -103,9 +104,7 @@ function ArchivoSubido({
   const [confirmandoBorrar, setConfirmandoBorrar] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const ver = useMutation({
-    mutationFn: () => documentacionApi.descargarDocumento(doc.id_documento_proveedor),
-  });
+  const [visorAbierto, setVisorAbierto] = useState(false);
 
   const reemplazar = useMutation({
     mutationFn: (archivo: File) =>
@@ -191,7 +190,7 @@ function ArchivoSubido({
 
         <div className="flex items-center gap-3 shrink-0">
           <button
-            onClick={() => ver.mutate()}
+            onClick={() => setVisorAbierto(true)}
             className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
           >
             <IconoOjo /> Ver
@@ -297,6 +296,14 @@ function ArchivoSubido({
             </Button>
           </div>
         </Modal>
+      )}
+
+      {visorAbierto && (
+        <ModalVisorPdf
+          idDocumentoProveedor={doc.id_documento_proveedor}
+          nombre={doc.nombre_original}
+          onClose={() => setVisorAbierto(false)}
+        />
       )}
     </div>
   );
@@ -610,20 +617,29 @@ function FranjaSuperior({
 
           {registrado && correccionesPendientes ? (
             <div className="text-right">
-              <Button
-                variant="primary"
-                className="!text-xs !px-3 !py-1.5"
-                disabled={hayRechazados}
-                isLoading={confirmarCorrecciones.isPending}
-                onClick={() => confirmarCorrecciones.mutate()}
-              >
-                Registrar documentación actualizada
-              </Button>
-              {hayRechazados && (
-                <p className="text-[10px] text-brand-900/40 mt-1">
-                  Se habilita al corregir los {documentosRechazados.length === 1 ? 'documento' : 'documentos'} rechazado{documentosRechazados.length === 1 ? '' : 's'}
-                </p>
-              )}
+              <span className="relative inline-block group">
+                <Button
+                  variant="primary"
+                  className="!text-xs !px-3 !py-1.5"
+                  disabled={hayRechazados}
+                  isLoading={confirmarCorrecciones.isPending}
+                  onClick={() => confirmarCorrecciones.mutate()}
+                >
+                  Registrar documentación actualizada
+                </Button>
+
+                {hayRechazados && (
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute z-20 right-0 top-full mt-1.5 w-56 rounded-md bg-brand-900
+                      px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 invisible
+                      group-hover:opacity-100 group-hover:visible transition-opacity"
+                  >
+                    Se habilita al corregir {documentosRechazados.length === 1 ? 'el documento rechazado' : 'los documentos rechazados'}
+                  </span>
+                )}
+              </span>
+
               {confirmarCorrecciones.isError && (
                 <p className="text-[10px] text-brand-wine mt-1">
                   {axios.isAxiosError(confirmarCorrecciones.error) && confirmarCorrecciones.error.response?.data?.errors

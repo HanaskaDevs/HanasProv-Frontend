@@ -32,10 +32,11 @@ const MENU_PROVEEDOR: MenuItem[] = [
 ];
 
 // Mientras el proveedor está "Aspirante" (todavía no aprobado), estas
-// secciones no le aplican -> ni siquiera puede tener pedidos, reclamos o
-// calificaciones todavía. Se muestran recién cuando pasa a otro estado
-// (aprobado por el equipo correspondiente).
-const ETIQUETAS_OCULTAS_PARA_ASPIRANTE = ['Calificación', 'Pedidos', 'Reclamos', 'Políticas'];
+// secciones no le aplican -> ni siquiera puede tener pedidos ni
+// reclamos todavía, y las políticas son para proveedores ya activos.
+// "Calificación" SÍ la puede ver -> es donde sigue el estado de su
+// propia postulación (Ficha/Documentación/Productos).
+const ETIQUETAS_OCULTAS_PARA_ASPIRANTE = ['Pedidos', 'Reclamos', 'Políticas'];
 
 const MENU_SISTEMAS: MenuItem[] = [
   { label: 'Empresas', to: '/empresas' },
@@ -62,10 +63,9 @@ const MENU_ADMIN: MenuItem[] = [
     label: 'Usuarios',
     children: [{ to: '/usuarios/proveedores', label: 'Cuentas de Proveedores' }],
   },
-  { label: 'Proveedores', to: '/proveedores' },
+  { label: 'Calificación Proveedores', to: '/proveedores' },
   PEDIDOS,
   RECLAMOS,
-  { label: 'Calificaciones', to: '/calificacion' },
   { label: 'Auditorías', to: '/auditorias' },
   { label: 'Políticas', to: '/politicas' },
   { label: 'Calendario', to: '/calendario' },
