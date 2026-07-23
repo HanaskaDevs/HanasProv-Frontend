@@ -1,45 +1,37 @@
-export interface RecepcionImagen {
-  id_recepcion_imagen: number;
-  nombre_original: string;
-}
-
-export interface RecepcionPedidoDetalle {
-  id_recepcion_pedido_detalle: number;
-  fecha_recepcion: string;
-  registrado_por: string | null;
-  cantidad_recibida: string;
-  recepcion_completa: boolean;
-  observacion: string | null;
-  imagenes: RecepcionImagen[];
-}
-
 export interface LineaPedidoInterno {
-  id_detalle_pedido_compra: number;
   nro_linea: number;
-  codigo_producto: string;
+  nro_producto: string;
   descripcion: string | null;
-  cantidad_pedida: string;
-  cantidad_recibida: string;
-  recepciones: RecepcionPedidoDetalle[];
+  cantidad: number;
+  cantidad_recibida: number;
+  porcentaje_entrega: number;
 }
 
 export interface PedidoInterno {
-  id_pedido_compra: number;
   nro_pedido: string;
-  fecha_registro_bc: string;
+  proveedor: string | null;
+  ruc_proveedor: string | null;
+  fecha_registro_bc: string | null;
   fecha_recepcion_esperada: string | null;
-  estado: 'Abierto' | 'Cerrado';
-  proveedor: {
-    id_proveedor: number;
-    razon_social: string;
-  };
+  estado_pedido_bc: string | null;
+  cod_almacen: string;
+  porcentaje_entrega: number;
   lineas: LineaPedidoInterno[];
 }
 
-export interface LineaRecepcionInput {
-  id_detalle_pedido_compra: number;
-  cantidad_recibida: number;
-  recepcion_completa: boolean;
-  observacion?: string;
-  imagenes: File[];
+export interface BodegaPedidos {
+  porcentaje_entrega: number;
+  pedidos: PedidoInterno[];
+}
+
+/** Llave = código de bodega (CD-0001/CD-0002/CD-0003). */
+export type PedidosPorBodega = Record<string, BodegaPedidos>;
+
+export const BODEGAS_PEDIDOS_INTERNOS = ['CD-0001', 'CD-0002', 'CD-0003'] as const;
+
+export interface FiltrosPedidosInternos {
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  proveedor?: string;
+  producto?: string;
 }
