@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../../auth/hooks/useAuth';
 import * as auditoriasApi from '../api/auditoriasApi';
@@ -22,7 +22,6 @@ function seccionCompleta(seccion: SeccionAuditoria): boolean {
 export default function AuditoriasPage() {
     const { esAdmin, esSistemas, esCalidad } = useAuth();
     const tieneAcceso = esAdmin || esSistemas || esCalidad;
-    const queryClient = useQueryClient();
 
     const [idTipoElegido, setIdTipoElegido] = useState<number | null>(null);
     const [busquedaProveedor, setBusquedaProveedor] = useState('');
