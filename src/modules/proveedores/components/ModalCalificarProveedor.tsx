@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import SeccionCalificarFicha from './SeccionCalificarFicha';
 import SeccionCalificarDocumentos from './SeccionCalificarDocumentos';
+import SeccionCalificarProductos from './SeccionCalificarProductos';
 
 function IconoExpandir() {
   return (
@@ -24,13 +25,14 @@ function IconoContraer() {
   );
 }
 
-type Pestana = 'ficha' | 'documentos';
+type Pestana = 'ficha' | 'documentos' | 'productos';
 
 /**
  * Mismo shell (header + botón expandir/contraer) que ModalFichaProveedor,
  * para que se sienta como la misma familia de modales del sistema. Acá,
- * en vez de un stepper de progreso, hay 2 pestañas: Ficha de Proveedor y
- * Documentos -> cada una es su propia sección de calificación completa.
+ * en vez de un stepper de progreso, hay 3 pestañas: Ficha de Proveedor,
+ * Documentos y Productos -> cada una es su propia sección de
+ * calificación completa.
  */
 export default function ModalCalificarProveedor({
   idProveedor,
@@ -85,6 +87,7 @@ export default function ModalCalificarProveedor({
             [
               ['ficha', 'Calificar Ficha'],
               ['documentos', 'Calificar Documentos'],
+              ['productos', 'Calificar Productos'],
             ] as [Pestana, string][]
           ).map(([valor, etiqueta]) => (
             <button
@@ -104,8 +107,10 @@ export default function ModalCalificarProveedor({
         <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
           {pestana === 'ficha' ? (
             <SeccionCalificarFicha idProveedor={idProveedor} />
-          ) : (
+          ) : pestana === 'documentos' ? (
             <SeccionCalificarDocumentos idProveedor={idProveedor} />
+          ) : (
+            <SeccionCalificarProductos idProveedor={idProveedor} />
           )}
         </div>
       </div>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import * as proveedoresApi from '../api/proveedoresApi';
 import Spinner from '../../../shared/components/Spinner';
 
 /**
@@ -8,14 +7,21 @@ import Spinner from '../../../shared/components/Spinner';
  * como blob (con axios, que sí manda el token) y se le pasa al iframe
  * como blob: URL. Se revoca al cerrar para no acumular memoria si el
  * admin abre varios documentos seguidos.
+ *
+ * "obtenerUrl" es inyectable (en vez de llamar directo a proveedoresApi)
+ * para poder reusar este mismo modal con distintos endpoints -> ver
+ * documentos de la ficha y documentos de producto, que son APIs
+ * distintas pero el visor en sí es idéntico.
  */
 export default function ModalVisorPdf({
-  idDocumentoProveedor,
+  idDocumento,
   nombre,
+  obtenerUrl,
   onClose,
 }: {
-  idDocumentoProveedor: number;
+  idDocumento: number;
   nombre: string;
+  obtenerUrl: (id: number) => Promise<string>;
   onClose: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -25,8 +31,7 @@ export default function ModalVisorPdf({
     let cancelado = false;
     let urlCreada: string | null = null;
 
-    proveedoresApi
-      .obtenerUrlVisorDocumento(idDocumentoProveedor)
+    obtenerUrl(idDocumento)
       .then((blobUrl) => {
         if (cancelado) {
           window.URL.revokeObjectURL(blobUrl);
@@ -41,7 +46,7 @@ export default function ModalVisorPdf({
       cancelado = true;
       if (urlCreada) window.URL.revokeObjectURL(urlCreada);
     };
-  }, [idDocumentoProveedor]);
+  }, [idDocumento, obtenerUrl]);
 
   return (
     <div className="fixed inset-0 bg-brand-900/70 flex items-center justify-center p-4 z-[70]" onClick={onClose}>

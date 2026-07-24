@@ -169,7 +169,7 @@ export default function CalificacionPage() {
   const productosAprobados = listaProductos.filter((p) => p.estado_calificacion === 'Aprobado').length;
   const productosRechazados = listaProductos.filter((p) => p.estado_calificacion === 'Rechazado').length;
   const productosPendientes = totalProductos - productosAprobados - productosRechazados;
-  const productosRegistrados = resumenProductos.data?.ya_bloqueado ?? false;
+  const productosRegistrados = (resumenProductos.data?.productos_en_revision ?? 0) > 0;
 
   const estadoProductos: EstadoGeneral = totalProductos === 0
     ? 'Sin iniciar'
