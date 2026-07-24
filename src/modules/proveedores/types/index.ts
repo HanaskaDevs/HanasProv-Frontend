@@ -45,3 +45,27 @@ export interface PayloadCalificar {
   aprobado: boolean;
   observacion?: string;
 }
+
+export interface DocumentoProductoCalificable {
+  id_documento_producto: number;
+  nombre_documento: string;
+  nombre_original: string;
+}
+
+export interface ProductoCalificable {
+  id_producto: number;
+  nombre_producto: string;
+  codigo_barras: string | null;
+  unidad_presentacion: string | null;
+  precio: string | null;
+  estado_calificacion: 'Aprobado' | 'Rechazado' | 'Pendiente' | null;
+  comentario_calificacion: string | null;
+  fecha_calificacion: string | null;
+  documentos: DocumentoProductoCalificable[];
+}
+
+export interface ProductosCalificacion {
+  razon_social: string;
+  calificacion_productos_registrada: boolean;
+  productos: ProductoCalificable[];
+}

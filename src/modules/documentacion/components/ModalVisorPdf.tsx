@@ -1,4 +1,6 @@
+// src/modules/documentacion/components/ModalVisorPdf.tsx
 import { useEffect, useState } from 'react';
+import * as documentacionApi from '../api/documentacionApi';
 import Spinner from '../../../shared/components/Spinner';
 
 /**
@@ -6,22 +8,17 @@ import Spinner from '../../../shared/components/Spinner';
  * header Authorization por su cuenta -> por eso el PDF se trae primero
  * como blob (con axios, que sí manda el token) y se le pasa al iframe
  * como blob: URL. Se revoca al cerrar para no acumular memoria si el
- * admin abre varios documentos seguidos.
- *
- * "obtenerUrl" es inyectable (en vez de llamar directo a proveedoresApi)
- * para poder reusar este mismo modal con distintos endpoints -> ver
- * documentos de la ficha y documentos de producto, que son APIs
- * distintas pero el visor en sí es idéntico.
+ * proveedor abre varios documentos seguidos. Mismo componente que ya
+ * usa el admin en su vista de calificación, adaptado a la API del
+ * proveedor (mi-documentos en vez de proveedores/documentos-calificacion).
  */
 export default function ModalVisorPdf({
-  idDocumento,
+  idDocumentoProveedor,
   nombre,
-  obtenerUrl,
   onClose,
 }: {
-  idDocumento: number;
+  idDocumentoProveedor: number;
   nombre: string;
-  obtenerUrl: (id: number) => Promise<string>;
   onClose: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -31,7 +28,8 @@ export default function ModalVisorPdf({
     let cancelado = false;
     let urlCreada: string | null = null;
 
-    obtenerUrl(idDocumento)
+    documentacionApi
+      .obtenerUrlVisorDocumento(idDocumentoProveedor)
       .then((blobUrl) => {
         if (cancelado) {
           window.URL.revokeObjectURL(blobUrl);
@@ -46,7 +44,7 @@ export default function ModalVisorPdf({
       cancelado = true;
       if (urlCreada) window.URL.revokeObjectURL(urlCreada);
     };
-  }, [idDocumento, obtenerUrl]);
+  }, [idDocumentoProveedor]);
 
   return (
     <div className="fixed inset-0 bg-brand-900/70 flex items-center justify-center p-4 z-[70]" onClick={onClose}>

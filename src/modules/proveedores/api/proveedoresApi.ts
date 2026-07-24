@@ -1,7 +1,7 @@
 // src/modules/proveedores/api/proveedoresApi.ts
 import apiClient from '../../../shared/api/apiClient';
 import type { FichaProveedor } from '../../miFicha/types';
-import type { ChecklistCalificacion, PayloadCalificar, ProveedorListado } from '../types';
+import type { ChecklistCalificacion, PayloadCalificar, ProductosCalificacion, ProveedorListado } from '../types';
 
 export async function listarProveedores(): Promise<ProveedorListado[]> {
   const { data } = await apiClient.get<ProveedorListado[]>('/proveedores');
@@ -66,6 +66,41 @@ export async function registrarCalificacionDocumentos(idProveedor: number): Prom
  */
 export async function obtenerUrlVisorDocumento(idDocumentoProveedor: number): Promise<string> {
   const { data } = await apiClient.get(`/proveedores/documentos-calificacion/${idDocumentoProveedor}/ver`, {
+    responseType: 'blob',
+  });
+  const blobPdf = new Blob([data], { type: 'application/pdf' });
+  return window.URL.createObjectURL(blobPdf);
+}
+
+export async function obtenerProductosCalificacion(idProveedor: number): Promise<ProductosCalificacion> {
+  const { data } = await apiClient.get<ProductosCalificacion>(`/proveedores/${idProveedor}/productos-calificacion`);
+  return data;
+}
+
+export async function registrarCalificacionProductos(idProveedor: number): Promise<void> {
+  await apiClient.post(`/proveedores/${idProveedor}/productos-calificacion/registrar`);
+}
+
+export interface ResultadoCalificarProducto {
+  id_producto: number;
+  estado_calificacion: 'Aprobado' | 'Rechazado' | null;
+  comentario_calificacion: string | null;
+  fecha_calificacion: string | null;
+}
+
+export async function calificarProducto(
+  idProducto: number,
+  payload: PayloadCalificar
+): Promise<ResultadoCalificarProducto> {
+  const { data } = await apiClient.post<ResultadoCalificarProducto>(
+    `/proveedores/productos-calificacion/${idProducto}`,
+    payload
+  );
+  return data;
+}
+
+export async function obtenerUrlVisorDocumentoProducto(idDocumentoProducto: number): Promise<string> {
+  const { data } = await apiClient.get(`/proveedores/productos-calificacion/documento/${idDocumentoProducto}/ver`, {
     responseType: 'blob',
   });
   const blobPdf = new Blob([data], { type: 'application/pdf' });

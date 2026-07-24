@@ -24,7 +24,11 @@ function formateaFecha(iso: string): string {
 }
 
 interface ControlesCalificacionProps {
-  estado: 'Aprobado' | 'Rechazado' | null;
+  // Documentos usa null para "sin calificar todavía"; Productos usa el
+  // string 'Pendiente' para lo mismo -> se aceptan los dos, el chequeo
+  // de "yaCalificado" de abajo ya los trata igual (ninguno cuenta como
+  // "ya decidido").
+  estado: 'Aprobado' | 'Rechazado' | 'Pendiente' | null;
   observacion: string | null;
   fecha: string | null;
   onCalificar: (aprobado: boolean, observacion?: string) => void;
@@ -54,7 +58,15 @@ export default function ControlesCalificacion({
   const [modoRecalificar, setModoRecalificar] = useState(false);
   const [textoObservacion, setTextoObservacion] = useState('');
 
-  const yaCalificado = estado !== null && !modoRecalificar;
+  // Antes era "estado !== null" -> funcionaba para Documentos (donde lo
+  // "sin calificar" es null), pero Productos arranca en el string
+  // "Pendiente" al registrarse (no null), y "Pendiente" !== null da
+  // true -> lo mostraba como si ya estuviera calificado, y como no era
+  // "Aprobado" caía directo en "Rechazado" sin que nadie lo hubiera
+  // tocado. Chequear explícitamente Aprobado/Rechazado es correcto para
+  // los dos casos, sin importar qué valor use cada módulo para "todavía
+  // no calificado".
+  const yaCalificado = (estado === 'Aprobado' || estado === 'Rechazado') && !modoRecalificar;
 
   if (yaCalificado) {
     return (

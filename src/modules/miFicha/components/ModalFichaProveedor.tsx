@@ -7,6 +7,7 @@ import Seccion2Form from './Seccion2Form';
 import Seccion3Form from './Seccion3Form';
 import VistaFichaCompleta from './VistaFichaCompleta';
 import FormularioCorreccionFicha from './FormularioCorreccionFicha';
+import CamposFichaSoloLectura from './CamposFichaSoloLectura';
 import type { FichaProveedor } from '../types';
 
 function IconoExpandir() {
@@ -163,8 +164,8 @@ export default function ModalFichaProveedor({
           <>
             <div className="shrink-0 px-6 pt-4">
               {!yaGuardoAlgo ? (
-                <div className="mb-4 rounded-md bg-brand-wine/5 border border-brand-wine/20 px-4 py-3">
-                  <p className="text-sm text-brand-wine">
+                <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 px-4 py-3">
+                  <p className="text-sm text-amber-800">
                     <span className="font-semibold">El equipo rechazó algunos campos de tu ficha.</span> Por favor
                     verifica la información y corrígelo.
                   </p>
@@ -180,7 +181,11 @@ export default function ModalFichaProveedor({
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">
-              <FormularioCorreccionFicha ficha={ficha} onGuardado={handleGuardadoCorreccion} />
+              {yaGuardoAlgo ? (
+                <CamposFichaSoloLectura ficha={ficha} />
+              ) : (
+                <FormularioCorreccionFicha ficha={ficha} onGuardado={handleGuardadoCorreccion} />
+              )}
             </div>
           </>
         )}

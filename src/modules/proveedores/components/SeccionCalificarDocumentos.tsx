@@ -293,8 +293,9 @@ export default function SeccionCalificarDocumentos({ idProveedor }: { idProveedo
 
       {documentoEnVisor && (
         <ModalVisorPdf
-          idDocumentoProveedor={documentoEnVisor.id_documento_proveedor}
+          idDocumento={documentoEnVisor.id_documento_proveedor}
           nombre={documentoEnVisor.nombre_original}
+          obtenerUrl={proveedoresApi.obtenerUrlVisorDocumento}
           onClose={() => setDocumentoEnVisor(null)}
         />
       )}

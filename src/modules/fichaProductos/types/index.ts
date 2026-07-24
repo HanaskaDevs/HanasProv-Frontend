@@ -32,5 +32,5 @@ export interface ResumenRegistro {
   total_productos: number;
   productos_incompletos: string[];
   puede_registrar: boolean;
-  ya_bloqueado: boolean;
+  productos_en_revision: number;
 }

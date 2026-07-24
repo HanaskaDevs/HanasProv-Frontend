@@ -1,8 +1,26 @@
 import apiClient from '../../../shared/api/apiClient';
 import type { NuevoProducto, Producto, ResumenRegistro, UnidadPresentacion } from '../types';
 
-export async function listarProductos(): Promise<Producto[]> {
-  const { data } = await apiClient.get<Producto[]>('/mis-productos');
+export interface RespuestaPaginada<T> {
+  data: T[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+/**
+ * Paginado y búsqueda del lado del servidor -> con catálogos de 1000+
+ * productos, traer todo de una vez y filtrar/paginar en el navegador
+ * sería impracticable (payload gigante + el browser renderizando miles
+ * de filas). Acá nunca se pide más de una página a la vez.
+ */
+export async function listarProductos(pagina: number, busqueda: string): Promise<RespuestaPaginada<Producto>> {
+  const { data } = await apiClient.get<RespuestaPaginada<Producto>>('/mis-productos', {
+    params: { page: pagina, per_page: 20, search: busqueda || undefined },
+  });
   return data;
 }
 
@@ -37,13 +55,15 @@ export async function verDocumentoProducto(idDocumentoProducto: number): Promise
   window.open(url, '_blank');
 }
 
-export async function obtenerResumenRegistro(): Promise<ResumenRegistro> {
-  const { data } = await apiClient.get<ResumenRegistro>('/mis-productos/resumen-registro');
+export async function obtenerResumenRegistro(idsProductos?: number[]): Promise<ResumenRegistro> {
+  const { data } = await apiClient.get<ResumenRegistro>('/mis-productos/resumen-registro', {
+    params: idsProductos && idsProductos.length > 0 ? { ids: idsProductos.join(',') } : undefined,
+  });
   return data;
 }
 
-export async function registrarProductos(): Promise<{ message: string; total: number }> {
-  const { data } = await apiClient.post('/mis-productos/registrar');
+export async function registrarProductos(idsProductos: number[]): Promise<{ message: string; total: number }> {
+  const { data } = await apiClient.post('/mis-productos/registrar', { ids: idsProductos });
   return data;
 }
 export async function eliminarProducto(idProducto: number): Promise<{ message: string }> {

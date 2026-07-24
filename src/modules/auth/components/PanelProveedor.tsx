@@ -172,7 +172,7 @@ export default function PanelProveedor() {
   const totalObligatorios = tiposDocumentos.filter((t) => t.obligatorio).length;
   const obligatoriosCargados = totalObligatorios - obligatoriosFaltantes.length;
   const documentacionRegistrada = documentos.data?.registrado ?? false;
-  const productosRegistrados = productos.data?.ya_bloqueado ?? false;
+  const productosRegistrados = (productos.data?.productos_en_revision ?? 0) > 0;
 
   const documentosRechazados = useMemo(
     () => tiposDocumentos.flatMap((t) => t.documentos).filter((d) => d.estado_calificacion === 'Rechazado'),
