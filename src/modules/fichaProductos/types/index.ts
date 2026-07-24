@@ -33,4 +33,8 @@ export interface ResumenRegistro {
   productos_incompletos: string[];
   puede_registrar: boolean;
   productos_en_revision: number;
+  productos_totales_catalogo: number;
+  productos_aprobados: number;
+  productos_rechazados: number;
+  correcciones_pendientes: boolean;
 }

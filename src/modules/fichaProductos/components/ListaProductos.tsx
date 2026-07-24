@@ -1,6 +1,7 @@
 // src/modules/fichaProductos/components/ListaProductos.tsx
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import * as productosApi from '../api/productosApi';
 import type { Producto } from '../types';
 import useDebounce from '../../../shared/hooks/useDebounce';
@@ -45,7 +46,15 @@ function BadgeCalificacion({ producto }: { producto: Producto }) {
   return null;
 }
 
-function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeof TIPOS_DOCUMENTO)[number] }) {
+function CasillaDocumento({
+  producto,
+  tipo,
+  correccionesPendientes,
+}: {
+  producto: Producto;
+  tipo: (typeof TIPOS_DOCUMENTO)[number];
+  correccionesPendientes: boolean;
+}) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +105,12 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
   }
 
   const bloqueado = producto.bloqueado;
+  // Igual que en Documentos: mientras haya correcciones pendientes de
+  // confirmar y este producto puntual no esté ya Aprobado, se puede
+  // seguir tocando aunque siga "Bloqueado" -> es la excepción para
+  // corregir justo lo que el admin rechazó.
+  const puedeEditar =
+    !bloqueado || (correccionesPendientes && producto.estado_calificacion !== 'Aprobado');
   const mostrarTooltipAnalisis = esAnalisisProducto && !yaSubido && mostrarPublicidad;
 
   return (
@@ -120,11 +135,11 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
         onMouseLeave={() => setMostrarPublicidad(false)}
       >
         {yaSubido ? (
-          <div className={`rounded-md border px-2.5 py-1.5 ${bloqueado ? 'border-brand-900/10 bg-brand-900/[0.03]' : 'border-emerald-200 bg-emerald-50'}`}>
-            <p className={`text-[11px] font-medium flex items-center gap-1 ${bloqueado ? 'text-brand-900/50' : 'text-emerald-800'}`}>
+          <div className={`rounded-md border px-2.5 py-1.5 ${!puedeEditar ? 'border-brand-900/10 bg-brand-900/[0.03]' : 'border-emerald-200 bg-emerald-50'}`}>
+            <p className={`text-[11px] font-medium flex items-center gap-1 ${!puedeEditar ? 'text-brand-900/50' : 'text-emerald-800'}`}>
               ✓ {tipo.etiqueta}
             </p>
-            <p className={`text-[10.5px] truncate ${bloqueado ? 'text-brand-900/40' : 'text-emerald-700/70'}`} title={yaSubido.nombre_original}>
+            <p className={`text-[10.5px] truncate ${!puedeEditar ? 'text-brand-900/40' : 'text-emerald-700/70'}`} title={yaSubido.nombre_original}>
               {yaSubido.nombre_original}
             </p>
             <div className="flex flex-wrap gap-x-2.5 gap-y-1 mt-1">
@@ -134,7 +149,7 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
               >
                 Ver
               </button>
-              {!bloqueado && (
+              {puedeEditar && (
                 <>
                   <button
                     onClick={() => inputRef.current?.click()}
@@ -154,7 +169,7 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
               )}
             </div>
           </div>
-        ) : bloqueado ? (
+        ) : bloqueado && !puedeEditar ? (
           <div className="w-full rounded-md border-2 border-dashed border-brand-900/10 px-2.5 py-1.5 bg-brand-900/[0.02]">
             <p className="text-[11px] font-medium text-brand-900/40">
               {tipo.etiqueta}
@@ -191,12 +206,14 @@ function CasillaDocumento({ producto, tipo }: { producto: Producto; tipo: (typeo
 function TarjetaProducto({
   producto,
   seleccionado,
+  correccionesPendientes,
   onSeleccionar,
   onEliminar,
   eliminando,
 }: {
   producto: Producto;
   seleccionado: boolean;
+  correccionesPendientes: boolean;
   onSeleccionar: () => void;
   onEliminar: () => void;
   eliminando: boolean;
@@ -266,7 +283,12 @@ function TarjetaProducto({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-brand-900/8">
         {TIPOS_DOCUMENTO.map((tipo) => (
-          <CasillaDocumento key={tipo.id} producto={producto} tipo={tipo} />
+          <CasillaDocumento
+            key={tipo.id}
+            producto={producto}
+            tipo={tipo}
+            correccionesPendientes={correccionesPendientes}
+          />
         ))}
       </div>
     </Card>
@@ -313,6 +335,14 @@ export default function ListaProductos() {
     },
   });
 
+  const confirmarCorrecciones = useMutation({
+    mutationFn: productosApi.confirmarCorrecciones,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+    },
+  });
+
   useEffect(() => {
     setPagina(1);
   }, [busquedaConDemora]);
@@ -328,6 +358,7 @@ export default function ListaProductos() {
 
   const productosEnRevision = resumen?.productos_en_revision ?? 0;
   const productos = data?.data ?? [];
+  const correccionesPendientes = resumen?.correcciones_pendientes ?? false;
   // Solo los que se pueden seleccionar (los bloqueados ni siquiera
   // muestran el checkbox) -> "seleccionar todo" tiene que ignorarlos,
   // si no quedaría marcando productos que no se pueden tocar.
@@ -364,14 +395,24 @@ export default function ListaProductos() {
 
   return (
     <div className="space-y-3 max-w-6xl mx-auto">
-      {productosEnRevision > 0 && (
-        <Card className="!p-2.5 bg-brand-yellow/15 border-brand-yellow/30">
-          <p className="text-xs text-brand-900/80">
-            Tienes {productosEnRevision} producto{productosEnRevision === 1 ? '' : 's'} en revisión (no se{' '}
-            {productosEnRevision === 1 ? 'puede' : 'pueden'} editar hasta que un administrador lo
-            {productosEnRevision === 1 ? '' : 's'} califique). El resto de tu catálogo sigue disponible como siempre.
+      {correccionesPendientes ? (
+        <Card className="!p-2.5 bg-amber-50 border-amber-200">
+          <p className="text-xs text-amber-800">
+            El equipo rechazó uno o más productos. Corrígelos (podés reemplazar sus documentos aunque sigan "en
+            revisión") y después tocá <strong>"Registrar productos actualizados"</strong> para volver a mandarlos.
           </p>
         </Card>
+      ) : (
+        productosEnRevision > 0 && (
+          <Card className="!p-2.5 bg-brand-yellow/15 border-brand-yellow/30">
+            <p className="text-xs text-brand-900/80">
+              Tienes {productosEnRevision} producto{productosEnRevision === 1 ? '' : 's'} en revisión (no se{' '}
+              {productosEnRevision === 1 ? 'puede' : 'pueden'} editar hasta que un administrador lo
+              {productosEnRevision === 1 ? '' : 's'} califique). El resto de tu catálogo sigue disponible como
+              siempre.
+            </p>
+          </Card>
+        )
       )}
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -399,7 +440,7 @@ export default function ListaProductos() {
             </label>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-start">
           {seleccionados.size > 0 && (
             <Button
               variant="secondary"
@@ -421,6 +462,25 @@ export default function ListaProductos() {
           >
             Registrar {seleccionados.size > 0 ? `${seleccionados.size} ` : ''}producto{seleccionados.size === 1 ? '' : 's'}
           </Button>
+          {correccionesPendientes && (
+            <div>
+              <Button
+                variant="primary"
+                className="!text-xs !px-3 !py-1.5"
+                isLoading={confirmarCorrecciones.isPending}
+                onClick={() => confirmarCorrecciones.mutate()}
+              >
+                Registrar productos actualizados
+              </Button>
+              {confirmarCorrecciones.isError && (
+                <p className="text-[10px] text-brand-wine mt-1 max-w-[220px] text-right">
+                  {axios.isAxiosError(confirmarCorrecciones.error) && confirmarCorrecciones.error.response?.data?.errors
+                    ? Object.values(confirmarCorrecciones.error.response.data.errors).flat().join(' ')
+                    : 'No se pudo confirmar. Intenta de nuevo.'}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -438,6 +498,7 @@ export default function ListaProductos() {
                 key={producto.id_producto}
                 producto={producto}
                 seleccionado={seleccionados.has(producto.id_producto)}
+                correccionesPendientes={resumen?.correcciones_pendientes ?? false}
                 onSeleccionar={() => alternarSeleccionado(producto.id_producto)}
                 onEliminar={() => eliminarUno.mutate(producto.id_producto)}
                 eliminando={eliminarUno.isPending}

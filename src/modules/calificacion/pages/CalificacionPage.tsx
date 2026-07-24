@@ -114,14 +114,18 @@ function TarjetaCategoria({
 export default function CalificacionPage() {
   const ficha = useQuery({ queryKey: ['mi-ficha'], queryFn: fichaApi.obtenerMiFicha, retry: false });
   const documentos = useQuery({ queryKey: ['mi-documentos'], queryFn: documentacionApi.obtenerChecklist, retry: false });
-  const productos = useQuery({ queryKey: ['mis-productos'], queryFn: productosApi.listarProductos, retry: false });
+  // Ojo: NO se usa productosApi.listarProductos() acá -> esa función
+  // está paginada (trae 20 productos por vez), y esta pantalla necesita
+  // el panorama COMPLETO del catálogo (conteos totales). resumenRegistro
+  // ya trae esos conteos calculados en el propio SQL, sin pedir el
+  // catálogo entero solo para contarlo en el navegador.
   const resumenProductos = useQuery({
     queryKey: ['resumen-registro-productos'],
-    queryFn: productosApi.obtenerResumenRegistro,
+    queryFn: () => productosApi.obtenerResumenRegistro(),
     retry: false,
   });
 
-  const cargando = ficha.isLoading || documentos.isLoading || productos.isLoading || resumenProductos.isLoading;
+  const cargando = ficha.isLoading || documentos.isLoading || resumenProductos.isLoading;
 
   if (cargando) {
     return (
@@ -164,10 +168,9 @@ export default function CalificacionPage() {
           : 'Sin iniciar';
 
   // --- Productos ---
-  const listaProductos = productos.data ?? [];
-  const totalProductos = listaProductos.length;
-  const productosAprobados = listaProductos.filter((p) => p.estado_calificacion === 'Aprobado').length;
-  const productosRechazados = listaProductos.filter((p) => p.estado_calificacion === 'Rechazado').length;
+  const totalProductos = resumenProductos.data?.productos_totales_catalogo ?? 0;
+  const productosAprobados = resumenProductos.data?.productos_aprobados ?? 0;
+  const productosRechazados = resumenProductos.data?.productos_rechazados ?? 0;
   const productosPendientes = totalProductos - productosAprobados - productosRechazados;
   const productosRegistrados = (resumenProductos.data?.productos_en_revision ?? 0) > 0;
 

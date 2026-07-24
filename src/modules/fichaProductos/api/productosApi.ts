@@ -80,3 +80,7 @@ export async function eliminarDocumentoProducto(idDocumentoProducto: number): Pr
   const { data } = await apiClient.delete(`/mis-productos/documentos/${idDocumentoProducto}`);
   return data;
 }
+
+export async function confirmarCorrecciones(): Promise<void> {
+  await apiClient.post('/mis-productos/confirmar-correcciones');
+}
