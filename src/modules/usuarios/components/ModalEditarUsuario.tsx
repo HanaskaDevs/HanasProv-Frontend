@@ -7,11 +7,13 @@ import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import { listarRoles, type Rol } from '../../roles/api/rolesApi';
+import { BODEGAS_PEDIDOS_INTERNOS } from '../../pedidosInternos/types';
 import {
   obtenerDetalleInterno,
   obtenerDetalleExterno,
   actualizarEmailUsuario,
   actualizarRolUsuarioEmpresa,
+  actualizarBodegasUsuarioEmpresa,
   quitarAccesoUsuarioEmpresa,
   type UsuarioDetalle,
 } from '../api/usuariosApi';
@@ -84,6 +86,21 @@ export default function ModalEditarUsuario({
     }
   }
 
+  async function alternarBodega(idEmpresa: number, codigo: string, bodegasActuales: string[]) {
+    const nuevasBodegas = bodegasActuales.includes(codigo)
+      ? bodegasActuales.filter((b) => b !== codigo)
+      : [...bodegasActuales, codigo];
+
+    setProcesandoEmpresa(idEmpresa);
+    try {
+      await actualizarBodegasUsuarioEmpresa(idUsuario, idEmpresa, nuevasBodegas);
+      await cargar();
+      onActualizado();
+    } finally {
+      setProcesandoEmpresa(null);
+    }
+  }
+
   async function quitarEmpresa(idEmpresa: number) {
     setProcesandoEmpresa(idEmpresa);
     setErrorGeneral(null);
@@ -124,37 +141,64 @@ export default function ModalEditarUsuario({
             <div>
               <label className="text-sm font-medium text-brand-900 block mb-2">Empresas con acceso</label>
               <div className="border border-brand-900/15 rounded-md divide-y divide-brand-900/8">
-                {detalle.empresas.map((e) => (
-                  <div key={e.id_empresa} className="flex items-center justify-between gap-2 px-3 py-2">
-                    <span className="text-sm text-brand-900">{e.nombre_comercial ?? e.razon_social}</span>
+                {detalle.empresas.map((e) => {
+                  const nombreRolSeleccionado = esInterno
+                    ? roles.find((r) => Number(r.id_rol) === Number(e.id_rol))?.nombre_rol
+                    : e.nombre_rol;
+                  const esCompras = nombreRolSeleccionado === 'Compras';
 
-                    {esInterno ? (
-                      <select
-                        value={e.id_rol}
-                        disabled={procesandoEmpresa === e.id_empresa}
-                        onChange={(ev) => cambiarRol(e.id_empresa, Number(ev.target.value))}
-                        className="rounded-md border border-brand-900/15 px-2 py-1 text-xs"
-                      >
-                        {roles.map((rol) => (
-                          <option key={rol.id_rol} value={rol.id_rol}>
-                            {rol.nombre_rol}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="text-xs text-brand-900/50">{e.nombre_rol}</span>
-                    )}
+                  return (
+                    <div key={e.id_empresa} className="px-3 py-2 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-brand-900">{e.nombre_comercial ?? e.razon_social}</span>
 
-                    <Button
-                      variant="ghost"
-                      className="text-xs px-2 py-1 text-brand-wine"
-                      isLoading={procesandoEmpresa === e.id_empresa}
-                      onClick={() => quitarEmpresa(e.id_empresa)}
-                    >
-                      Quitar
-                    </Button>
-                  </div>
-                ))}
+                        {esInterno ? (
+                          <select
+                            value={e.id_rol}
+                            disabled={procesandoEmpresa === e.id_empresa}
+                            onChange={(ev) => cambiarRol(e.id_empresa, Number(ev.target.value))}
+                            className="rounded-md border border-brand-900/15 px-2 py-1 text-xs"
+                          >
+                            {roles.map((rol) => (
+                              <option key={rol.id_rol} value={rol.id_rol}>
+                                {rol.nombre_rol}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-xs text-brand-900/50">{e.nombre_rol}</span>
+                        )}
+
+                        <Button
+                          variant="ghost"
+                          className="text-xs px-2 py-1 text-brand-wine"
+                          isLoading={procesandoEmpresa === e.id_empresa}
+                          onClick={() => quitarEmpresa(e.id_empresa)}
+                        >
+                          Quitar
+                        </Button>
+                      </div>
+
+                      {esCompras && (
+                        <div className="flex items-center gap-3 pl-1">
+                          <span className="text-xs text-brand-900/50">Bodegas:</span>
+                          {BODEGAS_PEDIDOS_INTERNOS.map((codigo) => (
+                            <label key={codigo} className="flex items-center gap-1.5 text-xs text-brand-900 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={e.bodegas_asignadas.includes(codigo)}
+                                disabled={procesandoEmpresa === e.id_empresa}
+                                onChange={() => alternarBodega(e.id_empresa, codigo, e.bodegas_asignadas)}
+                                className="h-3.5 w-3.5 accent-brand-700 cursor-pointer"
+                              />
+                              {codigo}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

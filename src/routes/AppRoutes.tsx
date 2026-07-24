@@ -19,6 +19,7 @@ import ProveedoresPage from '../modules/proveedores/pages/ProveedoresPage';
 import ReclamosAbiertosPage from '../modules/reclamos/pages/ReclamosAbiertosPage';
 import ReclamosCerradosPage from '../modules/reclamos/pages/ReclamosCerradosPage';
 import ConfiguracionesPage from '../modules/configuraciones/pages/ConfiguracionesPage';
+import AuditoriasPage from '../modules/auditorias/pages/AuditoriasPage';
 
 export default function AppRoutes() {
   return (
@@ -45,7 +46,7 @@ export default function AppRoutes() {
         <Route path="/pedidos" element={<PedidosPage />} />
         <Route path="/reclamos/abiertos" element={<ReclamosAbiertosPage />} />
         <Route path="/reclamos/cerrados" element={<ReclamosCerradosPage />} />
-        <Route path="/auditorias" element={<ProximamentePage titulo="Auditorías" />} />
+        <Route path="/auditorias" element={<AuditoriasPage />} />
         <Route path="/politicas" element={<ProximamentePage titulo="Políticas" />} />
         <Route path="/calendario" element={<ProximamentePage titulo="Calendario" />} />
         <Route path="/reportes" element={<ProximamentePage titulo="Reportes" />} />

@@ -23,8 +23,8 @@ function UsuariosInternosContent() {
   const [filtroRol, setFiltroRol] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
 
-  const cargar = useCallback(async () => {
-    setIsLoading(true);
+  const cargar = useCallback(async (silenciosa = false) => {
+    if (!silenciosa) setIsLoading(true);
     try {
       const data = await listarInternos();
       setUsuarios(data);
@@ -173,7 +173,7 @@ function UsuariosInternosContent() {
           idUsuario={usuarioEditando}
           esInterno
           onClose={() => setUsuarioEditando(null)}
-          onActualizado={cargar}
+          onActualizado={() => cargar(true)}
         />
       )}
     </div>

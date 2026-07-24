@@ -11,6 +11,8 @@ interface AuthContextValue {
   rolActivo: string | null;
   esSistemas: boolean;
   esAdmin: boolean;
+  esCompras: boolean;
+  esCalidad: boolean;
   esProveedor: boolean;
   puedeGestionarRecepciones: boolean;
   login: (email: string, password: string) => Promise<Usuario>;
@@ -54,6 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     cargarUsuarioActual();
+  }, []);
+
+  // Si a este usuario le cambian el acceso a una empresa (o el rol) mientras
+  // tiene la sesión abierta en otra pestaña/dispositivo, esto refresca sus
+  // datos (incluida la lista de empresas) apenas vuelve a esta pestaña, sin
+  // que tenga que cerrar sesión y volver a entrar para verlo reflejado.
+  useEffect(() => {
+    function alVolverALaPestaña() {
+      if (document.visibilityState === 'visible' && localStorage.getItem('token')) {
+        cargarUsuarioActual();
+      }
+    }
+    document.addEventListener('visibilitychange', alVolverALaPestaña);
+    return () => document.removeEventListener('visibilitychange', alVolverALaPestaña);
   }, []);
 
  async function login(email: string, password: string) {
@@ -109,6 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         rolActivo,
         esSistemas: rolActivo === ROLES.SISTEMAS,
         esAdmin: rolActivo === ROLES.ADMIN,
+        esCompras: rolActivo === ROLES.COMPRAS,
+        esCalidad: rolActivo === ROLES.CALIDAD,
         esProveedor: usuario?.tipo_usuario === 'Proveedor',
         puedeGestionarRecepciones:
           rolActivo === ROLES.SISTEMAS || rolActivo === ROLES.ADMIN || rolActivo === ROLES.COMPRAS,

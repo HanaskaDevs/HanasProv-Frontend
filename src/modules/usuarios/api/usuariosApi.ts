@@ -75,7 +75,7 @@ export interface UsuarioDetalle {
   nombre_completo: string;
   tipo_usuario: 'Interno' | 'Proveedor';
   activo: boolean;
-  empresas: { id_empresa: number; razon_social: string; nombre_comercial: string | null; id_rol: number; nombre_rol: string }[];
+  empresas: { id_empresa: number; razon_social: string; nombre_comercial: string | null; id_rol: number; nombre_rol: string; bodegas_asignadas: string[] }[];
 }
 
 export async function obtenerDetalleInterno(id: number): Promise<UsuarioDetalle> {
@@ -95,6 +95,11 @@ export async function actualizarEmailUsuario(id: number, email: string): Promise
 
 export async function actualizarRolUsuarioEmpresa(id: number, idEmpresa: number, idRol: number): Promise<{ message: string }> {
   const { data } = await apiClient.put(`/usuarios/${id}/empresas/${idEmpresa}`, { id_rol: idRol });
+  return data;
+}
+
+export async function actualizarBodegasUsuarioEmpresa(id: number, idEmpresa: number, codigosBodega: string[]): Promise<{ message: string }> {
+  const { data } = await apiClient.put(`/usuarios/${id}/empresas/${idEmpresa}/bodegas`, { codigos_bodega: codigosBodega });
   return data;
 }
 
