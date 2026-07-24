@@ -149,7 +149,7 @@ export default function PanelProveedor() {
   const documentos = useQuery({ queryKey: ['mi-documentos'], queryFn: documentacionApi.obtenerChecklist, retry: false });
   const productos = useQuery({
     queryKey: ['resumen-registro'],
-    queryFn: productosApi.obtenerResumenRegistro,
+    queryFn: () => productosApi.obtenerResumenRegistro(),
     retry: false,
   });
   const pedidosAbiertos = useQuery({
