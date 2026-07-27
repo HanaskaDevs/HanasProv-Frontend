@@ -17,9 +17,15 @@ export interface RespuestaPaginada<T> {
  * sería impracticable (payload gigante + el browser renderizando miles
  * de filas). Acá nunca se pide más de una página a la vez.
  */
-export async function listarProductos(pagina: number, busqueda: string): Promise<RespuestaPaginada<Producto>> {
+export type EstadoFiltroProducto = 'aprobado' | 'rechazado' | 'en_revision' | '';
+
+export async function listarProductos(
+  pagina: number,
+  busqueda: string,
+  estado: EstadoFiltroProducto = ''
+): Promise<RespuestaPaginada<Producto>> {
   const { data } = await apiClient.get<RespuestaPaginada<Producto>>('/mis-productos', {
-    params: { page: pagina, per_page: 20, search: busqueda || undefined },
+    params: { page: pagina, per_page: 20, search: busqueda || undefined, estado: estado || undefined },
   });
   return data;
 }

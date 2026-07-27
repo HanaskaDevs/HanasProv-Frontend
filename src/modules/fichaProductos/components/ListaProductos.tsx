@@ -3,12 +3,14 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import * as productosApi from '../api/productosApi';
+import type { EstadoFiltroProducto } from '../api/productosApi';
 import type { Producto } from '../types';
 import useDebounce from '../../../shared/hooks/useDebounce';
 import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
+import SelectFiltro from '../../../shared/components/SelectFiltro';
 import Paginador from '../../../shared/components/Paginador';
 import ModalCrearProducto from './ModalCrearProducto';
 import ModalConfirmarRegistro from './ModalConfirmarRegistro';
@@ -24,7 +26,7 @@ const TIPOS_DOCUMENTO = [
 function BadgeCalificacion({ producto }: { producto: Producto }) {
   if (producto.bloqueado && producto.estado_calificacion === 'Pendiente') {
     return (
-      <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-brand-yellow/20 text-amber-700">
+      <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-brand-200 text-brand-700">
         En revisión
       </span>
     );
@@ -105,12 +107,16 @@ function CasillaDocumento({
   }
 
   const bloqueado = producto.bloqueado;
-  // Igual que en Documentos: mientras haya correcciones pendientes de
-  // confirmar y este producto puntual no esté ya Aprobado, se puede
-  // seguir tocando aunque siga "Bloqueado" -> es la excepción para
-  // corregir justo lo que el admin rechazó.
+  // A diferencia de Documentos, acá NO alcanza con "no está Aprobado":
+  // un producto recién enviado y nunca revisado también queda en
+  // "Pendiente" (mismo valor que un producto que ya se corrigió una vez
+  // pero el proveedor todavía no confirmó) -> por eso se exige
+  // específicamente "Rechazado". Mientras se está corrigiendo, el
+  // backend deja el producto marcado como Rechazado a propósito (no lo
+  // resetea a Pendiente hasta que el proveedor confirme con "Registrar
+  // productos actualizados"), así este chequeo queda simple y correcto.
   const puedeEditar =
-    !bloqueado || (correccionesPendientes && producto.estado_calificacion !== 'Aprobado');
+    !bloqueado || (correccionesPendientes && producto.estado_calificacion === 'Rechazado');
   const mostrarTooltipAnalisis = esAnalisisProducto && !yaSubido && mostrarPublicidad;
 
   return (
@@ -221,7 +227,7 @@ function TarjetaProducto({
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
 
   return (
-    <Card className={`!p-3 ${producto.bloqueado ? 'opacity-75' : ''}`}>
+    <Card className="!p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2 min-w-0">
           {!producto.bloqueado && (
@@ -300,6 +306,7 @@ export default function ListaProductos() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<EstadoFiltroProducto>('');
   const [pagina, setPagina] = useState(1);
   const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
 
@@ -309,8 +316,8 @@ export default function ListaProductos() {
   const busquedaConDemora = useDebounce(busqueda, 400);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['mis-productos', pagina, busquedaConDemora],
-    queryFn: () => productosApi.listarProductos(pagina, busquedaConDemora),
+    queryKey: ['mis-productos', pagina, busquedaConDemora, filtroEstado],
+    queryFn: () => productosApi.listarProductos(pagina, busquedaConDemora, filtroEstado),
   });
 
   const { data: resumen, isLoading: cargandoResumen } = useQuery({
@@ -345,7 +352,7 @@ export default function ListaProductos() {
 
   useEffect(() => {
     setPagina(1);
-  }, [busquedaConDemora]);
+  }, [busquedaConDemora, filtroEstado]);
 
   function alternarSeleccionado(id: number) {
     setSeleccionados((prev) => {
@@ -398,8 +405,8 @@ export default function ListaProductos() {
       {correccionesPendientes ? (
         <Card className="!p-2.5 bg-amber-50 border-amber-200">
           <p className="text-xs text-amber-800">
-            El equipo rechazó uno o más productos. Corrígelos (podés reemplazar sus documentos aunque sigan "en
-            revisión") y después tocá <strong>"Registrar productos actualizados"</strong> para volver a mandarlos.
+            El equipo rechazó uno o más productos. Corrígelos (puedes reemplazar sus documentos aunque sigan "en
+            revisión") y después toca <strong>"Registrar productos actualizados"</strong> para volver a mandarlos.
           </p>
         </Card>
       ) : (
@@ -421,6 +428,17 @@ export default function ListaProductos() {
             valor={busqueda}
             onCambiar={setBusqueda}
             placeholder="Buscar producto o código de barras..."
+            className="!py-1.5 !text-xs"
+          />
+          <SelectFiltro
+            valor={filtroEstado}
+            onCambiar={(v) => setFiltroEstado(v as EstadoFiltroProducto)}
+            opciones={[
+              { valor: 'aprobado', etiqueta: 'Aprobados' },
+              { valor: 'rechazado', etiqueta: 'Rechazados' },
+              { valor: 'en_revision', etiqueta: 'En revisión' },
+            ]}
+            etiquetaTodos="Todos los estados"
             className="!py-1.5 !text-xs"
           />
           {isFetching && !isLoading && <Spinner className="h-3.5 w-3.5" />}
@@ -487,7 +505,9 @@ export default function ListaProductos() {
       {productos.length === 0 ? (
         <Card>
           <p className="text-sm text-brand-900/60 text-center py-10">
-            {!busquedaConDemora ? 'Todavía no has agregado ningún producto.' : 'Sin resultados para tu búsqueda.'}
+            {!busquedaConDemora && !filtroEstado
+              ? 'Todavía no has agregado ningún producto.'
+              : 'Sin resultados para tu búsqueda/filtro.'}
           </p>
         </Card>
       ) : (

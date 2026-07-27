@@ -369,7 +369,15 @@ function FilaDocumento({
 
   const yaSubido = tipo.documentos.length > 0;
   const faltaObligatorio = tipo.obligatorio && !yaSubido;
-  const mostrarCuadroCarga = !soloLectura && (tipo.permite_multiples || !yaSubido);
+  // Igual que en ArchivoSubido: aunque la documentación ya esté
+  // registrada (soloLectura), mientras haya correcciones pendientes de
+  // confirmar se puede seguir subiendo -> esto es lo que faltaba acá:
+  // si un tipo "Permite_Multiples" se queda en 0 documentos (ej. se
+  // borró el único que había, el que estaba rechazado), sigue sin
+  // ningún "ArchivoSubido" que muestre el botón de editar, así que hace
+  // falta este mismo permiso acá para poder volver a subir uno.
+  const puedeSubirNuevo = !soloLectura || correccionesPendientes;
+  const mostrarCuadroCarga = puedeSubirNuevo && (tipo.permite_multiples || !yaSubido);
 
   return (
     <div className="rounded-2xl border border-brand-900/20 bg-white p-2.5 transition-all duration-150 hover:border-brand-900/35 hover:shadow-sm">
@@ -404,7 +412,7 @@ function FilaDocumento({
         />
       ))}
 
-      {soloLectura && !yaSubido && (
+      {soloLectura && !yaSubido && !mostrarCuadroCarga && (
         <p className="text-[11px] text-brand-900/35 italic mt-1">No se cargó ningún archivo.</p>
       )}
 
