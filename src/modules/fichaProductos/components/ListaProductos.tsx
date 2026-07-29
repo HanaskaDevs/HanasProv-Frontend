@@ -402,24 +402,15 @@ export default function ListaProductos() {
 
   return (
     <div className="space-y-3 max-w-6xl mx-auto">
-      {correccionesPendientes ? (
-        <Card className="!p-2.5 bg-amber-50 border-amber-200">
-          <p className="text-xs text-amber-800">
-            El equipo rechazó uno o más productos. Corrígelos (puedes reemplazar sus documentos aunque sigan "en
-            revisión") y después toca <strong>"Registrar productos actualizados"</strong> para volver a mandarlos.
+      {!correccionesPendientes && productosEnRevision > 0 && (
+        <Card className="!p-2.5 bg-brand-yellow/15 border-brand-yellow/30">
+          <p className="text-xs text-brand-900/80">
+            Tienes {productosEnRevision} producto{productosEnRevision === 1 ? '' : 's'} en revisión (no se{' '}
+            {productosEnRevision === 1 ? 'puede' : 'pueden'} editar hasta que un administrador lo
+            {productosEnRevision === 1 ? '' : 's'} califique). El resto de tu catálogo sigue disponible como
+            siempre.
           </p>
         </Card>
-      ) : (
-        productosEnRevision > 0 && (
-          <Card className="!p-2.5 bg-brand-yellow/15 border-brand-yellow/30">
-            <p className="text-xs text-brand-900/80">
-              Tienes {productosEnRevision} producto{productosEnRevision === 1 ? '' : 's'} en revisión (no se{' '}
-              {productosEnRevision === 1 ? 'puede' : 'pueden'} editar hasta que un administrador lo
-              {productosEnRevision === 1 ? '' : 's'} califique). El resto de tu catálogo sigue disponible como
-              siempre.
-            </p>
-          </Card>
-        )
       )}
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
