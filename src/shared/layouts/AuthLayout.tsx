@@ -3,27 +3,34 @@ import LogoLink from '../components/LogoLink';
 import { obtenerImagenLoginPublica } from '../api/publicConfigApi';
 
 const IMAGEN_RESPALDO = '/hanaska.jpg';
+const CACHE_KEY = 'hanaska_login_imagen_url';
 
 export default function AuthLayout({ title, subtitle, children }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
 }) {
-  const [imagenFondo, setImagenFondo] = useState(IMAGEN_RESPALDO);
+  const [imagenFondo, setImagenFondo] = useState(
+    () => localStorage.getItem(CACHE_KEY) || IMAGEN_RESPALDO
+  );
 
   useEffect(() => {
     obtenerImagenLoginPublica()
       .then((url) => {
-        if (url) setImagenFondo(url);
+        if (!url) return;
+
+        const img = new Image();
+        img.onload = () => {
+          setImagenFondo(url);
+          localStorage.setItem(CACHE_KEY, url);
+        };
+        img.src = url;
       })
-      .catch(() => {
-        // Si falla la petición, se queda con la imagen de respaldo local.
-      });
+      .catch(() => {});
   }, []);
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
-      {/* Fondo */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-500"
         style={{ backgroundImage: `url('${imagenFondo}')` }}

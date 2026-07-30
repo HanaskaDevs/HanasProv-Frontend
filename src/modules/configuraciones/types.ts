@@ -26,3 +26,11 @@ export interface GuiaPaso {
   Texto: string;
   Activo: boolean;
 }
+
+export interface Politica {
+  Id_Politica: number;
+  Orden: number;
+  Titulo: string;
+  Descripcion: string;
+  Activo: boolean;
+}
