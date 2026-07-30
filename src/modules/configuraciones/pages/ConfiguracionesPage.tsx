@@ -5,8 +5,9 @@ import TabHomeSlides from '../components/TabHomeSlides';
 import TabLoginImagen from '../components/TabLoginImagen';
 import TabBotReglas from '../components/TabBotReglas';
 import TabGuiaPasos from '../components/TabGuiaPasos';
+import TabPoliticas from '../components/TabPoliticas';
 
-type Tab = 'home' | 'login' | 'bot' | 'guia';
+type Tab = 'home' | 'login' | 'bot' | 'guia' | 'politicas';
 
 export default function ConfiguracionesPage() {
   const { esSistemas } = useAuth();
@@ -27,10 +28,11 @@ export default function ConfiguracionesPage() {
     { id: 'login', label: 'Login' },
     { id: 'bot', label: 'Bot' },
     { id: 'guia', label: 'Guía de inicio' },
+    { id: 'politicas', label: 'Políticas' },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-6xl mx-auto w-full space-y-4">
       <div>
         <h1 className="font-display text-xl font-semibold text-brand-900 flex items-center gap-2">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700">
@@ -39,7 +41,7 @@ export default function ConfiguracionesPage() {
           Configuraciones
         </h1>
         <p className="text-brand-900/50 text-xs mt-0.5">
-          Contenido editable del sitio: Home, Login, Bot y Guía de inicio.
+          Contenido editable del sitio: Home, Login, Bot, Guía de inicio y Políticas.
         </p>
       </div>
 
@@ -63,6 +65,7 @@ export default function ConfiguracionesPage() {
       {tab === 'login' && <TabLoginImagen />}
       {tab === 'bot' && <TabBotReglas />}
       {tab === 'guia' && <TabGuiaPasos />}
+      {tab === 'politicas' && <TabPoliticas />}
     </div>
   );
 }
