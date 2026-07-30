@@ -164,17 +164,17 @@ export default function ModalFichaProveedor({
           <>
             <div className="shrink-0 px-6 pt-4">
               {!yaGuardoAlgo ? (
-                <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 px-4 py-3">
-                  <p className="text-sm text-amber-800">
-                    <span className="font-semibold">El equipo rechazó algunos campos de tu ficha.</span> Por favor
-                    verifica la información y corrígelo.
+                <div className="mb-4 rounded-md bg-brand-200/25 border border-brand-200 px-4 py-3">
+                  <p className="text-sm text-brand-700">
+                    El equipo encontró observaciones en algunos campos de su ficha. Por favor
+                    revise la información y realice los ajustes correspondientes.
                   </p>
                 </div>
               ) : (
                 <div className="mb-4 rounded-md bg-brand-700/5 border border-brand-700/20 px-4 py-3">
                   <p className="text-sm text-brand-900">
-                    <span className="font-semibold">Corrección guardada.</span> Los campos que ajustaste vuelven a
-                    quedar en revisión del equipo — no hace falta que hagas nada más acá.
+                    <span className="font-semibold">Corrección guardada.</span> Los campos que ajustó vuelven a
+                    quedar en revisión del equipo. No hace falta que haga nada más aquí.
                   </p>
                 </div>
               )}
@@ -203,11 +203,11 @@ export default function ModalFichaProveedor({
               {todoCompleto && (
                 <div className="mb-6 rounded-md bg-emerald-50 border border-emerald-200 px-4 py-3">
                   <p className="text-sm text-emerald-800">
-                    <span className="font-semibold">¡Completaste las 4 secciones de tu Ficha!</span> Ese es el
-                    primer paso, pero todavía no terminaste.
+                    <span className="font-semibold">¡Completó las 4 secciones de su Ficha!</span> Ese es el
+                    primer paso, pero todavía no terminó.
                   </p>
                   <p className="text-sm text-emerald-800 mt-1">
-                    Ahora sigue cargar tu <span className="font-semibold">documentación</span> — sin eso tu
+                    Ahora sigue cargar su <span className="font-semibold">documentación</span>. Sin eso su
                     proceso como proveedor no queda completo.
                   </p>
                   <Link

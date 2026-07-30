@@ -1,6 +1,6 @@
 // src/modules/fichaProductos/components/ListaProductos.tsx
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState, type KeyboardEvent } from 'react';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import axios from 'axios';
 import * as productosApi from '../api/productosApi';
 import type { EstadoFiltroProducto } from '../api/productosApi';
@@ -10,305 +10,177 @@ import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
-import SelectFiltro from '../../../shared/components/SelectFiltro';
+import FiltroMultiple from '../../../shared/components/FiltroMultiple';
 import Paginador from '../../../shared/components/Paginador';
 import ModalCrearProducto from './ModalCrearProducto';
 import ModalConfirmarRegistro from './ModalConfirmarRegistro';
+import ModalDocumentosProducto, {
+  contarDocumentosPorObligatoriedad,
+  BadgeCalificacion,
+} from './ModalDocumentosProducto';
+import Modal from '../../../shared/components/Modal';
 
-const TAMANO_MAXIMO_MB = 4;
+// Mismo molde de columnas para el encabezado y cada fila -> como cada
+// fila es su propio contenedor grid (no comparten una sola tabla), la
+// única forma de que se alineen perfecto entre sí es que TODAS las
+// columnas midan un valor fijo, excepto la de "Producto" (1fr) que
+// absorbe el espacio sobrante -> así ese sobrante queda siempre del
+// lado del nombre (que es donde se ve natural, como cualquier lista),
+// en vez de generar un hueco raro entre columnas.
+const PLANTILLA_COLUMNAS_LISTA = '24px 1fr 150px 130px 110px 28px';
 
-const TIPOS_DOCUMENTO = [
-  { id: 1, slug: 'ficha-tecnica', etiqueta: 'Ficha técnica', obligatorio: true },
-  { id: 2, slug: 'analisis-producto', etiqueta: 'Análisis de Laboratorio', obligatorio: true },
-  { id: 3, slug: 'carta-alergenos', etiqueta: 'Carta de alérgenos', obligatorio: false },
-] as const;
-
-function BadgeCalificacion({ producto }: { producto: Producto }) {
-  if (producto.bloqueado && producto.estado_calificacion === 'Pendiente') {
-    return (
-      <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-brand-200 text-brand-700">
-        En revisión
-      </span>
-    );
-  }
-  if (producto.estado_calificacion === 'Aprobado') {
-    return (
-      <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-        Aprobado
-      </span>
-    );
-  }
-  if (producto.estado_calificacion === 'Rechazado') {
-    return (
-      <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-        Rechazado
-      </span>
-    );
-  }
-  return null;
-}
-
-function CasillaDocumento({
-  producto,
-  tipo,
-  correccionesPendientes,
-}: {
-  producto: Producto;
-  tipo: (typeof TIPOS_DOCUMENTO)[number];
-  correccionesPendientes: boolean;
-}) {
-  const queryClient = useQueryClient();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [mostrarPublicidad, setMostrarPublicidad] = useState(false);
-
-  const yaSubido = producto.documentos.find((d) => d.tipo === tipo.slug);
-  const esAnalisisProducto = tipo.slug === 'analisis-producto';
-
-  const subir = useMutation({
-    mutationFn: (archivo: File) => productosApi.subirDocumentoProducto(producto.id_producto, tipo.id, archivo),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
-      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
-      window.dispatchEvent(new Event('hana:celebrar'));
-      setError(null);
-    },
-    onError: () => setError('No se pudo subir. Verifica que sea PDF y pese menos de 4MB.'),
-  });
-
-  const ver = useMutation({
-    mutationFn: (idDocumentoProducto: number) => productosApi.verDocumentoProducto(idDocumentoProducto),
-  });
-
-  const eliminarDoc = useMutation({
-    mutationFn: (idDocumentoProducto: number) => productosApi.eliminarDocumentoProducto(idDocumentoProducto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
-      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
-    },
-  });
-
-  function handleSeleccionar(e: ChangeEvent<HTMLInputElement>) {
-    const archivo = e.target.files?.[0];
-    e.target.value = '';
-    if (!archivo) return;
-
-    if (archivo.type !== 'application/pdf') {
-      setError('Solo se aceptan archivos PDF.');
-      return;
-    }
-    if (archivo.size > TAMANO_MAXIMO_MB * 1024 * 1024) {
-      setError(`El archivo supera los ${TAMANO_MAXIMO_MB}MB.`);
-      return;
-    }
-
-    setError(null);
-    subir.mutate(archivo);
-  }
-
-  const bloqueado = producto.bloqueado;
-  // A diferencia de Documentos, acá NO alcanza con "no está Aprobado":
-  // un producto recién enviado y nunca revisado también queda en
-  // "Pendiente" (mismo valor que un producto que ya se corrigió una vez
-  // pero el proveedor todavía no confirmó) -> por eso se exige
-  // específicamente "Rechazado". Mientras se está corrigiendo, el
-  // backend deja el producto marcado como Rechazado a propósito (no lo
-  // resetea a Pendiente hasta que el proveedor confirme con "Registrar
-  // productos actualizados"), así este chequeo queda simple y correcto.
-  const puedeEditar =
-    !bloqueado || (correccionesPendientes && producto.estado_calificacion === 'Rechazado');
-  const mostrarTooltipAnalisis = esAnalisisProducto && !yaSubido && mostrarPublicidad;
-
+function EncabezadoListaProductos() {
   return (
-    <div className="min-w-0 flex-1 relative">
-      <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
-
-      {mostrarTooltipAnalisis && (
-        <div className="absolute bottom-full left-0 mb-2 z-20 w-64 rounded-lg bg-brand-900 text-white text-xs px-3 py-2.5 shadow-lg">
-          <p className="font-medium mb-1">¿Aún no tienes el análisis de Laboratorio?</p>
-          <p className="text-white/80 leading-relaxed">
-            Puedes realizarlo con Hanaska. Para más información contáctanos a{' '}
-            <a href="mailto:analisis@hanska.com" className="underline font-medium">
-              analisis@hanska.com
-            </a>
-          </p>
-          <div className="absolute top-full left-4 h-2 w-2 -mt-1 rotate-45 bg-brand-900" />
-        </div>
-      )}
-
-      <div
-        onMouseEnter={() => esAnalisisProducto && !yaSubido && setMostrarPublicidad(true)}
-        onMouseLeave={() => setMostrarPublicidad(false)}
-      >
-        {yaSubido ? (
-          <div className={`rounded-md border px-2.5 py-1.5 ${!puedeEditar ? 'border-brand-900/10 bg-brand-900/[0.03]' : 'border-emerald-200 bg-emerald-50'}`}>
-            <p className={`text-[11px] font-medium flex items-center gap-1 ${!puedeEditar ? 'text-brand-900/50' : 'text-emerald-800'}`}>
-              ✓ {tipo.etiqueta}
-            </p>
-            <p className={`text-[10.5px] truncate ${!puedeEditar ? 'text-brand-900/40' : 'text-emerald-700/70'}`} title={yaSubido.nombre_original}>
-              {yaSubido.nombre_original}
-            </p>
-            <div className="flex flex-wrap gap-x-2.5 gap-y-1 mt-1">
-              <button
-                onClick={() => ver.mutate(yaSubido.id_documento_producto)}
-                className="text-[10.5px] font-medium text-brand-700 hover:underline"
-              >
-                Ver
-              </button>
-              {puedeEditar && (
-                <>
-                  <button
-                    onClick={() => inputRef.current?.click()}
-                    disabled={subir.isPending}
-                    className="text-[10.5px] font-medium text-brand-900/50 hover:underline"
-                  >
-                    Reemplazar
-                  </button>
-                  <button
-                    onClick={() => eliminarDoc.mutate(yaSubido.id_documento_producto)}
-                    disabled={eliminarDoc.isPending}
-                    className="text-[10.5px] font-medium text-brand-wine hover:underline"
-                  >
-                    Eliminar
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ) : bloqueado && !puedeEditar ? (
-          <div className="w-full rounded-md border-2 border-dashed border-brand-900/10 px-2.5 py-1.5 bg-brand-900/[0.02]">
-            <p className="text-[11px] font-medium text-brand-900/40">
-              {tipo.etiqueta}
-              {tipo.obligatorio && <span> *</span>}
-            </p>
-            <p className="text-[10.5px] text-brand-900/30">Bloqueado durante revisión</p>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={subir.isPending}
-            className={`w-full rounded-md border-2 border-dashed px-2.5 py-1.5 text-left transition-colors
-              ${tipo.obligatorio
-                ? 'border-brand-wine/30 hover:border-brand-wine/60 hover:bg-brand-wine/5'
-                : 'border-brand-900/15 hover:border-brand-900/30 hover:bg-brand-900/5'
-              }`}
-          >
-            <p className="text-[11px] font-medium text-brand-900">
-              {subir.isPending ? <Spinner className="h-3 w-3 inline mr-1" /> : null}
-              Cargue aquí {tipo.etiqueta.toLowerCase()}
-              {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
-            </p>
-            <p className="text-[10.5px] text-brand-900/40">PDF, máx. 4MB</p>
-          </button>
-        )}
-      </div>
-
-      {error && <span className="text-[10px] text-brand-wine block mt-1">{error}</span>}
+    <div
+      className="grid gap-3 items-center px-3 py-2 border-b border-brand-900/8 bg-brand-900/[0.02]"
+      style={{ gridTemplateColumns: PLANTILLA_COLUMNAS_LISTA }}
+    >
+      <span />
+      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide">Producto</span>
+      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide text-center">
+        Documentos registrados
+      </span>
+      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide">Estado</span>
+      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide">Acciones</span>
+      <span />
     </div>
   );
 }
 
-function TarjetaProducto({
+function FilaProducto({
   producto,
   seleccionado,
-  correccionesPendientes,
   onSeleccionar,
   onEliminar,
   eliminando,
+  onAbrirDocumentos,
+  indice,
 }: {
   producto: Producto;
   seleccionado: boolean;
-  correccionesPendientes: boolean;
   onSeleccionar: () => void;
   onEliminar: () => void;
   eliminando: boolean;
+  onAbrirDocumentos: () => void;
+  indice: number;
 }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+  const { obligatoriosSubidos, obligatoriosTotal, opcionalesSubidos, opcionalesTotal } =
+    contarDocumentosPorObligatoriedad(producto);
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onAbrirDocumentos();
+    }
+  }
 
   return (
-    <Card className="!p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2 min-w-0">
-          {!producto.bloqueado && (
-            <input
-              type="checkbox"
-              checked={seleccionado}
-              onChange={onSeleccionar}
-              className="mt-1 h-4 w-4 accent-brand-700 cursor-pointer shrink-0"
-            />
-          )}
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
-            <p className="text-[11px] text-brand-900/50 mt-0.5">
-              {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
-              {producto.precio != null && ` · $${producto.precio}`}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <BadgeCalificacion producto={producto} />
-          {!producto.bloqueado && (
-            confirmandoEliminar ? (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => { onEliminar(); setConfirmandoEliminar(false); }}
-                  disabled={eliminando}
-                  className="text-[11px] font-medium px-2 py-1 rounded-md bg-brand-wine text-white"
-                >
-                  Confirmar
-                </button>
-                <button
-                  onClick={() => setConfirmandoEliminar(false)}
-                  className="text-[11px] font-medium px-1.5 py-1 text-brand-900/40"
-                >
-                  Cancelar
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setConfirmandoEliminar(true)}
-                className="h-7 w-7 rounded-full flex items-center justify-center text-brand-900/30 hover:bg-brand-wine/10 hover:text-brand-wine transition-colors"
-                title="Eliminar producto"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-              </button>
-            )
-          )}
-        </div>
-      </div>
-
-      {producto.estado_calificacion === 'Rechazado' && producto.comentario_calificacion && (
-        <div className="mt-2 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1.5">
-          <p className="text-[11px] font-medium text-amber-800">Motivo del rechazo</p>
-          <p className="text-[11px] text-brand-900/70 mt-0.5">{producto.comentario_calificacion}</p>
-        </div>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onAbrirDocumentos}
+      onKeyDown={handleKeyDown}
+      // El delay escalonado (tope de 150ms para que listas largas no
+      // tarden en "terminar de aparecer") se define inline porque
+      // depende de la posición de cada fila -> no se puede meter en la
+      // clase CSS fija de index.css.
+      style={{ gridTemplateColumns: PLANTILLA_COLUMNAS_LISTA, animationDelay: `${Math.min(indice * 25, 150)}ms` }}
+      className={`animar-fila group grid gap-3 items-center px-3 py-2.5 border-b border-brand-900/8 last:border-b-0 hover:bg-brand-900/[0.05] transition-colors duration-150 cursor-pointer ${
+        indice % 2 === 0 ? 'bg-white' : 'bg-brand-900/[0.015]'
+      }`}
+    >
+      {!producto.bloqueado ? (
+        <input
+          type="checkbox"
+          checked={seleccionado}
+          onChange={onSeleccionar}
+          onClick={(e) => e.stopPropagation()}
+          className="h-4 w-4 accent-brand-700 cursor-pointer shrink-0 transition-transform active:scale-90"
+        />
+      ) : (
+        <span className="w-4 shrink-0" />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-brand-900/8">
-        {TIPOS_DOCUMENTO.map((tipo) => (
-          <CasillaDocumento
-            key={tipo.id}
-            producto={producto}
-            tipo={tipo}
-            correccionesPendientes={correccionesPendientes}
-          />
-        ))}
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
+        <p className="text-[11px] text-brand-900/50 truncate">
+          {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
+          {producto.precio != null && ` · $${producto.precio}`}
+        </p>
       </div>
-    </Card>
+
+      <div className="text-[11px] leading-tight text-center">
+        <p className={obligatoriosSubidos === obligatoriosTotal ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>
+          {obligatoriosSubidos}/{obligatoriosTotal} Obligatorios
+        </p>
+        <p className="text-brand-900/40">
+          {opcionalesSubidos}/{opcionalesTotal} Opcionales
+        </p>
+      </div>
+
+      <div className="min-w-0">
+        <BadgeCalificacion producto={producto} />
+      </div>
+
+      <div className="flex items-center gap-1.5 min-w-0" onClick={(e) => e.stopPropagation()}>
+        {!producto.bloqueado && confirmandoEliminar ? (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                onEliminar();
+                setConfirmandoEliminar(false);
+              }}
+              disabled={eliminando}
+              className="text-[11px] font-medium px-2 py-1 rounded-md bg-brand-wine text-white transition-transform active:scale-95"
+            >
+              Confirmar
+            </button>
+            <button
+              onClick={() => setConfirmandoEliminar(false)}
+              className="text-[11px] font-medium px-1.5 py-1 text-brand-900/40"
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <Button className="!text-[11px] !px-2.5 !py-1" onClick={onAbrirDocumentos}>
+            Ver registro
+          </Button>
+        )}
+      </div>
+
+      <div onClick={(e) => e.stopPropagation()}>
+        {!producto.bloqueado && !confirmandoEliminar && (
+          <button
+            onClick={() => setConfirmandoEliminar(true)}
+            className="h-7 w-7 rounded-full flex items-center justify-center text-brand-900/0 group-hover:text-brand-900/30 hover:!bg-brand-wine/10 hover:!text-brand-wine transition-colors shrink-0"
+            title="Eliminar producto"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
 export default function ListaProductos() {
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false);
+  // null = modal cerrado. Cuando tiene contenido, son los ids que se van
+  // a registrar -> así el mismo modal de confirmación sirve tanto para
+  // el registro masivo (selección) como para el botón individual de
+  // cada tarjeta, sin duplicar el flujo de validación.
+  const [idsParaRegistrar, setIdsParaRegistrar] = useState<number[] | null>(null);
+  const [idProductoAbierto, setIdProductoAbierto] = useState<number | null>(null);
   const [busqueda, setBusqueda] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState<EstadoFiltroProducto>('');
+  const [filtroEstado, setFiltroEstado] = useState<EstadoFiltroProducto[]>([]);
   const [pagina, setPagina] = useState(1);
   const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
+  const [errorCorreccion, setErrorCorreccion] = useState<string | null>(null);
 
   // La búsqueda pega directo al servidor (ver productosApi.listarProductos)
   // -> con debounce para no mandar una consulta en cada tecla, solo
@@ -318,6 +190,14 @@ export default function ListaProductos() {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['mis-productos', pagina, busquedaConDemora, filtroEstado],
     queryFn: () => productosApi.listarProductos(pagina, busquedaConDemora, filtroEstado),
+    // Sin esto, cada tecla (con su debounce) arma una queryKey nueva sin
+    // caché -> React Query vuelve a poner isLoading=true por un
+    // instante, y como el return de abajo reemplaza TODA la pantalla
+    // (incluida la barra de búsqueda) mientras isLoading es true, el
+    // input se desmontaba y perdía el foco en cada búsqueda -> se
+    // sentía como si la página se recargara. Con keepPreviousData se
+    // sigue mostrando la página anterior mientras llega la nueva.
+    placeholderData: keepPreviousData,
   });
 
   const { data: resumen, isLoading: cargandoResumen } = useQuery({
@@ -342,11 +222,24 @@ export default function ListaProductos() {
     },
   });
 
-  const confirmarCorrecciones = useMutation({
-    mutationFn: productosApi.confirmarCorrecciones,
+  // Confirma la corrección de UN producto puntual (ver
+  // ProductoService::confirmarCorreccionProducto en el backend) -> ya
+  // no es una acción global para todo el catálogo rechazado, así que
+  // no hace falta lidiar con una lista de "otros productos pendientes"
+  // cruzada; el único posible error es sobre ESTE mismo producto, que
+  // ya se está viendo en el modal abierto.
+  const confirmarCorreccion = useMutation({
+    mutationFn: (idProducto: number) => productosApi.confirmarCorreccionProducto(idProducto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+    },
+    onError: (error) => {
+      const mensaje =
+        axios.isAxiosError(error) && error.response?.data?.errors
+          ? (Object.values(error.response.data.errors).flat() as string[]).join(' ')
+          : 'No se pudo confirmar. Intenta de nuevo.';
+      setErrorCorreccion(mensaje);
     },
   });
 
@@ -363,9 +256,12 @@ export default function ListaProductos() {
     });
   }
 
-  const productosEnRevision = resumen?.productos_en_revision ?? 0;
   const productos = data?.data ?? [];
-  const correccionesPendientes = resumen?.correcciones_pendientes ?? false;
+  // Se busca por id en cada render (en vez de guardar el objeto completo
+  // en el estado) para que, si el proveedor sube/reemplaza/elimina un
+  // documento mientras el modal está abierto, se refleje al toque -> la
+  // invalidación de 'mis-productos' ya refresca este arreglo solo.
+  const productoAbierto = productos.find((p) => p.id_producto === idProductoAbierto) ?? null;
   // Solo los que se pueden seleccionar (los bloqueados ni siquiera
   // muestran el checkbox) -> "seleccionar todo" tiene que ignorarlos,
   // si no quedaría marcando productos que no se pueden tocar.
@@ -402,18 +298,7 @@ export default function ListaProductos() {
 
   return (
     <div className="space-y-3 max-w-6xl mx-auto">
-      {!correccionesPendientes && productosEnRevision > 0 && (
-        <Card className="!p-2.5 bg-brand-yellow/15 border-brand-yellow/30">
-          <p className="text-xs text-brand-900/80">
-            Tienes {productosEnRevision} producto{productosEnRevision === 1 ? '' : 's'} en revisión (no se{' '}
-            {productosEnRevision === 1 ? 'puede' : 'pueden'} editar hasta que un administrador lo
-            {productosEnRevision === 1 ? '' : 's'} califique). El resto de tu catálogo sigue disponible como
-            siempre.
-          </p>
-        </Card>
-      )}
-
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="sticky top-0 z-10 bg-brand-200/20 backdrop-blur-sm py-2 -mx-1 px-1 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <BarraBusqueda
             valor={busqueda}
@@ -421,16 +306,17 @@ export default function ListaProductos() {
             placeholder="Buscar producto o código de barras..."
             className="!py-1.5 !text-xs"
           />
-          <SelectFiltro
-            valor={filtroEstado}
-            onCambiar={(v) => setFiltroEstado(v as EstadoFiltroProducto)}
+          <FiltroMultiple
+            seleccionados={filtroEstado}
+            onCambiar={(v) => setFiltroEstado(v as EstadoFiltroProducto[])}
             opciones={[
               { valor: 'aprobado', etiqueta: 'Aprobados' },
               { valor: 'rechazado', etiqueta: 'Rechazados' },
               { valor: 'en_revision', etiqueta: 'En revisión' },
+              { valor: 'pendiente', etiqueta: 'Pendientes' },
             ]}
-            etiquetaTodos="Todos los estados"
-            className="!py-1.5 !text-xs"
+            etiqueta="Todos los estados"
+            className="w-44"
           />
           {isFetching && !isLoading && <Spinner className="h-3.5 w-3.5" />}
 
@@ -463,32 +349,15 @@ export default function ListaProductos() {
           <Button className="!text-xs !px-3 !py-1.5" onClick={() => setModalAbierto(true)}>
             + Agregar producto
           </Button>
-          <Button
-            variant="secondary"
-            className="!text-xs !px-3 !py-1.5"
-            onClick={() => setModalRegistroAbierto(true)}
-            disabled={cargandoResumen || seleccionados.size === 0}
-          >
-            Registrar {seleccionados.size > 0 ? `${seleccionados.size} ` : ''}producto{seleccionados.size === 1 ? '' : 's'}
-          </Button>
-          {correccionesPendientes && (
-            <div>
-              <Button
-                variant="primary"
-                className="!text-xs !px-3 !py-1.5"
-                isLoading={confirmarCorrecciones.isPending}
-                onClick={() => confirmarCorrecciones.mutate()}
-              >
-                Registrar productos actualizados
-              </Button>
-              {confirmarCorrecciones.isError && (
-                <p className="text-[10px] text-brand-wine mt-1 max-w-[220px] text-right">
-                  {axios.isAxiosError(confirmarCorrecciones.error) && confirmarCorrecciones.error.response?.data?.errors
-                    ? Object.values(confirmarCorrecciones.error.response.data.errors).flat().join(' ')
-                    : 'No se pudo confirmar. Intenta de nuevo.'}
-                </p>
-              )}
-            </div>
+          {seleccionados.size > 0 && (
+            <Button
+              variant="secondary"
+              className="!text-xs !px-3 !py-1.5"
+              onClick={() => setIdsParaRegistrar(Array.from(seleccionados))}
+              disabled={cargandoResumen}
+            >
+              Registrar {seleccionados.size} producto{seleccionados.size === 1 ? '' : 's'}
+            </Button>
           )}
         </div>
       </div>
@@ -496,23 +365,25 @@ export default function ListaProductos() {
       {productos.length === 0 ? (
         <Card>
           <p className="text-sm text-brand-900/60 text-center py-10">
-            {!busquedaConDemora && !filtroEstado
+            {!busquedaConDemora && filtroEstado.length === 0
               ? 'Todavía no has agregado ningún producto.'
               : 'Sin resultados para tu búsqueda/filtro.'}
           </p>
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {productos.map((producto) => (
-              <TarjetaProducto
+          <div className="rounded-lg border border-brand-900/8 overflow-hidden bg-white">
+            <EncabezadoListaProductos />
+            {productos.map((producto, indice) => (
+              <FilaProducto
                 key={producto.id_producto}
                 producto={producto}
+                indice={indice}
                 seleccionado={seleccionados.has(producto.id_producto)}
-                correccionesPendientes={resumen?.correcciones_pendientes ?? false}
                 onSeleccionar={() => alternarSeleccionado(producto.id_producto)}
                 onEliminar={() => eliminarUno.mutate(producto.id_producto)}
                 eliminando={eliminarUno.isPending}
+                onAbrirDocumentos={() => setIdProductoAbierto(producto.id_producto)}
               />
             ))}
           </div>
@@ -529,12 +400,46 @@ export default function ListaProductos() {
 
       {modalAbierto && <ModalCrearProducto onClose={() => setModalAbierto(false)} />}
 
-      {modalRegistroAbierto && (
+      {productoAbierto && (
+        <ModalDocumentosProducto
+          producto={productoAbierto}
+          correccionesPendientes={resumen?.correcciones_pendientes ?? false}
+          onClose={() => setIdProductoAbierto(null)}
+          onRegistrarUno={() => {
+            setIdsParaRegistrar([productoAbierto.id_producto]);
+            setIdProductoAbierto(null);
+          }}
+          onConfirmarCorreccion={() => {
+            // Antes esto cerraba el modal de una, sin importar si la
+            // mutación terminaba bien o mal -> con un error, el modal ya
+            // se había cerrado antes de que el mensaje pudiera avisarle
+            // nada al proveedor sobre ESTE producto. Ahora solo se
+            // cierra cuando de verdad se confirmó.
+            confirmarCorreccion.mutate(productoAbierto.id_producto, {
+              onSuccess: () => setIdProductoAbierto(null),
+            });
+          }}
+          confirmandoCorreccion={confirmarCorreccion.isPending}
+        />
+      )}
+
+      {idsParaRegistrar && (
         <ModalConfirmarRegistro
-          idsSeleccionados={Array.from(seleccionados)}
-          onClose={() => setModalRegistroAbierto(false)}
+          idsSeleccionados={idsParaRegistrar}
+          onClose={() => setIdsParaRegistrar(null)}
           onRegistrado={() => setSeleccionados(new Set())}
         />
+      )}
+
+      {errorCorreccion && (
+        <Modal title="No se pudo confirmar" onClose={() => setErrorCorreccion(null)}>
+          <p className="text-sm text-brand-900/80">{errorCorreccion}</p>
+          <div className="flex justify-end mt-4">
+            <Button variant="ghost" onClick={() => setErrorCorreccion(null)}>
+              Entendido
+            </Button>
+          </div>
+        </Modal>
       )}
     </div>
   );

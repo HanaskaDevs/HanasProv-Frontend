@@ -54,7 +54,7 @@ const CampoFicha = forwardRef<HTMLInputElement, CampoFichaProps>(
               focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700
               disabled:cursor-default disabled:bg-brand-900/[0.04] disabled:text-brand-900/70
               disabled:shadow-none disabled:border-brand-900/10
-              ${resaltado ? 'border-amber-400 ring-1 ring-amber-300 bg-amber-50' : error ? 'border-brand-wine' : 'border-brand-900/20'} ${className}`}
+              ${resaltado ? 'border-brand-700 ring-1 ring-brand-200 bg-brand-200/25' : error ? 'border-brand-wine' : 'border-brand-900/20'} ${className}`}
             {...props}
           />
           {accesorio}

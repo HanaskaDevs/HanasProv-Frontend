@@ -43,16 +43,26 @@ function ModalDetalleRechazo({
   onClose: () => void;
 }) {
   return (
-    <Modal onClose={onClose} title={`Documentos rechazados (${documentos.length})`} maxWidth="max-w-lg">
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-        {documentos.map(({ tipo, doc }) => (
-          <div key={doc.id_documento_proveedor} className="rounded-lg border border-brand-wine/15 bg-brand-wine/[0.03] p-3">
-            <p className="text-[10.5px] text-brand-900/50">{tipo.nombre_documento}</p>
-            <p className="text-xs font-semibold text-brand-900">{doc.nombre_original}</p>
-            <p className="text-sm text-brand-900/75 mt-1">{doc.comentario_calificacion}</p>
-          </div>
-        ))}
-      </div>
+    <Modal
+      onClose={onClose}
+      title={documentos.length > 0 ? `Documentos rechazados (${documentos.length})` : 'Documentos'}
+      maxWidth="max-w-lg"
+    >
+      {documentos.length === 0 ? (
+        <p className="text-sm text-brand-900/60 text-center py-6">
+          Todos los documentos están aprobados. No hay nada más que hacer aquí.
+        </p>
+      ) : (
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          {documentos.map(({ tipo, doc }) => (
+            <div key={doc.id_documento_proveedor} className="rounded-lg border border-brand-wine/15 bg-brand-wine/[0.03] p-3">
+              <p className="text-[10.5px] text-brand-900/50">{tipo.nombre_documento}</p>
+              <p className="text-xs font-semibold text-brand-900">{doc.nombre_original}</p>
+              <p className="text-sm text-brand-900/75 mt-1">{doc.comentario_calificacion}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </Modal>
   );
 }
@@ -213,21 +223,17 @@ export default function SeccionCalificarDocumentos({ idProveedor }: { idProveedo
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2.5">
                   <Badge tone="info">Documentación Calificada</Badge>
-                  <p className="text-xs text-brand-900/55">
-                    {hayRechazados
-                      ? 'Pendiente de correcciones por parte del aspirante.'
-                      : 'Aprobada. No hay nada más que hacer aquí.'}
-                  </p>
+                  {hayRechazados && (
+                    <p className="text-xs text-brand-900/55">Pendiente de correcciones por parte del aspirante.</p>
+                  )}
                 </div>
-                {hayRechazados && (
-                  <Button
-                    variant="ghost"
-                    className="!bg-brand-200/40 hover:!bg-brand-200/60 text-xs px-3 py-1.5 shrink-0"
-                    onClick={() => setModalDetalleAbierto(true)}
-                  >
-                    Más información
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  className="!bg-brand-200/40 hover:!bg-brand-200/60 text-xs px-3 py-1.5 shrink-0"
+                  onClick={() => setModalDetalleAbierto(true)}
+                >
+                  Más información
+                </Button>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-3 flex-wrap">

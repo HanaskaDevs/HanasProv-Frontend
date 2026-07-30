@@ -40,15 +40,25 @@ function ModalDetalleRechazoProductos({
   onClose: () => void;
 }) {
   return (
-    <Modal onClose={onClose} title={`Productos rechazados (${productos.length})`} maxWidth="max-w-lg">
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-        {productos.map((producto) => (
-          <div key={producto.id_producto} className="rounded-lg border border-brand-wine/15 bg-brand-wine/[0.03] p-3">
-            <p className="text-xs font-semibold text-brand-900">{producto.nombre_producto}</p>
-            <p className="text-sm text-brand-900/75 mt-1">{producto.comentario_calificacion}</p>
-          </div>
-        ))}
-      </div>
+    <Modal
+      onClose={onClose}
+      title={productos.length > 0 ? `Productos rechazados (${productos.length})` : 'Productos'}
+      maxWidth="max-w-lg"
+    >
+      {productos.length === 0 ? (
+        <p className="text-sm text-brand-900/60 text-center py-6">
+          Todos los productos están aprobados. No hay nada más que hacer aquí.
+        </p>
+      ) : (
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          {productos.map((producto) => (
+            <div key={producto.id_producto} className="rounded-lg border border-brand-wine/15 bg-brand-wine/[0.03] p-3">
+              <p className="text-xs font-semibold text-brand-900">{producto.nombre_producto}</p>
+              <p className="text-sm text-brand-900/75 mt-1">{producto.comentario_calificacion}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </Modal>
   );
 }
@@ -86,6 +96,16 @@ function TarjetaProducto({
         }
       );
       queryClient.invalidateQueries({ queryKey: ['proveedores-lista'] });
+    },
+    onError: () => {
+      // Antes esto no tenía onError -> si la petición fallaba por lo
+      // que sea (aunque el guardado en el backend haya ocurrido, ej. un
+      // error al armar la respuesta DESPUÉS de guardar), el formulario
+      // de calificación se quedaba ahí para siempre, sin avisar nada y
+      // sin reflejar el estado real. Acá se refresca desde el servidor
+      // -> si en verdad se guardó, esto lo destraba solo; si no, el
+      // mensaje de error de abajo explica qué pasó.
+      queryClient.invalidateQueries({ queryKey: ['calificacion-productos', idProveedor] });
     },
   });
 
@@ -146,6 +166,15 @@ function TarjetaProducto({
           soloLectura={soloLectura}
           onCalificar={(aprobado, observacion) => calificar.mutate({ aprobado, observacion })}
         />
+        {calificar.isError && (
+          <p className="text-[10.5px] text-brand-wine mt-1">
+            {axios.isAxiosError(calificar.error) && calificar.error.response?.data?.errors
+              ? Object.values(calificar.error.response.data.errors).flat().join(' ')
+              : axios.isAxiosError(calificar.error) && calificar.error.response?.data?.message
+              ? calificar.error.response.data.message
+              : 'No se pudo guardar. Revisa si ya se aplicó y probá de nuevo.'}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -210,21 +239,17 @@ export default function SeccionCalificarProductos({ idProveedor }: { idProveedor
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2.5">
               <Badge tone="info">Productos Calificados</Badge>
-              <p className="text-xs text-brand-900/55">
-                {hayRechazados
-                  ? 'Pendiente de correcciones por parte del aspirante.'
-                  : 'Aprobados. No hay nada más que hacer aquí.'}
-              </p>
+              {hayRechazados && (
+                <p className="text-xs text-brand-900/55">Pendiente de correcciones por parte del aspirante.</p>
+              )}
             </div>
-            {hayRechazados && (
-              <Button
-                variant="ghost"
-                className="!bg-brand-200/40 hover:!bg-brand-200/60 text-xs px-3 py-1.5 shrink-0"
-                onClick={() => setModalDetalleAbierto(true)}
-              >
-                Más información
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              className="!bg-brand-200/40 hover:!bg-brand-200/60 text-xs px-3 py-1.5 shrink-0"
+              onClick={() => setModalDetalleAbierto(true)}
+            >
+              Más información
+            </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3 flex-wrap">
