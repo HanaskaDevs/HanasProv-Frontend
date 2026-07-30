@@ -54,7 +54,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // Mientras no sepamos el estado (recién cargando), asumimos Aspirante
   // -> es más seguro mostrar de menos y luego expandir el menú, que
   // mostrar de más un instante y después ocultarlo (se ve como un bug).
-  const esAspirante = !esProveedor ? false : cargandoFicha || ficha?.estado === 'Aspirante';
+  // Comparación normalizada (sin mayúsculas/espacios) a propósito:
+  // "estado" viene de Nombre_Estado en la tabla Estado_Proveedor, un
+  // campo de texto libre editable desde el backend -> un espacio de más
+  // o un casing distinto ahí adentro ("aspirante", "Aspirante ") ya
+  // rompía la comparación estricta y dejaba el menú completo visible
+  // para un proveedor que en realidad seguía siendo Aspirante.
+  const esAspirante = !esProveedor ? false : cargandoFicha || ficha?.estado?.trim().toLowerCase() === 'aspirante';
 
   async function handleCambiarEmpresa(idEmpresa: number) {
     setCambiandoEmpresa(true);
@@ -80,8 +86,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-brand-200/10">
       <header className="bg-brand-900 text-white shrink-0">
-        <div className="flex items-center justify-between px-6 py-3">
-          <LogoLink className="h-12" variant="light" />
+        <div className="flex items-center justify-between px-6 py-2">
+          <LogoLink className="h-20" variant="light" />
 
           <div className="flex items-center gap-4">
             {usuario && usuario.empresas.length > 1 && (

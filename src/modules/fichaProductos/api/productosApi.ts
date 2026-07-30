@@ -17,9 +17,22 @@ export interface RespuestaPaginada<T> {
  * sería impracticable (payload gigante + el browser renderizando miles
  * de filas). Acá nunca se pide más de una página a la vez.
  */
-export async function listarProductos(pagina: number, busqueda: string): Promise<RespuestaPaginada<Producto>> {
+export type EstadoFiltroProducto = 'aprobado' | 'rechazado' | 'en_revision' | 'pendiente';
+
+export async function listarProductos(
+  pagina: number,
+  busqueda: string,
+  estados: EstadoFiltroProducto[] = []
+): Promise<RespuestaPaginada<Producto>> {
   const { data } = await apiClient.get<RespuestaPaginada<Producto>>('/mis-productos', {
-    params: { page: pagina, per_page: 20, search: busqueda || undefined },
+    params: {
+      page: pagina,
+      per_page: 20,
+      search: busqueda || undefined,
+      // Varios estados a la vez (filtro tipo BC) -> se mandan
+      // coma-separados, el backend hace un whereIn en vez de un where.
+      estado: estados.length > 0 ? estados.join(',') : undefined,
+    },
   });
   return data;
 }
@@ -47,12 +60,11 @@ export async function listarUnidadesPresentacion(): Promise<UnidadPresentacion[]
   return data;
 }
 
-export async function verDocumentoProducto(idDocumentoProducto: number): Promise<void> {
+export async function obtenerUrlVisorDocumentoProducto(idDocumentoProducto: number): Promise<string> {
   const { data } = await apiClient.get(`/mis-productos/documentos/${idDocumentoProducto}/ver`, {
     responseType: 'blob',
   });
-  const url = window.URL.createObjectURL(data);
-  window.open(url, '_blank');
+  return window.URL.createObjectURL(data);
 }
 
 export async function obtenerResumenRegistro(idsProductos?: number[]): Promise<ResumenRegistro> {
@@ -81,6 +93,6 @@ export async function eliminarDocumentoProducto(idDocumentoProducto: number): Pr
   return data;
 }
 
-export async function confirmarCorrecciones(): Promise<void> {
-  await apiClient.post('/mis-productos/confirmar-correcciones');
+export async function confirmarCorreccionProducto(idProducto: number): Promise<void> {
+  await apiClient.post(`/mis-productos/${idProducto}/confirmar-correccion`);
 }

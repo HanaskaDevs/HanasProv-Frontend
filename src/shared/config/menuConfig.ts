@@ -81,7 +81,15 @@ export function obtenerMenu(
 ): MenuItem[] {
   if (tipoUsuario === 'Proveedor') {
     if (esAspirante) {
-      return MENU_PROVEEDOR.filter((item) => !ETIQUETAS_OCULTAS_PARA_ASPIRANTE.includes(item.label));
+      // El aspirante todavía no tiene Pedidos, Reclamos ni Políticas
+      // (ver comentario arriba) -> pero sí necesita un acceso directo
+      // al panel/inicio en el menú (el resto de proveedores llega ahí
+      // por el logo, pero para el aspirante conviene dejarlo explícito
+      // ya que su panel es su única referencia de estado por ahora).
+      return [
+        { label: 'Inicio', to: '/panel' },
+        ...MENU_PROVEEDOR.filter((item) => !ETIQUETAS_OCULTAS_PARA_ASPIRANTE.includes(item.label)),
+      ];
     }
     return MENU_PROVEEDOR;
   }

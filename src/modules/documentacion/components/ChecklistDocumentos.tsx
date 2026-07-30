@@ -90,15 +90,24 @@ function ArchivoSubido({
   tipo,
   soloLectura,
   correccionesPendientes,
+  reemplazando,
+  onCambiarReemplazando,
 }: {
   doc: TipoDocumentoChecklist['documentos'][number];
   tipo: TipoDocumentoChecklist;
   soloLectura: boolean;
   correccionesPendientes: boolean;
+  // Antes esto era un useState local acá adentro -> el problema es que
+  // el bloque de "cargar otro" vive en el padre (FilaDocumento), y no
+  // tenía forma de saber si ALGUNA fila estaba reemplazando para
+  // ocultarse mientras tanto. Ahora el padre es dueño de "cuál
+  // documento se está reemplazando" (a lo sumo uno a la vez) y esta
+  // fila solo refleja/pide cambiarlo.
+  reemplazando: boolean;
+  onCambiarReemplazando: (valor: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [reemplazando, setReemplazando] = useState(false);
   const [nuevaFecha, setNuevaFecha] = useState('');
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [confirmandoBorrar, setConfirmandoBorrar] = useState(false);
@@ -116,7 +125,7 @@ function ArchivoSubido({
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mi-documentos'] });
-      setReemplazando(false);
+      onCambiarReemplazando(false);
       setNuevaFecha('');
       setNuevoNombre('');
       setError(null);
@@ -197,7 +206,7 @@ function ArchivoSubido({
           </button>
           {puedeEditar && (
             <button
-              onClick={() => setReemplazando((v) => !v)}
+              onClick={() => onCambiarReemplazando(!reemplazando)}
               disabled={reemplazar.isPending}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-900/50 hover:text-brand-900"
             >
@@ -217,55 +226,60 @@ function ArchivoSubido({
 
       {rechazado && doc.comentario_calificacion && (
         <p className="mt-1 text-[11px] text-brand-wine bg-brand-wine/5 border border-brand-wine/15 rounded px-2 py-1">
-          <span className="font-semibold">El equipo lo rechazó:</span> {doc.comentario_calificacion}
+          <span className="font-semibold">Motivo:</span> {doc.comentario_calificacion}
         </p>
       )}
 
       {puedeEditar && reemplazando && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
+        <div className="mt-1.5 rounded-md border border-brand-700/20 bg-brand-700/[0.04] p-2">
+          <p className="text-[10px] font-medium text-brand-700 mb-1">
+            Sube el archivo que reemplaza a "{doc.nombre_original}"
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={handleSeleccionar} />
 
-          {tipo.permite_multiples && (
-            <input
-              type="text"
-              value={nuevoNombre}
-              onChange={(e) => setNuevoNombre(e.target.value)}
-              placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
-              className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
-                text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
-            />
-          )}
-          {tipo.requiere_fecha_caducidad && (
-            <input
-              type="date"
-              value={nuevaFecha}
-              onChange={(e) => setNuevaFecha(e.target.value)}
-              className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
-                text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
-            />
-          )}
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={reemplazar.isPending}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
-          >
-            {reemplazar.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir />}
-            Elegir PDF
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setReemplazando(false);
-              setNuevaFecha('');
-              setNuevoNombre('');
-              setError(null);
-            }}
-            disabled={reemplazar.isPending}
-            className="text-[11px] text-brand-900/40 hover:text-brand-900"
-          >
-            Cancelar
-          </button>
+            {tipo.permite_multiples && (
+              <input
+                type="text"
+                value={nuevoNombre}
+                onChange={(e) => setNuevoNombre(e.target.value)}
+                placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
+                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                  text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
+              />
+            )}
+            {tipo.requiere_fecha_caducidad && (
+              <input
+                type="date"
+                value={nuevaFecha}
+                onChange={(e) => setNuevaFecha(e.target.value)}
+                className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                  text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={reemplazar.isPending}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
+            >
+              {reemplazar.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir />}
+              Elegir PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onCambiarReemplazando(false);
+                setNuevaFecha('');
+                setNuevoNombre('');
+                setError(null);
+              }}
+              disabled={reemplazar.isPending}
+              className="text-[11px] text-brand-900/40 hover:text-brand-900"
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
 
@@ -323,6 +337,12 @@ function FilaDocumento({
   const [fechaCaducidad, setFechaCaducidad] = useState('');
   const [nombreDocumento, setNombreDocumento] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // A lo sumo un documento de este tipo se puede estar reemplazando a
+  // la vez -> mientras eso pasa, se oculta el bloque de "cargar otro"
+  // de más abajo, para que no aparezcan dos formularios de carga casi
+  // idénticos en pantalla al mismo tiempo (uno para reemplazar el
+  // archivo rechazado, otro para agregar uno adicional).
+  const [reemplazandoId, setReemplazandoId] = useState<number | null>(null);
 
   const subir = useMutation({
     mutationFn: (archivo: File) =>
@@ -369,7 +389,15 @@ function FilaDocumento({
 
   const yaSubido = tipo.documentos.length > 0;
   const faltaObligatorio = tipo.obligatorio && !yaSubido;
-  const mostrarCuadroCarga = !soloLectura && (tipo.permite_multiples || !yaSubido);
+  // Igual que en ArchivoSubido: aunque la documentación ya esté
+  // registrada (soloLectura), mientras haya correcciones pendientes de
+  // confirmar se puede seguir subiendo -> esto es lo que faltaba acá:
+  // si un tipo "Permite_Multiples" se queda en 0 documentos (ej. se
+  // borró el único que había, el que estaba rechazado), sigue sin
+  // ningún "ArchivoSubido" que muestre el botón de editar, así que hace
+  // falta este mismo permiso acá para poder volver a subir uno.
+  const puedeSubirNuevo = !soloLectura || correccionesPendientes;
+  const mostrarCuadroCarga = puedeSubirNuevo && (tipo.permite_multiples || !yaSubido) && reemplazandoId === null;
 
   return (
     <div className="rounded-2xl border border-brand-900/20 bg-white p-2.5 transition-all duration-150 hover:border-brand-900/35 hover:shadow-sm">
@@ -401,10 +429,12 @@ function FilaDocumento({
           tipo={tipo}
           soloLectura={soloLectura}
           correccionesPendientes={correccionesPendientes}
+          reemplazando={reemplazandoId === doc.id_documento_proveedor}
+          onCambiarReemplazando={(valor) => setReemplazandoId(valor ? doc.id_documento_proveedor : null)}
         />
       ))}
 
-      {soloLectura && !yaSubido && (
+      {soloLectura && !yaSubido && !mostrarCuadroCarga && (
         <p className="text-[11px] text-brand-900/35 italic mt-1">No se cargó ningún archivo.</p>
       )}
 
@@ -573,13 +603,15 @@ function FranjaSuperior({
           <div className="min-w-0">
             <p className="text-xs font-semibold text-brand-900 truncate flex items-center gap-2 flex-wrap">
               {registrado ? (
-                hayRechazados ? (
+                correccionesPendientes ? (
                   <>
                     <Badge tone="danger">Documentación en revisión</Badge>
                     <span className="text-brand-900/60 font-normal">
-                      {documentosRechazados.length === 1
-                        ? '1 documento por corregir'
-                        : `${documentosRechazados.length} documentos por corregir`}
+                      {hayRechazados
+                        ? documentosRechazados.length === 1
+                          ? '1 documento por corregir'
+                          : `${documentosRechazados.length} documentos por corregir`
+                        : 'Corregido, clic en "Registrar documentación actualizada" para enviar a calificar'}
                     </span>
                   </>
                 ) : (
@@ -651,7 +683,7 @@ function FranjaSuperior({
           ) : registrado ? (
             <Link
               to="/productos"
-              className="inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
+              className="inline-flex items-center gap-1.5 rounded-md bg-brand-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 cursor-pointer"
             >
               Ir a Ficha Productos
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
