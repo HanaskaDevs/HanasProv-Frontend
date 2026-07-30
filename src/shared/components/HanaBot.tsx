@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as asistenteApi from '../api/asistenteApi';
 import type { MensajeChat } from '../api/asistenteApi';
+
+const REGEX_IR_A = /\[IR_A:(\/[a-zA-Z0-9\-\/]*)\]/;
 
 const SEGMENTOS = {
     saludo: { inicio: 0, fin: 1 },
@@ -11,6 +14,7 @@ const SEGMENTOS = {
 const INTERVALO_GUINO_MS = 2 * 60 * 1000;
 
 export default function HanaBot() {
+    const navigate = useNavigate();
     const videoRef = useRef<HTMLVideoElement>(null);
     const animandoRef = useRef(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -88,13 +92,24 @@ export default function HanaBot() {
 
         try {
             const respuesta = await asistenteApi.enviarMensaje(contenido, mensajes.slice(-10));
+
+            const matchIrA = respuesta.match(REGEX_IR_A);
             const debeAbrirGuia = respuesta.includes('[ABRIR_GUIA]');
-            const respuestaLimpia = respuesta.replace('[ABRIR_GUIA]', '').trim();
+
+            const respuestaLimpia = respuesta
+                .replace('[ABRIR_GUIA]', '')
+                .replace(REGEX_IR_A, '')
+                .trim();
 
             setMensajes((prev) => [...prev, { rol: 'hana', contenido: respuestaLimpia }]);
 
             if (debeAbrirGuia) {
                 setTimeout(() => window.dispatchEvent(new Event('guia-inicio:abrir')), 600);
+            }
+
+            if (matchIrA) {
+                const ruta = matchIrA[1];
+                setTimeout(() => navigate(ruta), 600);
             }
         } catch {
             setMensajes((prev) => [

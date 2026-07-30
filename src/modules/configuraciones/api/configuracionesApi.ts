@@ -1,5 +1,5 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { BotRegla, GuiaPaso, HomeSlide } from '../types';
+import type { BotRegla, GuiaPaso, HomeSlide, Politica } from '../types';
 
 // ---- Home Slides ----
 
@@ -125,5 +125,42 @@ export async function actualizarPasoGuia(
 
 export async function eliminarPasoGuia(id: number): Promise<{ message: string }> {
   const { data } = await apiClient.delete(`/configuraciones/guia-pasos/${id}`);
+  return data;
+}
+// ---- Políticas (administración) ----
+
+export async function listarPoliticas(): Promise<Politica[]> {
+  const { data } = await apiClient.get<Politica[]>('/configuraciones/politicas');
+  return data;
+}
+
+export async function crearPolitica(payload: {
+  titulo: string;
+  descripcion: string;
+  orden?: number;
+}): Promise<Politica> {
+  const { data } = await apiClient.post<Politica>('/configuraciones/politicas', payload);
+  return data;
+}
+
+export async function actualizarPolitica(
+  id: number,
+  payload: { titulo?: string; descripcion?: string; orden?: number; activo?: boolean }
+): Promise<Politica> {
+  const { data } = await apiClient.put<Politica>(`/configuraciones/politicas/${id}`, payload);
+  return data;
+}
+
+export async function eliminarPolitica(id: number): Promise<{ message: string }> {
+  const { data } = await apiClient.delete(`/configuraciones/politicas/${id}`);
+  return data;
+}
+export async function extraerTextoPdfPolitica(pdf: File): Promise<{ texto: string }> {
+  const formData = new FormData();
+  formData.append('pdf', pdf);
+
+  const { data } = await apiClient.post<{ texto: string }>('/configuraciones/politicas/extraer-pdf', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data;
 }

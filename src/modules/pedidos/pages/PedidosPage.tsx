@@ -99,7 +99,7 @@ function PedidosProveedor() {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="max-w-6xl mx-auto w-full space-y-4">
 
             {/* Encabezado */}
             <div className="flex items-center justify-between flex-wrap gap-2">
