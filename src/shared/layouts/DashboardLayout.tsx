@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../modules/auth/hooks/useAuth';
 import { obtenerMenu } from '../config/menuConfig';
@@ -8,7 +8,75 @@ import Avatar from '../components/Avatar';
 import ModalCambiarPassword from '../../modules/auth/components/ModalCambiarPassword';
 import * as fichaApi from '../../modules/miFicha/api/fichaApi';
 import GuiaInicioTour from '../components/GuiaInicioTour';
+import type { GuiaPasoPublico } from '../api/publicConfigApi';
 import HanaBot from '../components/HanaBot';
+
+function IconoFicha({ className = '' }: { className?: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <path d="M9 12h6M9 16h6" />
+    </svg>
+  );
+}
+
+function IconoCarpeta({ className = '' }: { className?: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+    </svg>
+  );
+}
+
+function IconoCandado({ className = '' }: { className?: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="11" width="18" height="10" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function IconoSalir({ className = '' }: { className?: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
+// Tour para el proveedor YA APROBADO -> apunta a lo que se le acaba de
+// habilitar (Pedidos, Reclamos), no a Ficha/Documentación (ya las
+// completó y aprobó hace rato, y de hecho ya ni están en el menú de
+// arriba, se mudaron al dropdown del usuario). A diferencia del tour
+// del aspirante, este queda fijo acá en vez de salir de Guia_Paso -> no
+// tiene sentido mezclarlo con la pantalla de configuración pensada para
+// la guía de onboarding.
+const PASOS_PROVEEDOR_APROBADO: GuiaPasoPublico[] = [
+  {
+    Target_Id: 'tour-productos',
+    Titulo: 'Mis Productos',
+    Texto: 'Administre su catálogo desde aquí: agregue nuevos productos, revise su estado de calificación y corrija lo que el equipo rechace.',
+  },
+  {
+    Target_Id: 'tour-calificacion',
+    Titulo: 'Calificación',
+    Texto: 'Consulte el estado de su ficha, documentación y productos frente al equipo de Hanaska.',
+  },
+  {
+    Target_Id: 'tour-pedidos',
+    Titulo: 'Pedidos',
+    Texto: 'Sus pedidos de compra abiertos y cerrados, con sus fechas de entrega esperadas.',
+  },
+  {
+    Target_Id: 'tour-reclamos',
+    Titulo: 'Reclamos',
+    Texto: 'Consulte y responda aquí los reclamos que le haga llegar el equipo de Hanaska.',
+  },
+];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { usuario, empresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } = useAuth();
@@ -86,7 +154,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-brand-200/10">
       <header className="bg-brand-900 text-white shrink-0">
-        <div className="flex items-center justify-between px-6 py-2">
+        <div className="flex items-center justify-between pl-10 pr-6 py-2">
           <LogoLink className="h-20" variant="light" />
 
           <div className="flex items-center gap-4">
@@ -118,16 +186,42 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
               {menuUsuarioAbierto && (
                 <div className="absolute right-0 top-full bg-white rounded-md shadow-lg border border-brand-900/10 py-1 min-w-[200px] z-20">
+                  {esProveedor && !esAspirante && (
+                    <>
+                      {/* Para el proveedor ya aprobado, Mi Ficha y Mi
+                          Documentación dejan de ser el foco principal
+                          (ya están completas y aprobadas) -> se sacan
+                          del menú de arriba y quedan acá, como algo que
+                          se consulta ocasionalmente, no todos los días. */}
+                      <Link
+                        to="/mi-ficha"
+                        className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm text-brand-900/80 hover:bg-brand-200/30"
+                      >
+                        <IconoFicha className="text-brand-900/40 shrink-0" />
+                        Mi Ficha
+                      </Link>
+                      <Link
+                        to="/documentos"
+                        className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm text-brand-900/80 hover:bg-brand-200/30"
+                      >
+                        <IconoCarpeta className="text-brand-900/40 shrink-0" />
+                        Mi Documentación
+                      </Link>
+                      <div className="border-t border-brand-900/8 my-1" />
+                    </>
+                  )}
                   <button
                     onClick={() => setModalPasswordAbierto(true)}
-                    className="w-full text-left px-4 py-2 text-sm text-brand-900/80 hover:bg-brand-200/30"
+                    className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm text-brand-900/80 hover:bg-brand-200/30"
                   >
+                    <IconoCandado className="text-brand-900/40 shrink-0" />
                     Cambiar contraseña
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-brand-wine hover:bg-brand-200/30"
+                    className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm text-brand-wine hover:bg-brand-200/30"
                   >
+                    <IconoSalir className="text-brand-wine/70 shrink-0" />
                     Cerrar sesión
                   </button>
                 </div>
@@ -145,7 +239,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 onMouseEnter={() => setMenuAbierto(item.label)}
                 onMouseLeave={() => setMenuAbierto(null)}
               >
-                <button className="px-3 py-2.5 text-sm font-medium text-white/80 hover:text-white rounded-md hover:bg-white/5 transition-colors">
+                <button
+                  id={item.label === 'Reclamos' ? 'tour-reclamos' : undefined}
+                  className="px-3 py-2.5 text-sm font-medium text-white/80 hover:text-white rounded-md hover:bg-white/5 transition-colors"
+                >
                   {item.label} <span className="ml-1 text-xs">▾</span>
                 </button>
 
@@ -178,7 +275,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       ? 'tour-documentacion'
                       : item.to === '/productos'
                         ? 'tour-productos'
-                        : undefined
+                        : item.to === '/calificacion'
+                          ? 'tour-calificacion'
+                          : item.to === '/pedidos'
+                            ? 'tour-pedidos'
+                            : undefined
                 }
                 className={({ isActive }) =>
                   `px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
@@ -197,7 +298,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {modalPasswordAbierto && <ModalCambiarPassword onClose={() => setModalPasswordAbierto(false)} />}
 
-      <GuiaInicioTour visible={tourVisible} onCerrar={cerrarTour} />
+      <GuiaInicioTour
+        visible={tourVisible}
+        onCerrar={cerrarTour}
+        pasos={esProveedor && !esAspirante ? PASOS_PROVEEDOR_APROBADO : undefined}
+      />
 
       <HanaBot />
     </div>

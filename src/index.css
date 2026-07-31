@@ -59,3 +59,40 @@ h1, h2, h3, h4, .font-display {
 .animar-fila {
   animation: entrada-fila 0.25s ease-out backwards;
 }
+
+/* Login: la tarjeta entra con un fundido + leve escala/desplazamiento
+   (más notorio que el fade genérico de arriba, porque acá es lo único
+   que pasa en pantalla, conviene que se sienta). Los campos del
+   formulario reusan el mismo patrón de "entrada-fila" escalonada que
+   ya usa Ficha Productos, con el delay puesto inline en cada campo. */
+@keyframes entrada-tarjeta-login {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animar-tarjeta-login {
+  animation: entrada-tarjeta-login 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Crossfade real del fondo del login: como cambiar "background-image"
+   en el mismo elemento no se puede animar (los navegadores no
+   interpolan entre dos url() distintas), se superponen dos capas y se
+   cruza la opacidad entre ellas en vez de reemplazar la imagen de una. */
+@keyframes aparecer-fondo {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animar-fondo-login {
+  animation: aparecer-fondo 0.7s ease-out forwards;
+}

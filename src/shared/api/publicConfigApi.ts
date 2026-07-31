@@ -3,7 +3,7 @@ import axios from 'axios';
 // Cliente separado del apiClient autenticado: estas rutas son públicas
 // (Landing, Login, Tour) y no deben depender de un token de sesión.
 const publicClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8001/api',
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8002/api',
 });
 
 export interface HomeSlidePublico {

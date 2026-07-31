@@ -9,6 +9,7 @@ import * as fichaApi from '../../miFicha/api/fichaApi';
 import * as documentacionApi from '../../documentacion/api/documentacionApi';
 import * as productosApi from '../../fichaProductos/api/productosApi';
 import * as pedidosApi from '../../pedidos/api/pedidosApi';
+import * as reclamosApi from '../../reclamos/api/reclamosApi';
 import type { FichaProveedor } from '../../miFicha/types';
 
 function IconoFicha({ className = '' }: { className?: string }) {
@@ -35,6 +36,32 @@ function IconoCaja({ className = '' }: { className?: string }) {
       <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
       <path d="m3.3 7 8.7 5 8.7-5" />
       <path d="M12 22V12" />
+    </svg>
+  );
+}
+
+function IconoProductos({ className = '' }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M3 12h18" />
+    </svg>
+  );
+}
+
+function IconoCalificacion({ className = '' }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function IconoReclamo({ className = '' }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" />
     </svg>
   );
 }
@@ -157,8 +184,13 @@ export default function PanelProveedor() {
     queryFn: pedidosApi.listarPedidosAbiertos,
     retry: false,
   });
+  const reclamosAbiertos = useQuery({
+    queryKey: ['mis-reclamos-abiertos'],
+    queryFn: reclamosApi.listarMisReclamosAbiertos,
+    retry: false,
+  });
 
-  const cargando = ficha.isLoading || documentos.isLoading || pedidosAbiertos.isLoading;
+  const cargando = ficha.isLoading || documentos.isLoading || pedidosAbiertos.isLoading || reclamosAbiertos.isLoading;
 
   const porcentajeFicha = ficha.data ? calcularPorcentajeFicha(ficha.data) : 0;
   const fichaCompleta = porcentajeFicha === 100;
@@ -172,7 +204,16 @@ export default function PanelProveedor() {
   const totalObligatorios = tiposDocumentos.filter((t) => t.obligatorio).length;
   const obligatoriosCargados = totalObligatorios - obligatoriosFaltantes.length;
   const documentacionRegistrada = documentos.data?.registrado ?? false;
-  const productosRegistrados = (productos.data?.productos_en_revision ?? 0) > 0;
+  // OJO: antes esto solo miraba "en revisión" (Bloqueado=1 + Pendiente)
+  // -> apenas el admin terminaba de aprobar el único producto, dejaba de
+  // contar como "en revisión" y la alerta de abajo volvía a aparecer
+  // como si nunca hubiera registrado nada, aunque ya tuviera productos
+  // Aprobados. Un proveedor "tiene productos registrados" si registró
+  // AL MENOS UNO alguna vez, esté en el estado que esté ahora.
+  const productosRegistrados =
+    (productos.data?.productos_en_revision ?? 0) > 0 ||
+    (productos.data?.productos_aprobados ?? 0) > 0 ||
+    (productos.data?.productos_rechazados ?? 0) > 0;
 
   const documentosRechazados = useMemo(
     () => tiposDocumentos.flatMap((t) => t.documentos).filter((d) => d.estado_calificacion === 'Rechazado'),
@@ -247,8 +288,8 @@ export default function PanelProveedor() {
         {!fichaCompleta && (
           <Alerta
             tono="yellow"
-            titulo="Tu Ficha de Proveedor no está completa"
-            descripcion={`Llevas ${porcentajeFicha}% — complétala para poder avanzar con tu documentación.`}
+            titulo="Tu Ficha de Proveedor tiene datos pendientes"
+            descripcion={`Llevas ${porcentajeFicha}% completado. Termina de llenarla para mantenerla al día.`}
             to="/mi-ficha"
             textoBoton="Completar ficha"
           />
@@ -268,8 +309,8 @@ export default function PanelProveedor() {
         {documentacionRegistrada && !productosRegistrados && (
           <Alerta
             tono="yellow"
-            titulo="Sigue tu Ficha de Productos"
-            descripcion="Ya registraste tu documentación. El siguiente paso es cargar y registrar tus productos."
+            titulo="Tienes productos sin registrar"
+            descripcion="Registra tu Ficha de Productos para que el equipo pueda revisarla y calificarla."
             to="/productos"
             textoBoton="Ir a Ficha Productos"
           />
@@ -305,11 +346,15 @@ export default function PanelProveedor() {
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <TarjetaStat
-          icono={<IconoFicha />}
-          valor={`${porcentajeFicha}%`}
-          etiqueta="Ficha completada"
-          color={fichaCompleta ? 'text-emerald-700 bg-emerald-50' : 'text-brand-900 bg-brand-yellow/20'}
-          to="/mi-ficha"
+          icono={<IconoReclamo />}
+          valor={reclamosAbiertos.data?.length ?? 0}
+          etiqueta="Reclamos abiertos"
+          color={
+            (reclamosAbiertos.data?.length ?? 0) > 0
+              ? 'text-brand-wine bg-brand-wine/10'
+              : 'text-brand-900/40 bg-brand-900/5'
+          }
+          to="/reclamos/abiertos"
         />
         <TarjetaStat
           icono={<IconoCarpeta />}
@@ -384,7 +429,9 @@ export default function PanelProveedor() {
             {[
               { to: '/mi-ficha', icono: <IconoFicha />, texto: 'Mi Ficha de Proveedor' },
               { to: '/documentos', icono: <IconoCarpeta />, texto: 'Documentación' },
+              { to: '/productos', icono: <IconoProductos />, texto: 'Mis Productos' },
               { to: '/pedidos', icono: <IconoCaja />, texto: 'Pedidos' },
+              { to: '/calificacion', icono: <IconoCalificacion />, texto: 'Calificación' },
             ].map((item) => (
               <Link
                 key={item.to}
