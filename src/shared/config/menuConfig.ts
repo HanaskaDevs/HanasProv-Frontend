@@ -22,9 +22,25 @@ const RECLAMOS: MenuItem = {
 };
 
 const MENU_PROVEEDOR: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
   { label: 'Mi Ficha', to: '/mi-ficha' },
   { label: 'Documentación', to: '/documentos' },
   { label: 'Ficha Productos', to: '/productos' },
+  { label: 'Calificación', to: '/calificacion' },
+  PEDIDOS,
+  RECLAMOS,
+  { label: 'Políticas', to: '/politicas' },
+];
+
+// El proveedor Aprobado ya completó y aprobó su Ficha y su
+// Documentación -> dejan de ser lo primero que necesita todos los días,
+// así que se sacan del menú de arriba (quedan como "Mi Ficha"/"Mi
+// Documentación" en el dropdown del usuario, ver DashboardLayout) y
+// "Ficha Productos" pasa a llamarse "Mis Productos" -> ya no está
+// "llenando una ficha", es su catálogo activo de productos.
+const MENU_PROVEEDOR_APROBADO: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
+  { label: 'Mis Productos', to: '/productos' },
   { label: 'Calificación', to: '/calificacion' },
   PEDIDOS,
   RECLAMOS,
@@ -55,6 +71,7 @@ const MENU_SISTEMAS: MenuItem[] = [
   { label: 'Políticas', to: '/politicas' },
   { label: 'Calendario', to: '/calendario' },
   { label: 'Reportes', to: '/reportes' },
+  { label: 'Catálogos', to: '/catalogos' },
   { label: 'Configuraciones', to: '/configuraciones' },
 ];
 
@@ -82,16 +99,11 @@ export function obtenerMenu(
   if (tipoUsuario === 'Proveedor') {
     if (esAspirante) {
       // El aspirante todavía no tiene Pedidos, Reclamos ni Políticas
-      // (ver comentario arriba) -> pero sí necesita un acceso directo
-      // al panel/inicio en el menú (el resto de proveedores llega ahí
-      // por el logo, pero para el aspirante conviene dejarlo explícito
-      // ya que su panel es su única referencia de estado por ahora).
-      return [
-        { label: 'Inicio', to: '/panel' },
-        ...MENU_PROVEEDOR.filter((item) => !ETIQUETAS_OCULTAS_PARA_ASPIRANTE.includes(item.label)),
-      ];
+      // (ver comentario arriba). "Inicio" ya viene incluido en
+      // MENU_PROVEEDOR (no hace falta agregarlo a mano acá).
+      return MENU_PROVEEDOR.filter((item) => !ETIQUETAS_OCULTAS_PARA_ASPIRANTE.includes(item.label));
     }
-    return MENU_PROVEEDOR;
+    return MENU_PROVEEDOR_APROBADO;
   }
 
   switch (rolActivo) {

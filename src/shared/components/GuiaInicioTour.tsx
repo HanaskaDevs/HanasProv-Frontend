@@ -23,20 +23,36 @@ const ANCHO_TARJETA = 300;
 const ESPACIO_RESALTADO = 8;
 const ESPACIO_TARJETA = 14;
 
-export default function GuiaInicioTour({ visible, onCerrar }: { visible: boolean; onCerrar: () => void }) {
-    const [pasos, setPasos] = useState<GuiaPasoPublico[]>(PASOS_RESPALDO);
+export default function GuiaInicioTour({
+    visible,
+    onCerrar,
+    pasos: pasosPersonalizados,
+}: {
+    visible: boolean;
+    onCerrar: () => void;
+    /** Si se pasa, se usa tal cual (sin ir a buscar los pasos configurados
+     *  en el backend) -> pensado para el tour del proveedor Aprobado, que
+     *  apunta a otras secciones (Mis Productos, Calificación, Pedidos,
+     *  Reclamos) y no tiene sentido que un admin lo edite desde la misma
+     *  pantalla de configuración que la guía de onboarding del aspirante. */
+    pasos?: GuiaPasoPublico[];
+}) {
+    const [pasosBackend, setPasosBackend] = useState<GuiaPasoPublico[]>(PASOS_RESPALDO);
     const [paso, setPaso] = useState(0);
     const [rect, setRect] = useState<DOMRect | null>(null);
 
     useEffect(() => {
+        if (pasosPersonalizados) return; // no hace falta pedirle nada al backend
         obtenerGuiaPasos()
             .then((data) => {
-                if (data.length > 0) setPasos(data);
+                if (data.length > 0) setPasosBackend(data);
             })
             .catch(() => {
                 // Se queda con PASOS_RESPALDO si falla.
             });
-    }, []);
+    }, [pasosPersonalizados]);
+
+    const pasos = pasosPersonalizados ?? pasosBackend;
 
     useEffect(() => {
         if (visible) setPaso(0);

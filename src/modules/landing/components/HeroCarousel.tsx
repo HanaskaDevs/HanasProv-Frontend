@@ -49,7 +49,7 @@ export default function HeroCarousel() {
         setIndice((i) => (i + 1) % slides.length);
         setVisible(true);
       }, 250);
-    }, 5000);
+    }, 6000);
     return () => clearInterval(intervalo);
   }, [slides.length]);
 
@@ -67,71 +67,72 @@ export default function HeroCarousel() {
   const tipoMedia = esSlideReal ? (slide as HomeSlidePublico).Tipo_Media : null;
 
   return (
-    <div className="grid md:grid-cols-2 gap-12 items-center">
-      <div className={`transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-        <p className="text-sm uppercase tracking-[0.2em] text-brand-700 mb-4 font-semibold">
-          {'Eyebrow' in slide ? slide.Eyebrow : slide.eyebrow}
-        </p>
-        <h2 className="font-display text-4xl md:text-5xl leading-tight text-brand-900 mb-5">
-          {'Titulo' in slide ? slide.Titulo : slide.titulo}
-        </h2>
-        <p className="text-lg text-brand-900/70 max-w-md mb-8">
-          {'Descripcion' in slide ? slide.Descripcion : slide.descripcion}
-        </p>
+    <>
+      {/* Media a pantalla completa (antes vivía en una tarjeta chica a un
+          costado) -> cubre toda la sección del hero, con el texto
+          superpuesto encima en vez de al lado.
 
-        <div className="flex gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => irA(i)}
-              aria-label={`Ir a la diapositiva ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${
-                i === indice ? 'w-8 bg-brand-wine' : 'w-4 bg-brand-900/15'
-              }`}
+          OJO: esto se ancla directo al contenedor relativo del padre
+          (<main> en LandingPage) con "absolute inset-0" en vez de
+          depender de "h-full" en cascada por varios niveles -> eso fue
+          justo el bug: alguno de esos niveles no terminaba de resolver
+          una altura definida, y el video quedaba con 0px de alto aunque
+          la petición de red cargara perfecto. */}
+      <div className={`absolute inset-0 transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+        {rutaMedia ? (
+          tipoMedia === 'video' ? (
+            <video
+              key={rutaMedia}
+              src={rutaMedia}
+              muted
+              loop
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
             />
-          ))}
-        </div>
+          ) : (
+            <img key={rutaMedia} src={rutaMedia} alt="" className="w-full h-full object-cover" />
+          )
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-900 via-brand-700 to-brand-wine/60" />
+        )}
       </div>
 
+      {/* Degradado oscuro de abajo hacia arriba -> el video se ve entero,
+          pero el texto (que vive abajo) siempre tiene con qué contrastar,
+          sin importar qué tan clara sea esa parte puntual del video. */}
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-900/95 via-brand-900/25 to-transparent" />
+
       <div
-        className={`relative aspect-[4/3] rounded-3xl overflow-hidden bg-brand-900 shadow-xl transition-opacity duration-300 ${
+        className={`absolute inset-x-0 bottom-0 px-8 md:px-16 pb-14 md:pb-20 transition-opacity duration-500 ${
           visible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {rutaMedia ? (
-          tipoMedia === 'video' ? (
-            <video src={rutaMedia} muted loop autoPlay playsInline className="w-full h-full object-cover" />
-          ) : (
-            <img src={rutaMedia} alt="" className="w-full h-full object-cover" />
-          )
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-900 via-brand-700 to-brand-wine/60" />
-            <svg viewBox="0 0 200 200" className="absolute inset-0 h-full w-full p-14 text-brand-yellow" fill="none">
-              {indice % 3 === 0 && (
-                <g stroke="currentColor" strokeWidth="2">
-                  <rect x="40" y="60" width="120" height="90" rx="8" />
-                  <path d="M40 90 h120" />
-                  <path d="M100 60 v30" />
-                  <path d="M70 130 h20 M110 130 h20" strokeLinecap="round" />
-                </g>
-              )}
-              {indice % 3 === 1 && (
-                <g stroke="currentColor" strokeWidth="2">
-                  <circle cx="100" cy="100" r="55" />
-                  <path d="M78 100 l16 16 l30 -34" strokeLinecap="round" strokeLinejoin="round" />
-                </g>
-              )}
-              {indice % 3 === 2 && (
-                <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M45 140 l35 -40 l30 25 l45 -55" />
-                  <path d="M120 70 h35 v35" />
-                </g>
-              )}
-            </svg>
-          </>
-        )}
+        <div className="max-w-2xl">
+          <p className="text-sm uppercase tracking-[0.2em] text-brand-yellow mb-4 font-semibold">
+            {'Eyebrow' in slide ? slide.Eyebrow : slide.eyebrow}
+          </p>
+          <h2 className="font-display text-3xl md:text-5xl font-bold uppercase leading-[1.1] text-white mb-5">
+            {'Titulo' in slide ? slide.Titulo : slide.titulo}
+          </h2>
+          <p className="text-base md:text-lg text-white/85 max-w-xl mb-8">
+            {'Descripcion' in slide ? slide.Descripcion : slide.descripcion}
+          </p>
+
+          <div className="flex gap-2">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => irA(i)}
+                aria-label={`Ir a la diapositiva ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === indice ? 'w-8 bg-brand-yellow' : 'w-4 bg-white/25'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -560,6 +560,7 @@ function FranjaSuperior({
   faltantes,
   documentosRechazados,
   correccionesPendientes,
+  todosAprobados,
 }: {
   totalObligatorios: number;
   cargadosObligatorios: number;
@@ -570,6 +571,7 @@ function FranjaSuperior({
   faltantes: string[];
   documentosRechazados: { tipo: TipoDocumentoChecklist; doc: DocumentoSubido }[];
   correccionesPendientes: boolean;
+  todosAprobados: boolean;
 }) {
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -614,6 +616,8 @@ function FranjaSuperior({
                         : 'Corregido, clic en "Registrar documentación actualizada" para enviar a calificar'}
                     </span>
                   </>
+                ) : todosAprobados ? (
+                  <Badge tone="success">Documentación Aprobada</Badge>
                 ) : (
                   <Badge tone="info">Documentación en revisión</Badge>
                 )
@@ -938,6 +942,14 @@ export default function ChecklistDocumentos() {
       .filter((doc) => doc.estado_calificacion === 'Rechazado')
       .map((doc) => ({ tipo, doc }))
   );
+  // "En revisión" (celeste) implica que todavía falta que el admin la
+  // mire -> pero antes ese era el ÚNICO texto posible una vez
+  // registrada (aparte del caso con rechazos), aunque el admin ya
+  // hubiera aprobado TODO. Acá se calcula aparte para poder decir
+  // "Aprobada" cuando de verdad ya no queda nada pendiente de revisar.
+  const todosLosDocumentos = tipos.flatMap((tipo) => tipo.documentos);
+  const todosAprobados =
+    todosLosDocumentos.length > 0 && todosLosDocumentos.every((doc) => doc.estado_calificacion === 'Aprobado');
 
   return (
     <div className="flex-1 min-h-0 flex flex-col space-y-2.5 max-w-6xl mx-auto w-full">
@@ -952,6 +964,7 @@ export default function ChecklistDocumentos() {
           faltantes={faltantes}
           documentosRechazados={documentosRechazados}
           correccionesPendientes={data?.correcciones_pendientes ?? false}
+          todosAprobados={todosAprobados}
         />
       </div>
 

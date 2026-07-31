@@ -44,23 +44,45 @@ export default function LoginPage() {
   return (
     <AuthLayout title="Iniciar sesión" subtitle="Portal de Proveedores">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-       <div className="flex flex-col gap-1">
-  <label className="text-sm font-medium text-white/90">Correo</label>
-  <Input type="email" {...register('email')} error={errors.email?.message} />
-</div>
-<div className="flex flex-col gap-1">
-  <label className="text-sm font-medium text-white/90">Contraseña</label>
-  <Input type="password" {...register('password')} error={errors.password?.message} />
-</div>
+        <div className="animar-fila flex flex-col gap-1" style={{ animationDelay: '80ms' }}>
+          <label className="text-sm font-medium text-white/90" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+            Correo
+          </label>
+          <Input
+            type="email"
+            {...register('email')}
+            error={errors.email?.message}
+            className="!bg-black/30 !border-white/25 !text-white placeholder:!text-white/40 shadow-lg focus:!ring-brand-yellow focus:!border-brand-yellow/60"
+          />
+        </div>
+        <div className="animar-fila flex flex-col gap-1" style={{ animationDelay: '140ms' }}>
+          <label className="text-sm font-medium text-white/90" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+            Contraseña
+          </label>
+          <Input
+            type="password"
+            {...register('password')}
+            error={errors.password?.message}
+            className="!bg-black/30 !border-white/25 !text-white placeholder:!text-white/40 shadow-lg focus:!ring-brand-yellow focus:!border-brand-yellow/60"
+          />
+        </div>
 
-        {errorGeneral && <p className="text-sm text-brand-wine">{errorGeneral}</p>}
+        {errorGeneral && (
+          <p className="animar-fila text-sm text-red-300">{errorGeneral}</p>
+        )}
 
-        <Button type="submit" isLoading={isSubmitting} className="w-full">
-          Ingresar
-        </Button>
+        <div className="animar-fila" style={{ animationDelay: '200ms' }}>
+          <Button type="submit" isLoading={isSubmitting} className="w-full">
+            Ingresar
+          </Button>
+        </div>
 
-        <div className="text-center pt-1">
-          <Link to="/olvide-password" className="text-sm text-white/80 hover:underline">
+        <div className="animar-fila text-center pt-1" style={{ animationDelay: '250ms' }}>
+          <Link
+            to="/olvide-password"
+            className="text-sm text-white/80 hover:text-white hover:underline transition-colors"
+            style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}
+          >
             Olvidé mi contraseña
           </Link>
         </div>
