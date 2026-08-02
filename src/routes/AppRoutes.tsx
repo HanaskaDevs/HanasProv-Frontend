@@ -16,6 +16,7 @@ import RestablecerPasswordPage from '../modules/auth/pages/RestablecerPasswordPa
 import EmpresasPage from '../modules/empresas/pages/EmpresasPage';
 import PedidosPage from '../modules/pedidos/pages/PedidosPage';
 import ProveedoresPage from '../modules/proveedores/pages/ProveedoresPage';
+import DetalleProveedoresPage from '../modules/proveedores/pages/DetalleProveedoresPage';
 import ProductosProveedoresPage from '../modules/proveedores/pages/ProductosProveedoresPage';
 import ReclamosAbiertosPage from '../modules/reclamos/pages/ReclamosAbiertosPage';
 import ReclamosCerradosPage from '../modules/reclamos/pages/ReclamosCerradosPage';
@@ -23,7 +24,6 @@ import ConfiguracionesPage from '../modules/configuraciones/pages/Configuracione
 import AuditoriasPage from '../modules/auditorias/pages/AuditoriasPage';
 import PoliticasPage from '../modules/politicas/pages/PoliticasPage';
 import CatalogosPage from '../modules/catalogos/pages/CatalogosPage';
-import CatalogoProductosPage from '../modules/catalogoProductos/pages/CatalogoProductosPage';
 
 export default function AppRoutes() {
   return (
@@ -45,6 +45,7 @@ export default function AppRoutes() {
         <Route path="/usuarios/internos" element={<UsuariosInternosPage />} />
         <Route path="/usuarios/proveedores" element={<UsuariosExternosPage />} />
         <Route path="/proveedores" element={<ProveedoresPage />} />
+        <Route path="/proveedores/detalle" element={<DetalleProveedoresPage />} />
         <Route path="/productos-proveedores" element={<ProductosProveedoresPage />} />
 
         <Route path="/calificacion" element={<CalificacionPage />} />
@@ -57,7 +58,6 @@ export default function AppRoutes() {
         <Route path="/reportes" element={<ProximamentePage titulo="Reportes" />} />
         <Route path="/configuraciones" element={<ConfiguracionesPage />} />
         <Route path="/catalogos" element={<CatalogosPage />} />
-        <Route path="/catalogo-productos" element={<CatalogoProductosPage />} />
       </Route>
     </Routes>
   );
