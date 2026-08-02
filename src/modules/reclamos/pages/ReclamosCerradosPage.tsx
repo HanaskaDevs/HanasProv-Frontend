@@ -29,7 +29,7 @@ export default function ReclamosCerradosPage() {
     }, [data, busqueda]);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-6xl mx-auto">
             <div>
                 <h1 className="font-display text-xl font-semibold text-brand-900 flex items-center gap-2">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-700">

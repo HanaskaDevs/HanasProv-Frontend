@@ -9,7 +9,8 @@ import Spinner from '../../../shared/components/Spinner';
 import Button from '../../../shared/components/Button';
 import Badge from '../../../shared/components/Badge';
 import Modal from '../../../shared/components/Modal';
-import ModalVisorPdf from './ModalVisorPdf';
+import ModalVisorPdf from '../../../shared/components/ModalVisorPdf';
+import ModalDocumentacionRegistrada from './ModalDocumentacionRegistrada';
 
 const TAMANO_MAXIMO_MB = 4;
 
@@ -64,6 +65,16 @@ function IconoRepetir({ className = '' }: { className?: string }) {
   );
 }
 
+function IconoAlerta({ className = '' }: { className?: string }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 function IconoBasura({ className = '' }: { className?: string }) {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -71,16 +82,6 @@ function IconoBasura({ className = '' }: { className?: string }) {
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       <line x1="10" y1="11" x2="10" y2="17" />
       <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-  );
-}
-
-function IconoAlerta({ className = '' }: { className?: string }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   );
 }
@@ -133,6 +134,9 @@ function ArchivoSubido({
     onError: () => setError('No se pudo reemplazar. Verifica que sea PDF y pese menos de 4MB.'),
   });
 
+  // Solo documentos OPCIONALES se pueden borrar del todo -> los
+  // obligatorios siempre tienen que tener algo cargado, así que ahí
+  // solo se puede Ver/Reemplazar.
   const borrar = useMutation({
     mutationFn: () => documentacionApi.borrarDocumento(doc.id_documento_proveedor),
     onSuccess: () => {
@@ -140,6 +144,7 @@ function ArchivoSubido({
       setConfirmandoBorrar(false);
     },
   });
+
 
   function handleSeleccionar(e: ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
@@ -175,12 +180,13 @@ function ArchivoSubido({
   // confirmás, todo vuelve a quedar bloqueado hasta que el admin revise
   // de nuevo. El backend aplica exactamente esta misma regla.
   const rechazado = doc.estado_calificacion === 'Rechazado';
-  const puedeEditar = !soloLectura || (correccionesPendientes && doc.estado_calificacion !== 'Aprobado');
+  const puedeEditar =
+    !soloLectura || (correccionesPendientes && doc.estado_calificacion !== 'Aprobado') || doc.proximo_a_vencer;
 
   return (
     <div className="py-1">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2 min-w-0">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
           <span className="text-xs font-medium text-brand-900 truncate" title={doc.nombre_original}>
             {doc.nombre_original}
           </span>
@@ -192,8 +198,11 @@ function ArchivoSubido({
           {doc.estado_calificacion === 'Aprobado' && <Badge tone="success">Aprobado</Badge>}
           {rechazado && (
             <Badge tone="danger" className="!bg-amber-100 !text-amber-800">
-              Rechazado
+              Por corregir
             </Badge>
+          )}
+          {doc.proximo_a_vencer && doc.estado_calificacion !== 'Rechazado' && (
+            <Badge tone="warning" className="whitespace-nowrap shrink-0">Próximo a vencer</Badge>
           )}
         </div>
 
@@ -213,7 +222,7 @@ function ArchivoSubido({
               <IconoRepetir /> Reemplazar
             </button>
           )}
-          {puedeEditar && (
+          {puedeEditar && !tipo.obligatorio && (
             <button
               onClick={() => setConfirmandoBorrar(true)}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-wine/70 hover:text-brand-wine"
@@ -242,9 +251,9 @@ function ArchivoSubido({
               <input
                 type="text"
                 value={nuevoNombre}
-                onChange={(e) => setNuevoNombre(e.target.value)}
+                onChange={(e) => setNuevoNombre(e.target.value.toUpperCase())}
                 placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
-                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px] uppercase placeholder:normal-case
                   text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
               />
             )}
@@ -314,8 +323,9 @@ function ArchivoSubido({
 
       {visorAbierto && (
         <ModalVisorPdf
-          idDocumentoProveedor={doc.id_documento_proveedor}
+          idDocumento={doc.id_documento_proveedor}
           nombre={doc.nombre_original}
+          obtenerUrl={documentacionApi.obtenerUrlVisorDocumento}
           onClose={() => setVisorAbierto(false)}
         />
       )}
@@ -402,7 +412,13 @@ function FilaDocumento({
   return (
     <div className="rounded-2xl border border-brand-900/20 bg-white p-2.5 transition-all duration-150 hover:border-brand-900/35 hover:shadow-sm">
       <div className="flex items-center gap-1.5 min-w-0">
-        <IconoDocumento className={yaSubido ? 'text-emerald-600 shrink-0' : 'text-brand-900/35 shrink-0'} />
+        <span
+          className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
+            yaSubido ? 'bg-emerald-100 text-emerald-600' : 'bg-brand-900/8 text-brand-900/40'
+          }`}
+        >
+          <IconoDocumento />
+        </span>
         <span className="text-xs font-medium text-brand-900 truncate">
           {tipo.nombre_documento}
           {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
@@ -446,9 +462,9 @@ function FilaDocumento({
             <input
               type="text"
               value={nombreDocumento}
-              onChange={(e) => setNombreDocumento(e.target.value)}
+              onChange={(e) => setNombreDocumento(e.target.value.toUpperCase())}
               placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
-              className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+              className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px] uppercase placeholder:normal-case
                 text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
             />
           )}
@@ -576,6 +592,7 @@ function FranjaSuperior({
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
+  const [modalExitoAbierto, setModalExitoAbierto] = useState(false);
 
   const porcentaje =
     totalObligatorios > 0 ? Math.round((cargadosObligatorios / totalObligatorios) * 100) : 100;
@@ -587,6 +604,7 @@ function FranjaSuperior({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mi-documentos'] });
       setModalAbierto(false);
+      setModalExitoAbierto(true);
     },
   });
 
@@ -671,7 +689,7 @@ function FranjaSuperior({
                       px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 invisible
                       group-hover:opacity-100 group-hover:visible transition-opacity"
                   >
-                    Se habilita al corregir {documentosRechazados.length === 1 ? 'el documento rechazado' : 'los documentos rechazados'}
+                    Se habilita al corregir {documentosRechazados.length === 1 ? 'el documento marcado' : 'los documentos marcados'}
                   </span>
                 )}
               </span>
@@ -729,9 +747,9 @@ function FranjaSuperior({
               <IconoAlerta />
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-brand-900">¿Estás seguro de registrar la documentación ingresada?</p>
+              <p className="text-sm text-brand-900">¿Está seguro de registrar la documentación ingresada?</p>
               <p className="text-xs text-brand-900/50">
-                Una vez registrada, no podrás editar ni cargar más archivos. Solo podrás verlos.
+                Una vez registrada, no podrá editar ni cargar más archivos. Solo podrá verlos.
               </p>
             </div>
           </div>
@@ -753,6 +771,10 @@ function FranjaSuperior({
             </Button>
           </div>
         </Modal>
+      )}
+
+      {modalExitoAbierto && (
+        <ModalDocumentacionRegistrada onClose={() => setModalExitoAbierto(false)} />
       )}
     </Card>
   );
@@ -968,7 +990,7 @@ export default function ChecklistDocumentos() {
         />
       </div>
 
-      <div className="relative flex-1 min-h-0 flex flex-col">
+      <div className="relative flex flex-col">
         {totalPaginas > 1 && (
           <div className="hidden sm:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
             <FlechaPaginador
@@ -979,7 +1001,7 @@ export default function ChecklistDocumentos() {
           </div>
         )}
 
-        <Card className="!p-0 overflow-hidden flex-1 min-h-0 flex flex-col">
+        <Card className="!p-0 overflow-hidden flex flex-col">
           <div className="shrink-0 flex gap-0.5 overflow-x-auto border-b border-brand-900/8 bg-brand-900/[0.02] px-2 pt-1">
             {statsPorCategoria.map(({ categoria, tiposCategoria, cargados, faltanObligatorios }) => (
               <TabCategoria
@@ -1005,13 +1027,14 @@ export default function ChecklistDocumentos() {
           <div className="p-3 overflow-y-auto">
             <div key={`${categoriaSeleccionada}-${paginaSegura}`} className="animar-entrada-pagina sm:px-11">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {tiposPagina.map((tipo) => (
-                  <FilaDocumento
-                    key={tipo.id_tipo_documento}
-                    tipo={tipo}
-                    soloLectura={data?.registrado ?? false}
-                    correccionesPendientes={data?.correcciones_pendientes ?? false}
-                  />
+                {tiposPagina.map((tipo, indice) => (
+                  <div key={tipo.id_tipo_documento} className="animar-fila" style={{ animationDelay: `${indice * 40}ms` }}>
+                    <FilaDocumento
+                      tipo={tipo}
+                      soloLectura={data?.registrado ?? false}
+                      correccionesPendientes={data?.correcciones_pendientes ?? false}
+                    />
+                  </div>
                 ))}
               </div>
             </div>

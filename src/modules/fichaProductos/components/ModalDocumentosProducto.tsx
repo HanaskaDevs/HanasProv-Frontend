@@ -60,7 +60,7 @@ export function BadgeCalificacion({ producto }: { producto: Producto }) {
   if (producto.estado_calificacion === 'Rechazado') {
     return (
       <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">
-        Rechazado
+        Por corregir
       </span>
     );
   }
@@ -108,6 +108,9 @@ function CasillaDocumento({
 
   const [mostrarVisor, setMostrarVisor] = useState(false);
 
+  // Solo el documento OPCIONAL (Carta de alérgenos) se puede borrar del
+  // todo -> Ficha técnica y Análisis de Laboratorio son obligatorios,
+  // ahí solo se puede Ver/Reemplazar.
   const eliminarDoc = useMutation({
     mutationFn: (idDocumentoProducto: number) => productosApi.eliminarDocumentoProducto(idDocumentoProducto),
     onSuccess: () => {
@@ -160,7 +163,7 @@ function CasillaDocumento({
         <div className="absolute bottom-full left-0 mb-2 z-20 w-64 rounded-lg bg-brand-900 text-white text-xs px-3 py-2.5 shadow-lg">
           <p className="font-medium mb-1">¿Aún no tienes el análisis de Laboratorio?</p>
           <p className="text-white/80 leading-relaxed">
-            Puedes realizarlo con Hanaska. Para más información contáctanos a{' '}
+            Puedes realizarlo con nosotros. Para más información contáctanos a{' '}
             <a href="mailto:analisis@hanska.com" className="underline font-medium">
               analisis@hanska.com
             </a>
@@ -211,13 +214,15 @@ function CasillaDocumento({
                   >
                     Reemplazar
                   </button>
-                  <button
-                    onClick={() => eliminarDoc.mutate(yaSubido.id_documento_producto)}
-                    disabled={eliminarDoc.isPending}
-                    className="text-[10.5px] font-medium text-brand-wine hover:underline"
-                  >
-                    Eliminar
-                  </button>
+                  {!tipo.obligatorio && (
+                    <button
+                      onClick={() => eliminarDoc.mutate(yaSubido.id_documento_producto)}
+                      disabled={eliminarDoc.isPending}
+                      className="text-[10.5px] font-medium text-brand-wine hover:underline"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -313,7 +318,7 @@ export default function ModalDocumentosProducto({
 
       {producto.estado_calificacion === 'Rechazado' && producto.comentario_calificacion && (
         <div className="mb-3 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1.5">
-          <p className="text-[11px] font-medium text-amber-800">Motivo del rechazo</p>
+          <p className="text-[11px] font-medium text-amber-800">Motivo</p>
           <p className="text-[11px] text-brand-900/70 mt-0.5">{producto.comentario_calificacion}</p>
         </div>
       )}

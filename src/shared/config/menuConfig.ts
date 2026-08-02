@@ -60,19 +60,25 @@ const MENU_PROVEEDOR_APROBADO: MenuItem[] = [
 const ETIQUETAS_OCULTAS_PARA_ASPIRANTE = ['Pedidos', 'Reclamos', 'Políticas'];
 
 const MENU_SISTEMAS: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
   { label: 'Empresas', to: '/empresas' },
   {
     label: 'Usuarios',
     children: [
       { to: '/usuarios/internos', label: 'Usuarios Internos' },
-      { to: '/usuarios/proveedores', label: 'Cuentas de Proveedores' },
+      { to: '/usuarios/proveedores', label: 'Proveedores' },
     ],
   },
+  // Renombrado a "Calificación Proveedores" (mismo nombre que ya usa
+  // MENU_ADMIN para esta misma pantalla) -> si no, quedaban DOS ítems
+  // llamados "Proveedores" en este mismo menú (este y el de arriba,
+  // que en realidad apuntan a pantallas completamente distintas).
+  { label: 'Calificación Proveedores', to: '/proveedores' },
+  { label: 'Productos', to: '/productos-proveedores' },
   { label: 'Proveedores', to: '/proveedores' },
   CATALOGO_PRODUCTOS,
   PEDIDOS,
   RECLAMOS,
-  { label: 'Calificaciones', to: '/calificacion' },
   { label: 'Auditorías', to: '/auditorias' },
   { label: 'Políticas', to: '/politicas' },
   { label: 'Calendario', to: '/calendario' },
@@ -82,11 +88,13 @@ const MENU_SISTEMAS: MenuItem[] = [
 ];
 
 const MENU_ADMIN: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
   {
     label: 'Usuarios',
-    children: [{ to: '/usuarios/proveedores', label: 'Cuentas de Proveedores' }],
+    children: [{ to: '/usuarios/proveedores', label: 'Proveedores' }],
   },
   { label: 'Calificación Proveedores', to: '/proveedores' },
+  { label: 'Productos', to: '/productos-proveedores' },
   CATALOGO_PRODUCTOS,
   PEDIDOS,
   RECLAMOS,

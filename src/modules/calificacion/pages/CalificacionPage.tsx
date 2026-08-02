@@ -47,7 +47,7 @@ function BadgeEstado({ estado }: { estado: EstadoGeneral }) {
   if (estado === 'Rechazado')
     return (
       <Badge tone="danger" className="!bg-amber-100 !text-amber-800">
-        Rechazado
+        Por corregir
       </Badge>
     );
   if (estado === 'En revisión') return <Badge tone="info">En revisión</Badge>;
@@ -135,11 +135,24 @@ export default function CalificacionPage() {
     );
   }
 
+  // Estado GENERAL del proveedor (Aspirante/Aprobado) -> distinto de
+  // estado_calificacion_general, que es solo el veredicto de la Ficha
+  // en sí. El proveedor pasa a "Aprobado" automáticamente cuando se
+  // cumplen las 3 condiciones mínimas (ver
+  // CalificacionProveedorService::activarSiCorresponde): ficha
+  // aprobada + toda la documentación aprobada + al menos 1 producto
+  // aprobado.
+  const proveedorAprobado = ficha.data?.estado?.trim().toLowerCase() === 'aprobado';
+
   // --- Ficha ---
   const porcentajeFicha = ficha.data ? Number(ficha.data.porcentaje_completado) : 0;
-  const camposRechazadosFicha = ficha.data
-    ? Object.values(ficha.data.calificaciones_campos).filter((c) => c.estado === 'Rechazado').length
-    : 0;
+  const todasCalificacionesFicha = ficha.data ? Object.values(ficha.data.calificaciones_campos) : [];
+  const totalCamposCalificados = todasCalificacionesFicha.length;
+  const camposAprobadosFicha = todasCalificacionesFicha.filter((c) => c.estado === 'Aprobado').length;
+  const camposRechazadosFicha = todasCalificacionesFicha.filter((c) => c.estado === 'Rechazado').length;
+  // Sobre 100 pts: cuántos de los campos ya calificados están Aprobados.
+  const calificacionFicha =
+    totalCamposCalificados > 0 ? Math.round((camposAprobadosFicha / totalCamposCalificados) * 100) : null;
   const estadoFicha: EstadoGeneral =
     porcentajeFicha < 100
       ? 'Incompleto'
@@ -156,6 +169,10 @@ export default function CalificacionPage() {
   const documentosRechazados = todosLosDocumentos.filter((d) => d.estado_calificacion === 'Rechazado').length;
   const documentosPendientes = totalDocumentos - documentosAprobados - documentosRechazados;
   const documentacionRegistrada = documentos.data?.registrado ?? false;
+  // Sobre 100 pts: aprobados sobre el total cargado (ej. 9 cargados y
+  // los 9 aprobados -> 100 pts).
+  const calificacionDocumentacion =
+    totalDocumentos > 0 ? Math.round((documentosAprobados / totalDocumentos) * 100) : null;
 
   const estadoDocumentacion: EstadoGeneral = !documentacionRegistrada
     ? 'Incompleto'
@@ -173,6 +190,9 @@ export default function CalificacionPage() {
   const productosRechazados = resumenProductos.data?.productos_rechazados ?? 0;
   const productosPendientes = totalProductos - productosAprobados - productosRechazados;
   const productosRegistrados = (resumenProductos.data?.productos_en_revision ?? 0) > 0;
+  // Mismo criterio que documentación: aprobados sobre el total cargado.
+  const calificacionProductos =
+    totalProductos > 0 ? Math.round((productosAprobados / totalProductos) * 100) : null;
 
   const estadoProductos: EstadoGeneral = totalProductos === 0
     ? 'Sin iniciar'
@@ -193,6 +213,23 @@ export default function CalificacionPage() {
         </p>
       </div>
 
+      {proveedorAprobado && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-start gap-3">
+          <span className="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-emerald-800">¡Ya es un proveedor aprobado!</p>
+            <p className="text-xs text-emerald-800/80 mt-0.5">
+              Cumplió con los 3 requisitos mínimos: su ficha aprobada, toda su documentación aprobada y al menos
+              un producto aprobado. Ya puede operar como proveedor de Hanaska.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <TarjetaCategoria
           icono={<IconoFicha />}
@@ -200,10 +237,14 @@ export default function CalificacionPage() {
           estado={estadoFicha}
           detalle={porcentajeFicha < 100 ? 'Todavía no está completa' : 'Completa'}
           items={[
-            { etiqueta: 'Completado', valor: `${porcentajeFicha}%` },
+            { etiqueta: 'Campos Aprobados', valor: totalCamposCalificados > 0 ? String(camposAprobadosFicha) : '—' },
+            { etiqueta: 'Campos Rechazados', valor: camposRechazadosFicha > 0 ? String(camposRechazadosFicha) : '—' },
             {
-              etiqueta: 'Campos rechazados',
-              valor: camposRechazadosFicha > 0 ? String(camposRechazadosFicha) : '—',
+              etiqueta: 'Calificación',
+              valor:
+                calificacionFicha !== null && (estadoFicha === 'Aprobado' || estadoFicha === 'Rechazado')
+                  ? `${calificacionFicha}/100 pts`
+                  : '—',
             },
           ]}
           enlace="/mi-ficha"
@@ -222,6 +263,13 @@ export default function CalificacionPage() {
               etiqueta: 'Rechazados',
               valor: documentosRechazados > 0 ? String(documentosRechazados) : '—',
             },
+            {
+              etiqueta: 'Calificación',
+              valor:
+                calificacionDocumentacion !== null && (estadoDocumentacion === 'Aprobado' || estadoDocumentacion === 'Rechazado')
+                  ? `${calificacionDocumentacion}/100 pts`
+                  : '—',
+            },
           ]}
           enlace="/documentos"
           textoEnlace="Ir a Documentación"
@@ -238,6 +286,13 @@ export default function CalificacionPage() {
             {
               etiqueta: 'Rechazados',
               valor: productosRechazados > 0 ? String(productosRechazados) : '—',
+            },
+            {
+              etiqueta: 'Calificación',
+              valor:
+                calificacionProductos !== null && (estadoProductos === 'Aprobado' || estadoProductos === 'Rechazado')
+                  ? `${calificacionProductos}/100 pts`
+                  : '—',
             },
           ]}
           enlace="/productos"

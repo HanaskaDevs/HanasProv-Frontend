@@ -1,5 +1,6 @@
 // src/shared/components/ModalVisorPdf.tsx
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Spinner from './Spinner';
 
 /**
@@ -15,6 +16,16 @@ import Spinner from './Spinner';
  * documentos de la ficha del proveedor, de la calificación del admin, y
  * de la ficha de productos, que son APIs distintas pero el visor en sí
  * es idéntico.
+ *
+ * OJO con esto: antes se renderizaba directo en el JSX del que lo
+ * invoca -> si ese componente (o cualquier ancestro suyo) tiene un CSS
+ * "transform" (ej. el hover:-translate-y-0.5 de las tarjetas de
+ * documento), el navegador convierte automáticamente los elementos
+ * "position: fixed" de adentro en relativos a ESE ancestro en vez de a
+ * toda la pantalla -> el modal quedaba encerrado en la tarjeta chica y
+ * parpadeaba al mover el mouse (el hover entraba y salía todo el
+ * tiempo). Con createPortal, este modal cuelga directo de document.body,
+ * fuera de ese árbol -> no importa qué transform tenga nada por encima.
  */
 export default function ModalVisorPdf({
   idDocumento,
@@ -51,7 +62,7 @@ export default function ModalVisorPdf({
     };
   }, [idDocumento, obtenerUrl]);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-brand-900/70 flex items-center justify-center p-4 z-[70]" onClick={onClose}>
       <div
         className="bg-white rounded-lg shadow-xl w-full h-full max-w-5xl flex flex-col"
@@ -80,6 +91,7 @@ export default function ModalVisorPdf({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

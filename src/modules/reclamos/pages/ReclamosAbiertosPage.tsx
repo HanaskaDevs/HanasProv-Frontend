@@ -32,7 +32,7 @@ export default function ReclamosAbiertosPage() {
     }, [data, busqueda]);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-6xl mx-auto">
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                     <h1 className="font-display text-xl font-semibold text-brand-900 flex items-center gap-2">
