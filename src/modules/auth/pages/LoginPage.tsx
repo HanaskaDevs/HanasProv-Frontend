@@ -63,6 +63,8 @@ export default function LoginPage() {
             type="password"
             {...register('password')}
             error={errors.password?.message}
+            errorClassName="text-brand-yellow"
+            toggleClassName="text-white/50 hover:text-white/80"
             className="!bg-black/30 !border-white/25 !text-white placeholder:!text-white/40 shadow-lg focus:!ring-brand-yellow focus:!border-brand-yellow/60"
           />
         </div>

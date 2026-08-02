@@ -2,13 +2,17 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import Card from '../../../shared/components/Card';
 import Badge from '../../../shared/components/Badge';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import AroProgreso from '../../../shared/components/AroProgreso';
 import ModalFichaProveedor from '../components/ModalFichaProveedor';
+import ModalFichaRegistrada from '../components/ModalFichaRegistrada';
+import ModalEditarContactos from '../components/ModalEditarContactos';
 import { obtenerMiFicha } from '../api/fichaApi';
+import * as documentacionApi from '../../documentacion/api/documentacionApi';
 import type { FichaProveedor } from '../types';
 import {
   CAMPO_CLASE,
@@ -52,7 +56,7 @@ function badgeDeEstado(porcentaje: number, estadoCalificacion: FichaProveedor['e
   if (porcentaje === 0) return { tone: 'neutral' as const, texto: 'Sin iniciar' };
   if (porcentaje === 100) {
     if (estadoCalificacion === 'Aprobado') return { tone: 'success' as const, texto: 'Aprobada' };
-    if (estadoCalificacion === 'Rechazado') return { tone: 'amber' as const, texto: 'Rechazada' };
+    if (estadoCalificacion === 'Rechazado') return { tone: 'amber' as const, texto: 'Por corregir' };
     return { tone: 'info' as const, texto: 'Ficha en revisión' };
   }
   return { tone: 'warning' as const, texto: 'En progreso' };
@@ -110,7 +114,7 @@ function armarSecciones(ficha: FichaProveedor): SeccionInfo[] {
   ];
 }
 
-function TarjetaSeccionFicha({ seccion, onAbrir }: { seccion: SeccionInfo; onAbrir: () => void }) {
+function TarjetaSeccionFicha({ seccion }: { seccion: SeccionInfo }) {
   const rechazada = seccion.camposRechazados.length > 0;
   const estado = rechazada
     ? { tone: 'amber' as const, texto: 'Por corregir' }
@@ -119,18 +123,7 @@ function TarjetaSeccionFicha({ seccion, onAbrir }: { seccion: SeccionInfo; onAbr
     : { tone: 'neutral' as const, texto: 'Incompleto' };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onAbrir}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onAbrir();
-        }
-      }}
-      className="rounded-lg border border-brand-900/8 bg-white px-4 py-3 flex items-start gap-3 cursor-pointer transition-colors hover:bg-brand-900/[0.02]"
-    >
+    <div className="rounded-lg border border-brand-900/8 bg-white px-4 py-3 flex items-start gap-3">
       <div
         className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 font-medium text-xs ${
           rechazada
@@ -150,10 +143,6 @@ function TarjetaSeccionFicha({ seccion, onAbrir }: { seccion: SeccionInfo; onAbr
         </div>
         <p className="text-xs text-brand-900/55 mt-0.5">{seccion.descripcion}</p>
       </div>
-
-      <Button className="shrink-0 !text-xs !px-3 !py-1.5" onClick={onAbrir}>
-        Ver
-      </Button>
     </div>
   );
 }
@@ -163,6 +152,18 @@ export default function MiFichaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalRegistradaAbierto, setModalRegistradaAbierto] = useState(false);
+  const [modalContactosAbierto, setModalContactosAbierto] = useState(false);
+
+  // Mismo queryKey que usan Documentación/Inicio -> React Query lo sirve
+  // de caché en vez de duplicar la llamada. Se usa acá solo para saber
+  // si ya se registró la documentación (ver "documentacionYaAvanzada"
+  // más abajo), no para mostrar el checklist en sí.
+  const { data: documentos } = useQuery({
+    queryKey: ['mi-documentos'],
+    queryFn: documentacionApi.obtenerChecklist,
+    retry: false,
+  });
 
   useEffect(() => {
     let cancelado = false;
@@ -212,6 +213,7 @@ export default function MiFichaPage() {
   const estadoCalificacion = ficha.estado_calificacion_general;
   const estado = badgeDeEstado(porcentaje, estadoCalificacion);
   const rechazada = estadoCalificacion === 'Rechazado';
+  const esAprobado = ficha.estado?.trim().toLowerCase() === 'aprobado';
   const secciones = armarSecciones(ficha);
   const seccionesCompletas = secciones.filter((s) => s.completa).length;
 
@@ -248,19 +250,33 @@ export default function MiFichaPage() {
             </div>
           </div>
 
-          <Button className="!text-xs !px-3 !py-1.5 shrink-0" onClick={() => setModalAbierto(true)}>
-            Ver
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {esAprobado && (
+              <Button
+                variant="ghost"
+                className="!text-xs !px-3 !py-1.5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setModalContactosAbierto(true);
+                }}
+              >
+                Editar contactos
+              </Button>
+            )}
+            <Button className="!text-xs !px-3 !py-1.5" onClick={() => setModalAbierto(true)}>
+              Ver
+            </Button>
+          </div>
         </div>
       </Card>
 
       <div className="space-y-2">
         {secciones.map((seccion) => (
-          <TarjetaSeccionFicha key={seccion.numero} seccion={seccion} onAbrir={() => setModalAbierto(true)} />
+          <TarjetaSeccionFicha key={seccion.numero} seccion={seccion} />
         ))}
       </div>
 
-      {porcentaje === 100 && !rechazada && (
+      {porcentaje === 100 && !rechazada && !documentos?.registrado && (
         <Card className="!p-2.5 sm:!p-3 bg-brand-700/5 border-brand-700/20">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
@@ -286,6 +302,21 @@ export default function MiFichaPage() {
           fichaInicial={ficha}
           onClose={() => setModalAbierto(false)}
           onFichaActualizada={setFicha}
+          documentacionRegistrada={documentos?.registrado ?? false}
+          onCompletado={() => {
+            setModalAbierto(false);
+            setModalRegistradaAbierto(true);
+          }}
+        />
+      )}
+
+      {modalRegistradaAbierto && <ModalFichaRegistrada onClose={() => setModalRegistradaAbierto(false)} />}
+
+      {modalContactosAbierto && (
+        <ModalEditarContactos
+          ficha={ficha}
+          onClose={() => setModalContactosAbierto(false)}
+          onGuardado={setFicha}
         />
       )}
     </div>

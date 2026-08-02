@@ -48,19 +48,38 @@ export default function OlvidePasswordPage() {
     <AuthLayout title="Olvidé mi contraseña" subtitle="Te enviaremos un código de recuperación">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-white/90">Correo</label>
-          <Input type="email" {...register('email')} error={errors.email?.message} />
+          <label className="text-sm font-medium text-white/90" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+            Correo
+          </label>
+          <Input
+            type="email"
+            {...register('email')}
+            error={errors.email?.message}
+            className="!bg-black/30 !border-white/25 !text-white placeholder:!text-white/40 shadow-lg focus:!ring-brand-yellow focus:!border-brand-yellow/60"
+          />
         </div>
 
-        {errorGeneral && <p className="text-sm text-red-300">{errorGeneral}</p>}
-        {mensajeExito && <p className="text-sm text-emerald-300">{mensajeExito}</p>}
+        {errorGeneral && (
+          <p className="text-sm text-red-300" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+            {errorGeneral}
+          </p>
+        )}
+        {mensajeExito && (
+          <p className="text-sm text-emerald-300" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+            {mensajeExito}
+          </p>
+        )}
 
         <Button type="submit" isLoading={isSubmitting} className="w-full">
           Enviar código
         </Button>
 
         <div className="text-center pt-1">
-          <Link to="/login" className="text-sm text-white/80 hover:underline">
+          <Link
+            to="/login"
+            className="text-sm text-white/80 hover:text-white hover:underline transition-colors"
+            style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}
+          >
             Volver al inicio de sesión
           </Link>
         </div>

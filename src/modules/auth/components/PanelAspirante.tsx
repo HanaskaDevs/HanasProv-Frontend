@@ -149,17 +149,17 @@ export default function PanelAspirante() {
   const pasos: Paso[] = [
     {
       numero: 1,
-      titulo: 'Completa tu Ficha de Proveedor',
+      titulo: 'Complete su Ficha de Proveedor',
       descripcion: fichaRechazada
         ? `El equipo encontró ${camposFichaRechazados} campo(s) por corregir.`
-        : 'Datos generales, clases y categorías de tu empresa.',
+        : 'Datos generales, clases y categorías de su empresa.',
       estado: fichaRechazada ? 'rechazado' : fichaCompleta ? 'completado' : 'actual',
       to: '/mi-ficha',
       textoBoton: fichaRechazada ? 'Corregir ficha' : 'Completar ficha',
     },
     {
       numero: 2,
-      titulo: 'Carga tu documentación',
+      titulo: 'Cargue su documentación',
       descripcion:
         documentosRechazados.length > 0
           ? `${documentosRechazados.length} documento(s) por corregir.`
@@ -179,8 +179,8 @@ export default function PanelAspirante() {
     },
     {
       numero: 3,
-      titulo: 'Registra tu Ficha de Productos',
-      descripcion: 'Sube la ficha técnica y análisis de laboratorio de tu catálogo.',
+      titulo: 'Registre su Ficha de Productos',
+      descripcion: 'Cargue la ficha técnica y el análisis de laboratorio de su catálogo.',
       estado: productosRegistrados ? 'completado' : fichaCompleta && documentacionCompleta ? 'actual' : 'pendiente',
       to: '/productos',
       textoBoton: 'Ir a Ficha Productos',
@@ -188,25 +188,25 @@ export default function PanelAspirante() {
   ];
 
   const todoListo = pasos.every((p) => p.estado === 'completado');
+  const hayCorrecciones = fichaRechazada || documentosRechazados.length > 0;
 
   return (
     <div className="space-y-5">
       <div className="rounded-lg bg-brand-900 p-6">
         <p className="font-display text-lg font-semibold text-white">
-          ¡Bienvenido a Hanaska!
+          ¡Bienvenido al Portal de Proveedores Hanaska!
         </p>
         <p className="text-sm text-white/70 mt-1 max-w-2xl">
-          Estás postulando como proveedor. Antes de operar con nosotros necesitamos 3 cosas: tu ficha completa, tu
-          documentación al día, y tu catálogo de productos registrado. Sigue los pasos de abajo. Puedes guardar tu
-          avance y volver cuando quieras.
+          Su postulación como proveedor consta de tres pasos: completar su ficha como proveedor, cargar su
+          documentación vigente y registrar su oferta de productos.
         </p>
       </div>
 
-      {(fichaRechazada || documentosRechazados.length > 0) && (
+      {hayCorrecciones && (
         <div className="rounded-lg border border-brand-wine/20 bg-brand-wine/[0.03] px-4 py-3 flex items-start gap-2.5">
           <IconoAlerta className="shrink-0 mt-0.5 text-brand-wine" />
           <p className="text-sm text-brand-900">
-            El equipo revisó tu postulación y encontró algunas cosas por corregir. Revisa los pasos marcados como{' '}
+            El equipo revisó su postulación y encontró algunas cosas por corregir. Revise los pasos marcados como{' '}
             <span className="text-brand-wine font-medium">"Por corregir"</span> abajo.
           </p>
         </div>
@@ -220,12 +220,14 @@ export default function PanelAspirante() {
 
       <div className={`rounded-lg border p-6 ${todoListo ? 'bg-emerald-50 border-emerald-200' : 'bg-brand-900/[0.02] border-brand-900/8'}`}>
         <p className="text-sm font-medium text-brand-900">
-          {todoListo ? 'Ya completaste los 3 pasos' : 'Después de estos 3 pasos'}
+          {todoListo ? 'Completó los 3 pasos' : hayCorrecciones ? 'Después de las correcciones' : 'Después de estos 3 pasos'}
         </p>
         <p className="text-xs text-brand-900/60 mt-1">
           {todoListo
-            ? 'Tu postulación quedó en manos de nuestro equipo. Puedes seguir el estado de tu revisión en Calificación.'
-            : 'Nuestro equipo revisa tu ficha, documentos y productos. Puedes seguir el estado de esa revisión en cualquier momento desde Calificación.'}
+            ? 'Su postulación ya está en manos de nuestro equipo de calidad. Podrá seguir el estado de la evaluación desde Calificación.'
+            : hayCorrecciones
+              ? 'Nuestro equipo revisará nuevamente su postulación. Recuerde que puede seguir el estado de su postulación en cualquier momento desde Calificación.'
+              : 'Nuestro equipo de calidad revisará su ficha, documentación y productos. Podrá seguir el estado de esa evaluación en cualquier momento desde Calificación.'}
         </p>
         <Link
           to="/calificacion"

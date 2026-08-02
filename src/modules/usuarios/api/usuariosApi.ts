@@ -62,6 +62,11 @@ export async function reactivarUsuario(id: number): Promise<{ message: string }>
   return data;
 }
 
+export async function reenviarActivacion(id: number): Promise<{ message: string }> {
+  const { data } = await apiClient.post(`/usuarios/${id}/reenviar-activacion`);
+  return data;
+}
+
 export async function agregarEmpresaUsuario(id: number, idEmpresa: number, idRol?: number): Promise<{ message: string }> {
   const { data } = await apiClient.post(`/usuarios/${id}/empresas`, {
     id_empresa: idEmpresa,

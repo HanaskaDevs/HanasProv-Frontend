@@ -1,6 +1,5 @@
 // src/modules/miFicha/components/ModalFichaProveedor.tsx
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import ProgressSteps from './ProgressSteps';
 import InformacionProveedorForm from './InformacionProveedorForm';
 import Seccion2Form from './Seccion2Form';
@@ -57,10 +56,20 @@ export default function ModalFichaProveedor({
   fichaInicial,
   onClose,
   onFichaActualizada,
+  onCompletado,
+  documentacionRegistrada,
 }: {
   fichaInicial: FichaProveedor;
   onClose: () => void;
   onFichaActualizada: (ficha: FichaProveedor) => void;
+  /** Se llama UNA vez, justo cuando las 4 secciones pasan de incompletas
+   *  a completas en esta misma sesión -> el padre cierra este modal y
+   *  muestra la confirmación aparte (ver ModalFichaRegistrada), en vez
+   *  de dejar un banner conviviendo con un formulario ya sin nada más
+   *  que llenar. */
+  onCompletado?: () => void;
+  /** Se reenvía tal cual a VistaFichaCompleta -> ver ese componente. */
+  documentacionRegistrada?: boolean;
 }) {
   const [ficha, setFicha] = useState(fichaInicial);
   const [expandido, setExpandido] = useState(false);
@@ -87,7 +96,6 @@ export default function ModalFichaProveedor({
 
   const pasosCompletados = [datosGeneralesCompleta, datosGeneralesCompleta, clase, categoria];
   const porcentaje = Math.round((pasosCompletados.filter(Boolean).length / 4) * 100);
-  const todoCompleto = pasosCompletados.every(Boolean);
 
   // Al cambiar de paso (ej. "Siguiente" en Datos Generales -> Contactos),
   // el contenedor con scroll conserva la posición anterior por defecto
@@ -99,9 +107,19 @@ export default function ModalFichaProveedor({
   }, [pasoVisible]);
 
   function actualizar(fichaActualizada: FichaProveedor) {
+    const completaAntes = esFichaCompleta(ficha);
+    const completaDespues = esFichaCompleta(fichaActualizada);
+
     setFicha(fichaActualizada);
     setYaGuardoAlgo(true);
     onFichaActualizada(fichaActualizada);
+
+    // Solo dispara la confirmación en el wizard normal (no en modo
+    // corrección: ahí "completo" ya era cierto desde antes del rechazo,
+    // así que no es una transición real -> yaGuardoAlgo cubre ese caso).
+    if (!modoCorreccion && !completaAntes && completaDespues) {
+      onCompletado?.();
+    }
   }
 
   function handleGuardadoInformacion(fichaActualizada: FichaProveedor) {
@@ -156,7 +174,7 @@ export default function ModalFichaProveedor({
 
         {soloLectura && (
           <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
-            <VistaFichaCompleta ficha={ficha} />
+            <VistaFichaCompleta ficha={ficha} documentacionRegistrada={documentacionRegistrada} />
           </div>
         )}
 
@@ -199,29 +217,6 @@ export default function ModalFichaProveedor({
                 onIrAPaso={setPasoVisible}
                 porcentaje={porcentaje}
               />
-
-              {todoCompleto && (
-                <div className="mb-6 rounded-md bg-emerald-50 border border-emerald-200 px-4 py-3">
-                  <p className="text-sm text-emerald-800">
-                    <span className="font-semibold">¡Completó las 4 secciones de su Ficha!</span> Ese es el
-                    primer paso, pero todavía no terminó.
-                  </p>
-                  <p className="text-sm text-emerald-800 mt-1">
-                    Ahora sigue cargar su <span className="font-semibold">documentación</span>. Sin eso su
-                    proceso como proveedor no queda completo.
-                  </p>
-                  <Link
-                    to="/documentos"
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
-                  >
-                    Ir a Documentación
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  </Link>
-                </div>
-              )}
             </div>
 
             <div ref={contenidoRef} className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">

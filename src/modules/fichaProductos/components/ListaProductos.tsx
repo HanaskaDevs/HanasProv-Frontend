@@ -311,7 +311,7 @@ export default function ListaProductos() {
             onCambiar={(v) => setFiltroEstado(v as EstadoFiltroProducto[])}
             opciones={[
               { valor: 'aprobado', etiqueta: 'Aprobados' },
-              { valor: 'rechazado', etiqueta: 'Rechazados' },
+              { valor: 'rechazado', etiqueta: 'Por corregir' },
               { valor: 'en_revision', etiqueta: 'En revisión' },
               { valor: 'pendiente', etiqueta: 'Pendientes' },
             ]}

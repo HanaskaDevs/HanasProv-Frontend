@@ -3,10 +3,11 @@ import { useAuth } from '../hooks/useAuth';
 import Card from '../../../shared/components/Card';
 import PanelProveedor from '../components/PanelProveedor';
 import PanelAspirante from '../components/PanelAspirante';
+import PanelSistemas from '../components/PanelSistemas';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 
 export default function DashboardHomePage() {
-  const { usuario, empresaActiva, esProveedor } = useAuth();
+  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin } = useAuth();
 
   // Comparte queryKey con DashboardLayout/MiFichaPage -> React Query lo
   // sirve de caché en vez de duplicar la llamada. Mismo criterio
@@ -29,10 +30,10 @@ export default function DashboardHomePage() {
         {!esAspirante && (
           <div>
             <h1 className="font-display text-2xl font-semibold text-brand-900">
-              Hola, {usuario?.nombre_completo}
+              Bienvenido, {usuario?.nombre_completo}
             </h1>
             <p className="text-brand-900/60 text-sm mt-1">
-              {empresaActiva?.razon_social ?? 'Sin empresa activa'} · Rol: {empresaActiva?.nombre_rol ?? '—'}
+              {empresaActiva?.razon_social ?? 'Sin empresa activa'}
             </p>
           </div>
         )}
@@ -52,6 +53,8 @@ export default function DashboardHomePage() {
 
       {esProveedor ? (
         esAspirante ? <PanelAspirante /> : <PanelProveedor />
+      ) : esSistemas || esAdmin ? (
+        <PanelSistemas />
       ) : (
         <Card>
           <p className="text-sm text-brand-900/70">

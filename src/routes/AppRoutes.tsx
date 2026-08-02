@@ -16,6 +16,7 @@ import RestablecerPasswordPage from '../modules/auth/pages/RestablecerPasswordPa
 import EmpresasPage from '../modules/empresas/pages/EmpresasPage';
 import PedidosPage from '../modules/pedidos/pages/PedidosPage';
 import ProveedoresPage from '../modules/proveedores/pages/ProveedoresPage';
+import ProductosProveedoresPage from '../modules/proveedores/pages/ProductosProveedoresPage';
 import ReclamosAbiertosPage from '../modules/reclamos/pages/ReclamosAbiertosPage';
 import ReclamosCerradosPage from '../modules/reclamos/pages/ReclamosCerradosPage';
 import ConfiguracionesPage from '../modules/configuraciones/pages/ConfiguracionesPage';
@@ -43,6 +44,7 @@ export default function AppRoutes() {
         <Route path="/usuarios/internos" element={<UsuariosInternosPage />} />
         <Route path="/usuarios/proveedores" element={<UsuariosExternosPage />} />
         <Route path="/proveedores" element={<ProveedoresPage />} />
+        <Route path="/productos-proveedores" element={<ProductosProveedoresPage />} />
 
         <Route path="/calificacion" element={<CalificacionPage />} />
         <Route path="/pedidos" element={<PedidosPage />} />

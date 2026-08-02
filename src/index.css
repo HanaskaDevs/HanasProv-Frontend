@@ -96,3 +96,61 @@ h1, h2, h3, h4, .font-display {
 .animar-fondo-login {
   animation: aparecer-fondo 0.7s ease-out forwards;
 }
+
+/* Modal de "algo se completó/registró con éxito" (ej. al terminar las 4
+   secciones de la Ficha de Proveedor) -> la tarjeta entra con fundido +
+   escala, y el círculo del check "rebota" un poco al aparecer en vez de
+   simplemente aparecer de golpe, para que se sienta como una
+   confirmación real y no un cartel más. */
+@keyframes entrada-modal-exito {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animar-modal-exito {
+  animation: entrada-modal-exito 0.25s ease-out;
+}
+
+@keyframes rebote-check {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animar-rebote-check {
+  animation: rebote-check 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s backwards;
+}
+
+/* Entrada de página completa (al cambiar de pestaña del menú, ej. de
+   Mi Ficha a Documentación) -> antes el contenido cambiaba de un
+   corte seco, y como cada página tiene una altura distinta, el footer
+   "saltaba" de golpe a su nueva posición. Con este fundido + leve
+   desplazamiento vertical, ese salto se siente como parte de una
+   transición en vez de un corte abrupto. Se dispara de nuevo en cada
+   cambio de ruta usando la ruta como key (ver DashboardLayout). */
+@keyframes entrada-pagina-completa {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animar-entrada-pagina-completa {
+  animation: entrada-pagina-completa 0.22s ease-out;
+}

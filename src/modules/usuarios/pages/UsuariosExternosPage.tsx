@@ -11,7 +11,7 @@ import EstadoBadge from '../components/EstadoBadge';
 import ModalCrearUsuarioExterno from '../components/ModalCrearUsuarioExterno';
 import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
 import ModalEditarUsuario from '../components/ModalEditarUsuario';
-import { listarExternos, inactivarUsuario, reactivarUsuario, type UsuarioExterno } from '../api/usuariosApi';
+import { listarExternos, inactivarUsuario, reactivarUsuario, reenviarActivacion, type UsuarioExterno } from '../api/usuariosApi';
 
 function UsuariosExternosContent() {
   const [usuarios, setUsuarios] = useState<UsuarioExterno[]>([]);
@@ -20,6 +20,8 @@ function UsuariosExternosContent() {
   const [usuarioParaEmpresa, setUsuarioParaEmpresa] = useState<number | null>(null);
   const [usuarioEditando, setUsuarioEditando] = useState<number | null>(null);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
+  const [reenviandoId, setReenviandoId] = useState<number | null>(null);
+  const [mensajeReenvio, setMensajeReenvio] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroFicha, setFiltroFicha] = useState('');
@@ -70,8 +72,19 @@ function UsuariosExternosContent() {
     }
   }
 
+  async function reenviar(u: UsuarioExterno) {
+    setReenviandoId(u.id);
+    setMensajeReenvio(null);
+    try {
+      await reenviarActivacion(u.id);
+      setMensajeReenvio(`Correo de activación reenviado a ${u.email}.`);
+    } finally {
+      setReenviandoId(null);
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-semibold text-brand-900">Usuarios externos</h1>
@@ -79,6 +92,15 @@ function UsuariosExternosContent() {
         </div>
         <Button onClick={() => setModalAbierto(true)}>Nuevo usuario</Button>
       </div>
+
+      {mensajeReenvio && (
+        <div className="rounded-md bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-800 flex items-center justify-between">
+          {mensajeReenvio}
+          <button onClick={() => setMensajeReenvio(null)} className="text-emerald-700/60 hover:text-emerald-900 ml-4">
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por nombre, proveedor o correo..." />
@@ -126,7 +148,13 @@ function UsuariosExternosContent() {
               {usuariosFiltrados.map((u) => (
                 <tr key={u.id}>
                   <td className="px-4 py-3 text-brand-900">
-                    {u.proveedor?.razon_social ?? u.nombre_completo}
+                    {u.proveedor?.razon_social ? (
+                      u.proveedor.razon_social
+                    ) : u.requiere_activacion ? (
+                      <span className="text-brand-900/40 italic">Pendiente de activar</span>
+                    ) : (
+                      <span className="text-brand-900/40 italic">Ficha sin completar</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-brand-900/70">{u.email}</td>
                   <td className="px-4 py-3">
@@ -150,6 +178,16 @@ function UsuariosExternosContent() {
                     >
                       + Empresa
                     </Button>
+                    {u.requiere_activacion && (
+                      <Button
+                        variant="ghost"
+                        className="text-xs px-2 py-1"
+                        isLoading={reenviandoId === u.id}
+                        onClick={() => reenviar(u)}
+                      >
+                        Reenviar activación
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       className={`text-xs px-2 py-1 ${u.activo ? 'text-brand-wine' : 'text-emerald-700'}`}

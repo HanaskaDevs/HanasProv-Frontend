@@ -5,17 +5,17 @@ const PASOS_RESPALDO: GuiaPasoPublico[] = [
     {
         Target_Id: 'tour-mi-ficha',
         Titulo: 'Paso 1 · Ficha de Proveedor',
-        Texto: 'Aquí debes llenar los datos de tu empresa: información general, clase de proveedor y categoría de productos o servicios.',
+        Texto: 'Complete los datos de su empresa: información general, clase de proveedor y categoría de productos o servicios.',
     },
     {
         Target_Id: 'tour-documentacion',
         Titulo: 'Paso 2 · Documentación',
-        Texto: 'Aquí deberás subir en formato PDF toda la documentación requerida. Tienes documentos obligatorios y opcionales.',
+        Texto: 'Cargue en formato PDF la documentación requerida. Encontrará documentos obligatorios y opcionales.',
     },
     {
         Target_Id: 'tour-productos',
         Titulo: 'Paso 3 · Ficha de Productos',
-        Texto: 'Aquí registras tus productos con su ficha técnica, análisis y carta de alérgenos. Cuando termines, podrás enviarlos a calificación.',
+        Texto: 'Registre sus productos junto con su ficha técnica, análisis y carta de alérgenos. Una vez completado, podrá enviarlos a calificación.',
     },
 ];
 

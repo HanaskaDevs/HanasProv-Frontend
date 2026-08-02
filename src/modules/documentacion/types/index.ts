@@ -2,6 +2,10 @@ export interface DocumentoSubido {
   id_documento_proveedor: number;
   nombre_original: string;
   fecha_caducidad: string | null;
+  /** true si vence en 30 días o menos (o ya venció) -> usado para que
+   *  un proveedor YA APROBADO pueda reemplazar este documento puntual
+   *  aunque el resto de su documentación ya esté aprobada y bloqueada. */
+  proximo_a_vencer: boolean;
   estado: string;
   fecha_creacion: string;
   estado_calificacion: 'Aprobado' | 'Rechazado' | null;

@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../modules/auth/hooks/useAuth';
 import { obtenerMenu } from '../config/menuConfig';
@@ -10,6 +10,7 @@ import * as fichaApi from '../../modules/miFicha/api/fichaApi';
 import GuiaInicioTour from '../components/GuiaInicioTour';
 import type { GuiaPasoPublico } from '../api/publicConfigApi';
 import HanaBot from '../components/HanaBot';
+import Footer from '../components/Footer';
 
 function IconoFicha({ className = '' }: { className?: string }) {
   return (
@@ -48,6 +49,15 @@ function IconoSalir({ className = '' }: { className?: string }) {
   );
 }
 
+function IconoEmpresa({ className = '' }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="4" y="2" width="16" height="20" rx="1" />
+      <path d="M9 22v-4h6v4M9 6h.01M9 10h.01M9 14h.01M15 6h.01M15 10h.01M15 14h.01" />
+    </svg>
+  );
+}
+
 // Tour para el proveedor YA APROBADO -> apunta a lo que se le acaba de
 // habilitar (Pedidos, Reclamos), no a Ficha/Documentación (ya las
 // completó y aprobó hace rato, y de hecho ya ni están en el menú de
@@ -81,6 +91,7 @@ const PASOS_PROVEEDOR_APROBADO: GuiaPasoPublico[] = [
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { usuario, empresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
@@ -145,6 +156,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   const menu = obtenerMenu(rolActivo, usuario?.tipo_usuario ?? 'Interno', esAspirante);
+  const [conScroll, setConScroll] = useState(false);
 
   async function handleLogout() {
     await logout();
@@ -153,24 +165,36 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-brand-200/10">
-      <header className="bg-brand-900 text-white shrink-0">
-        <div className="flex items-center justify-between pl-10 pr-6 py-2">
-          <LogoLink className="h-20" variant="light" />
+      <header className="bg-brand-900 text-white shrink-0 transition-all duration-300">
+        <div className={`flex items-center justify-between pl-10 pr-6 transition-all duration-300 ${conScroll ? 'py-1' : 'py-2'}`}>
+          <LogoLink className={`transition-all duration-300 ${conScroll ? 'h-12' : 'h-20'}`} variant="light" />
 
           <div className="flex items-center gap-4">
-            {usuario && usuario.empresas.length > 1 && (
-              <select
-                value={empresaActiva ? String(empresaActiva.id_empresa) : ''}
-                onChange={(e) => handleCambiarEmpresa(Number(e.target.value))}
-                disabled={cambiandoEmpresa}
-                className="bg-white/10 text-white text-sm rounded-md px-3 py-1.5 border border-white/20"
-              >
-                {usuario.empresas.map((e) => (
-                  <option key={e.id_empresa} value={String(e.id_empresa)} className="text-brand-900">
-                    {e.nombre_comercial ?? e.razon_social}
-                  </option>
-                ))}
-              </select>
+            {usuario && usuario.empresas.length > 1 ? (
+              <div className="flex items-center gap-2 bg-white/10 rounded-md px-3 py-1.5 border border-white/20">
+                <IconoEmpresa className="text-white/60 shrink-0" />
+                <select
+                  value={empresaActiva ? String(empresaActiva.id_empresa) : ''}
+                  onChange={(e) => handleCambiarEmpresa(Number(e.target.value))}
+                  disabled={cambiandoEmpresa}
+                  className="bg-transparent text-white text-sm focus:outline-none"
+                >
+                  {usuario.empresas.map((e) => (
+                    <option key={e.id_empresa} value={String(e.id_empresa)} className="text-brand-900">
+                      {e.nombre_comercial ?? e.razon_social}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              empresaActiva && (
+                <div className="flex items-center gap-2 bg-white/10 rounded-md px-3 py-1.5 border border-white/20">
+                  <IconoEmpresa className="text-white/60 shrink-0" />
+                  <span className="text-white text-sm">
+                    {empresaActiva.nombre_comercial ?? empresaActiva.razon_social}
+                  </span>
+                </div>
+              )
             )}
 
             <div
@@ -294,7 +318,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-8">{children}</main>
+      <main
+        className="flex-1 overflow-y-auto flex flex-col"
+        onScroll={(e) => {
+          // Dos umbrales distintos (no uno solo) a propósito: si achicar
+          // el header en sí corre un poquito el scroll (cambia su propia
+          // altura), un único umbral hace que el scroll quede justo en el
+          // borde y la animación oscile en bucle sin parar. Con un umbral
+          // más alto para achicar y uno más bajo para volver a agrandar,
+          // queda una "zona muerta" en el medio que no dispara nada.
+          const scrollTop = e.currentTarget.scrollTop;
+          setConScroll((actual) => (actual ? scrollTop > 8 : scrollTop > 40));
+        }}
+      >
+        <div key={location.pathname} className="flex-1 p-8 animar-entrada-pagina-completa">
+          {children}
+        </div>
+        <Footer />
+      </main>
 
       {modalPasswordAbierto && <ModalCambiarPassword onClose={() => setModalPasswordAbierto(false)} />}
 

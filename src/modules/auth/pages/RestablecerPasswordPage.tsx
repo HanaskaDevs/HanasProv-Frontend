@@ -23,11 +23,18 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
-function CampoOscuro({ label, ...props }: { label: string } & Parameters<typeof Input>[0]) {
+function CampoOscuro({ label, className = '', ...props }: { label: string } & Parameters<typeof Input>[0]) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm font-medium text-white/90">{label}</label>
-      <Input {...props} />
+      <label className="text-sm font-medium text-white/90" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+        {label}
+      </label>
+      <Input
+        {...props}
+        errorClassName="text-brand-yellow"
+        toggleClassName="text-white/50 hover:text-white/80"
+        className={`!bg-black/30 !border-white/25 !text-white placeholder:!text-white/40 shadow-lg focus:!ring-brand-yellow focus:!border-brand-yellow/60 ${className}`}
+      />
     </div>
   );
 }
@@ -72,7 +79,7 @@ export default function RestablecerPasswordPage() {
   if (exito) {
     return (
       <AuthLayout title="Contraseña actualizada">
-        <p className="text-sm text-white/80 text-center">
+        <p className="text-sm text-white/80 text-center" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
           Tu contraseña se actualizó correctamente. Serás redirigido al inicio de sesión...
         </p>
       </AuthLayout>
@@ -97,7 +104,11 @@ export default function RestablecerPasswordPage() {
           error={errors.password_nueva_confirmation?.message}
         />
 
-        {errorGeneral && <p className="text-sm text-red-300">{errorGeneral}</p>}
+        {errorGeneral && (
+          <p className="text-sm text-red-300" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+            {errorGeneral}
+          </p>
+        )}
 
         <Button type="submit" isLoading={isSubmitting} className="w-full">
           Restablecer contraseña

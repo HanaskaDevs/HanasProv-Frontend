@@ -45,66 +45,66 @@ export interface UnidadPresentacion {
 
 // ---------- Clase de Proveedor ----------
 export const claseProveedorApi = {
-  listar: async (): Promise<ClaseProveedor[]> => (await apiClient.get('/catalogos/clases-proveedor')).data,
+  listar: async (): Promise<ClaseProveedor[]> => (await apiClient.get('/catalogos-admin/clases-proveedor')).data,
   crear: async (payload: Record<string, unknown>): Promise<ClaseProveedor> =>
-    (await apiClient.post('/catalogos/clases-proveedor', payload)).data,
+    (await apiClient.post('/catalogos-admin/clases-proveedor', payload)).data,
   actualizar: async (id: number, payload: Record<string, unknown>): Promise<ClaseProveedor> =>
-    (await apiClient.put(`/catalogos/clases-proveedor/${id}`, payload)).data,
+    (await apiClient.put(`/catalogos-admin/clases-proveedor/${id}`, payload)).data,
   desactivar: async (id: number): Promise<{ message: string }> =>
-    (await apiClient.delete(`/catalogos/clases-proveedor/${id}`)).data,
+    (await apiClient.delete(`/catalogos-admin/clases-proveedor/${id}`)).data,
   activar: async (id: number): Promise<ClaseProveedor> =>
-    (await apiClient.patch(`/catalogos/clases-proveedor/${id}/activar`)).data,
+    (await apiClient.patch(`/catalogos-admin/clases-proveedor/${id}/activar`)).data,
 };
 
 // ---------- Categoría de Producto ----------
 export const categoriaProductoApi = {
-  listar: async (): Promise<CategoriaProducto[]> => (await apiClient.get('/catalogos/categorias-producto')).data,
+  listar: async (): Promise<CategoriaProducto[]> => (await apiClient.get('/catalogos-admin/categorias-producto')).data,
   crear: async (payload: Record<string, unknown>): Promise<CategoriaProducto> =>
-    (await apiClient.post('/catalogos/categorias-producto', payload)).data,
+    (await apiClient.post('/catalogos-admin/categorias-producto', payload)).data,
   actualizar: async (id: number, payload: Record<string, unknown>): Promise<CategoriaProducto> =>
-    (await apiClient.put(`/catalogos/categorias-producto/${id}`, payload)).data,
+    (await apiClient.put(`/catalogos-admin/categorias-producto/${id}`, payload)).data,
   desactivar: async (id: number): Promise<{ message: string }> =>
-    (await apiClient.delete(`/catalogos/categorias-producto/${id}`)).data,
+    (await apiClient.delete(`/catalogos-admin/categorias-producto/${id}`)).data,
   activar: async (id: number): Promise<CategoriaProducto> =>
-    (await apiClient.patch(`/catalogos/categorias-producto/${id}/activar`)).data,
+    (await apiClient.patch(`/catalogos-admin/categorias-producto/${id}/activar`)).data,
 };
 
 // ---------- Tipo de Documento (Documentación general) ----------
 export const tipoDocumentoApi = {
-  listar: async (): Promise<TipoDocumento[]> => (await apiClient.get('/catalogos/tipos-documento')).data,
+  listar: async (): Promise<TipoDocumento[]> => (await apiClient.get('/catalogos-admin/tipos-documento')).data,
   crear: async (payload: Record<string, unknown>): Promise<TipoDocumento> =>
-    (await apiClient.post('/catalogos/tipos-documento', payload)).data,
+    (await apiClient.post('/catalogos-admin/tipos-documento', payload)).data,
   actualizar: async (id: number, payload: Record<string, unknown>): Promise<TipoDocumento> =>
-    (await apiClient.put(`/catalogos/tipos-documento/${id}`, payload)).data,
+    (await apiClient.put(`/catalogos-admin/tipos-documento/${id}`, payload)).data,
   desactivar: async (id: number): Promise<{ message: string }> =>
-    (await apiClient.delete(`/catalogos/tipos-documento/${id}`)).data,
+    (await apiClient.delete(`/catalogos-admin/tipos-documento/${id}`)).data,
   activar: async (id: number): Promise<TipoDocumento> =>
-    (await apiClient.patch(`/catalogos/tipos-documento/${id}/activar`)).data,
+    (await apiClient.patch(`/catalogos-admin/tipos-documento/${id}/activar`)).data,
 };
 
 // ---------- Tipo de Documento de Producto (Ficha Productos) ----------
 export const tipoDocumentoProductoApi = {
   listar: async (): Promise<TipoDocumentoProducto[]> =>
-    (await apiClient.get('/catalogos/tipos-documento-producto')).data,
+    (await apiClient.get('/catalogos-admin/tipos-documento-producto')).data,
   crear: async (payload: Record<string, unknown>): Promise<TipoDocumentoProducto> =>
-    (await apiClient.post('/catalogos/tipos-documento-producto', payload)).data,
+    (await apiClient.post('/catalogos-admin/tipos-documento-producto', payload)).data,
   actualizar: async (id: number, payload: Record<string, unknown>): Promise<TipoDocumentoProducto> =>
-    (await apiClient.put(`/catalogos/tipos-documento-producto/${id}`, payload)).data,
+    (await apiClient.put(`/catalogos-admin/tipos-documento-producto/${id}`, payload)).data,
   desactivar: async (id: number): Promise<{ message: string }> =>
-    (await apiClient.delete(`/catalogos/tipos-documento-producto/${id}`)).data,
+    (await apiClient.delete(`/catalogos-admin/tipos-documento-producto/${id}`)).data,
   activar: async (id: number): Promise<TipoDocumentoProducto> =>
-    (await apiClient.patch(`/catalogos/tipos-documento-producto/${id}/activar`)).data,
+    (await apiClient.patch(`/catalogos-admin/tipos-documento-producto/${id}/activar`)).data,
 };
 
 // ---------- Unidad de Presentación ----------
 export const unidadPresentacionApi = {
-  listar: async (): Promise<UnidadPresentacion[]> => (await apiClient.get('/catalogos/unidades-presentacion')).data,
+  listar: async (): Promise<UnidadPresentacion[]> => (await apiClient.get('/catalogos-admin/unidades-presentacion')).data,
   crear: async (payload: Record<string, unknown>): Promise<UnidadPresentacion> =>
-    (await apiClient.post('/catalogos/unidades-presentacion', payload)).data,
+    (await apiClient.post('/catalogos-admin/unidades-presentacion', payload)).data,
   actualizar: async (id: number, payload: Record<string, unknown>): Promise<UnidadPresentacion> =>
-    (await apiClient.put(`/catalogos/unidades-presentacion/${id}`, payload)).data,
+    (await apiClient.put(`/catalogos-admin/unidades-presentacion/${id}`, payload)).data,
   desactivar: async (id: number): Promise<{ message: string }> =>
-    (await apiClient.delete(`/catalogos/unidades-presentacion/${id}`)).data,
+    (await apiClient.delete(`/catalogos-admin/unidades-presentacion/${id}`)).data,
   activar: async (id: number): Promise<UnidadPresentacion> =>
-    (await apiClient.patch(`/catalogos/unidades-presentacion/${id}/activar`)).data,
+    (await apiClient.patch(`/catalogos-admin/unidades-presentacion/${id}/activar`)).data,
 };

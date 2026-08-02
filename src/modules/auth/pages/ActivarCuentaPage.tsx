@@ -14,8 +14,8 @@ const schema = z
     email: z.string().email('Correo inválido'),
     codigo: z.string().min(1, 'El código es requerido'),
     nombre_completo: z.string().min(1, 'El nombre completo es requerido'),
-    cargo: z.string().optional(),
-    telefono: z.string().optional(),
+    cargo: z.string().min(1, 'El cargo es requerido'),
+    telefono: z.string().min(1, 'El teléfono es requerido'),
     password_nueva: z.string().min(8, 'Mínimo 8 caracteres'),
     password_nueva_confirmation: z.string().min(1, 'Requerido'),
   })
@@ -26,11 +26,18 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
-function CampoOscuro({ label, ...props }: { label: string } & Parameters<typeof Input>[0]) {
+function CampoOscuro({ label, className = '', ...props }: { label: string } & Parameters<typeof Input>[0]) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm font-medium text-white/90">{label}</label>
-      <Input {...props} />
+      <label className="text-sm font-medium text-white/90" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+        {label}
+      </label>
+      <Input
+        {...props}
+        errorClassName="text-brand-yellow"
+        toggleClassName="text-white/50 hover:text-white/80"
+        className={`!bg-black/30 !border-white/25 !text-white placeholder:!text-white/40 shadow-lg focus:!ring-brand-yellow focus:!border-brand-yellow/60 ${className}`}
+      />
     </div>
   );
 }
@@ -60,7 +67,7 @@ export default function ActivarCuentaPage() {
   async function irSiguiente() {
     const camposPorPaso: Record<number, (keyof FormValues)[]> = {
       1: ['email', 'codigo'],
-      2: ['nombre_completo'],
+      2: ['nombre_completo', 'cargo', 'telefono'],
     };
     const valido = await trigger(camposPorPaso[paso]);
     if (valido) setPaso((p) => p + 1);
@@ -79,8 +86,8 @@ export default function ActivarCuentaPage() {
         password_nueva: values.password_nueva,
         password_nueva_confirmation: values.password_nueva_confirmation,
         nombre_completo: values.nombre_completo,
-        cargo: values.cargo || undefined,
-        telefono: values.telefono || undefined,
+        cargo: values.cargo,
+        telefono: values.telefono,
       });
       setExito(true);
       setTimeout(() => navigate('/login'), 2000);
@@ -100,7 +107,7 @@ export default function ActivarCuentaPage() {
   if (exito) {
     return (
       <AuthLayout title="Cuenta activada">
-        <p className="text-sm text-white/80 text-center">
+        <p className="text-sm text-white/80 text-center" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
           Tu cuenta quedó activada correctamente. Serás redirigido al inicio de sesión...
         </p>
       </AuthLayout>
@@ -130,8 +137,8 @@ export default function ActivarCuentaPage() {
               {...register('nombre_completo')}
               error={errors.nombre_completo?.message}
             />
-            <CampoOscuro label="Cargo (opcional)" {...register('cargo')} />
-            <CampoOscuro label="Teléfono (opcional)" {...register('telefono')} />
+            <CampoOscuro label="Cargo" {...register('cargo')} error={errors.cargo?.message} />
+            <CampoOscuro label="Teléfono" {...register('telefono')} error={errors.telefono?.message} />
           </>
         )}
 
@@ -152,11 +159,20 @@ export default function ActivarCuentaPage() {
           </>
         )}
 
-        {errorGeneral && <p className="text-sm text-red-300">{errorGeneral}</p>}
+        {errorGeneral && (
+          <p className="text-sm text-red-300" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+            {errorGeneral}
+          </p>
+        )}
 
         <div className="flex gap-2 pt-2">
           {paso > 1 && (
-            <Button type="button" variant="ghost" onClick={irAtras} className="flex-1">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={irAtras}
+              className="flex-1 !bg-white/10 !text-white hover:!bg-white/20 !border !border-white/25"
+            >
               Atrás
             </Button>
           )}
