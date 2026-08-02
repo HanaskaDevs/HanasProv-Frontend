@@ -22,6 +22,7 @@ import ConfiguracionesPage from '../modules/configuraciones/pages/Configuracione
 import AuditoriasPage from '../modules/auditorias/pages/AuditoriasPage';
 import PoliticasPage from '../modules/politicas/pages/PoliticasPage';
 import CatalogosPage from '../modules/catalogos/pages/CatalogosPage';
+import CatalogoProductosPage from '../modules/catalogoProductos/pages/CatalogoProductosPage';
 
 export default function AppRoutes() {
   return (
@@ -54,6 +55,7 @@ export default function AppRoutes() {
         <Route path="/reportes" element={<ProximamentePage titulo="Reportes" />} />
         <Route path="/configuraciones" element={<ConfiguracionesPage />} />
         <Route path="/catalogos" element={<CatalogosPage />} />
+        <Route path="/catalogo-productos" element={<CatalogoProductosPage />} />
       </Route>
     </Routes>
   );
