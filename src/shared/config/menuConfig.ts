@@ -13,6 +13,11 @@ export interface MenuItem {
 
 const PEDIDOS: MenuItem = { label: 'Pedidos', to: '/pedidos' };
 
+// Catálogo consolidado de productos de todos los proveedores. Solo
+// personal interno: Sistemas, Admin y Compras (Calidad NO -> por eso
+// dejó de existir un único MENU_CALIDAD_COMPRAS, ver más abajo).
+const CATALOGO_PRODUCTOS: MenuItem = { label: 'Catálogo Productos', to: '/catalogo-productos' };
+
 const RECLAMOS: MenuItem = {
   label: 'Reclamos',
   children: [
@@ -70,6 +75,8 @@ const MENU_SISTEMAS: MenuItem[] = [
   // que en realidad apuntan a pantallas completamente distintas).
   { label: 'Calificación Proveedores', to: '/proveedores' },
   { label: 'Productos', to: '/productos-proveedores' },
+  { label: 'Proveedores', to: '/proveedores' },
+  CATALOGO_PRODUCTOS,
   PEDIDOS,
   RECLAMOS,
   { label: 'Auditorías', to: '/auditorias' },
@@ -88,6 +95,7 @@ const MENU_ADMIN: MenuItem[] = [
   },
   { label: 'Calificación Proveedores', to: '/proveedores' },
   { label: 'Productos', to: '/productos-proveedores' },
+  CATALOGO_PRODUCTOS,
   PEDIDOS,
   RECLAMOS,
   { label: 'Auditorías', to: '/auditorias' },
@@ -96,7 +104,17 @@ const MENU_ADMIN: MenuItem[] = [
   { label: 'Reportes', to: '/reportes' },
 ];
 
-const MENU_CALIDAD_COMPRAS: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
+const MENU_CALIDAD: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
+
+// Compras tenía exactamente el mismo menú que Calidad; se separan porque
+// Compras SÍ entra al Catálogo de Productos (es quien mapea los códigos
+// de Business Central) y Calidad no.
+const MENU_COMPRAS: MenuItem[] = [
+  CATALOGO_PRODUCTOS,
+  PEDIDOS,
+  { label: 'Auditorías', to: '/auditorias' },
+  RECLAMOS,
+];
 
 export function obtenerMenu(
   rolActivo: string | null,
@@ -119,8 +137,9 @@ export function obtenerMenu(
     case ROLES.ADMIN:
       return MENU_ADMIN;
     case ROLES.CALIDAD:
+      return MENU_CALIDAD;
     case ROLES.COMPRAS:
-      return MENU_CALIDAD_COMPRAS;
+      return MENU_COMPRAS;
     default:
       return [];
   }
