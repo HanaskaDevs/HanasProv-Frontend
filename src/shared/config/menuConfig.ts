@@ -13,11 +13,6 @@ export interface MenuItem {
 
 const PEDIDOS: MenuItem = { label: 'Pedidos', to: '/pedidos' };
 
-// Catálogo consolidado de productos de todos los proveedores. Solo
-// personal interno: Sistemas, Admin y Compras (Calidad NO -> por eso
-// dejó de existir un único MENU_CALIDAD_COMPRAS, ver más abajo).
-const CATALOGO_PRODUCTOS: MenuItem = { label: 'Catálogo Productos', to: '/catalogo-productos' };
-
 const RECLAMOS: MenuItem = {
   label: 'Reclamos',
   children: [
@@ -66,17 +61,21 @@ const MENU_SISTEMAS: MenuItem[] = [
     label: 'Usuarios',
     children: [
       { to: '/usuarios/internos', label: 'Usuarios Internos' },
-      { to: '/usuarios/proveedores', label: 'Proveedores' },
+      // Renombrado de "Proveedores" a "Cuentas de Proveedores" -> ahora
+      // que "Proveedores" es un desplegable de nivel superior (ver
+      // abajo), dejarlo igual acá generaba dos ítems con el mismo
+      // nombre en el mismo menú, apuntando a cosas distintas.
+      { to: '/usuarios/proveedores', label: 'Cuentas de Proveedores' },
     ],
   },
-  // Renombrado a "Calificación Proveedores" (mismo nombre que ya usa
-  // MENU_ADMIN para esta misma pantalla) -> si no, quedaban DOS ítems
-  // llamados "Proveedores" en este mismo menú (este y el de arriba,
-  // que en realidad apuntan a pantallas completamente distintas).
-  { label: 'Calificación Proveedores', to: '/proveedores' },
-  { label: 'Productos', to: '/productos-proveedores' },
-  { label: 'Proveedores', to: '/proveedores' },
-  CATALOGO_PRODUCTOS,
+  {
+    label: 'Proveedores',
+    children: [
+      { to: '/proveedores/detalle', label: 'Detalle de Proveedores' },
+      { to: '/proveedores', label: 'Calificación de Proveedores' },
+    ],
+  },
+  { label: 'Catálogo de Productos', to: '/catalogo-productos' },
   PEDIDOS,
   RECLAMOS,
   { label: 'Auditorías', to: '/auditorias' },
@@ -91,11 +90,16 @@ const MENU_ADMIN: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
   {
     label: 'Usuarios',
-    children: [{ to: '/usuarios/proveedores', label: 'Proveedores' }],
+    children: [{ to: '/usuarios/proveedores', label: 'Cuentas de Proveedores' }],
   },
-  { label: 'Calificación Proveedores', to: '/proveedores' },
-  { label: 'Productos', to: '/productos-proveedores' },
-  CATALOGO_PRODUCTOS,
+  {
+    label: 'Proveedores',
+    children: [
+      { to: '/proveedores/detalle', label: 'Detalle de Proveedores' },
+      { to: '/proveedores', label: 'Calificación de Proveedores' },
+    ],
+  },
+  { label: 'Catálogo de Productos', to: '/catalogo-productos' },
   PEDIDOS,
   RECLAMOS,
   { label: 'Auditorías', to: '/auditorias' },
@@ -104,17 +108,7 @@ const MENU_ADMIN: MenuItem[] = [
   { label: 'Reportes', to: '/reportes' },
 ];
 
-const MENU_CALIDAD: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
-
-// Compras tenía exactamente el mismo menú que Calidad; se separan porque
-// Compras SÍ entra al Catálogo de Productos (es quien mapea los códigos
-// de Business Central) y Calidad no.
-const MENU_COMPRAS: MenuItem[] = [
-  CATALOGO_PRODUCTOS,
-  PEDIDOS,
-  { label: 'Auditorías', to: '/auditorias' },
-  RECLAMOS,
-];
+const MENU_CALIDAD_COMPRAS: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
 
 export function obtenerMenu(
   rolActivo: string | null,
@@ -137,9 +131,8 @@ export function obtenerMenu(
     case ROLES.ADMIN:
       return MENU_ADMIN;
     case ROLES.CALIDAD:
-      return MENU_CALIDAD;
     case ROLES.COMPRAS:
-      return MENU_COMPRAS;
+      return MENU_CALIDAD_COMPRAS;
     default:
       return [];
   }
