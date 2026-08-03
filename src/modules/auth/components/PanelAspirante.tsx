@@ -140,7 +140,13 @@ export default function PanelAspirante() {
   const documentacionRegistrada = documentos.data?.registrado ?? false;
   const documentacionCompleta = documentacionRegistrada && documentosRechazados.length === 0;
 
-  const productosRegistrados = (productos.data?.productos_en_revision ?? 0) > 0 || (productos.data?.productos_aprobados ?? 0) > 0;
+  const productosRechazados = productos.data?.productos_rechazados ?? 0;
+  const correccionesPendientesProductos = productos.data?.correcciones_pendientes ?? false;
+  const productosRegistrados =
+    (productos.data?.productos_en_revision ?? 0) > 0 ||
+    (productos.data?.productos_aprobados ?? 0) > 0 ||
+    productosRechazados > 0;
+  const productosCompleta = productosRegistrados && !correccionesPendientesProductos;
 
   // El primer paso sin terminar es "el actual" -> los de más adelante
   // quedan "pendiente" (todavía no tiene sentido tocarlos) y los de
@@ -180,15 +186,23 @@ export default function PanelAspirante() {
     {
       numero: 3,
       titulo: 'Registre su Ficha de Productos',
-      descripcion: 'Cargue la ficha técnica y el análisis de laboratorio de su catálogo.',
-      estado: productosRegistrados ? 'completado' : fichaCompleta && documentacionCompleta ? 'actual' : 'pendiente',
+      descripcion: correccionesPendientesProductos
+        ? `${productosRechazados} producto(s) por corregir.`
+        : 'Cargue la ficha técnica y el análisis de laboratorio de su catálogo.',
+      estado: correccionesPendientesProductos
+        ? 'rechazado'
+        : productosCompleta
+        ? 'completado'
+        : fichaCompleta && documentacionCompleta
+        ? 'actual'
+        : 'pendiente',
       to: '/productos',
-      textoBoton: 'Ir a Ficha Productos',
+      textoBoton: correccionesPendientesProductos ? 'Corregir productos' : 'Ir a Ficha Productos',
     },
   ];
 
   const todoListo = pasos.every((p) => p.estado === 'completado');
-  const hayCorrecciones = fichaRechazada || documentosRechazados.length > 0;
+  const hayCorrecciones = fichaRechazada || documentosRechazados.length > 0 || correccionesPendientesProductos;
 
   return (
     <div className="space-y-5">

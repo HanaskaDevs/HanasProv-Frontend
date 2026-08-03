@@ -17,7 +17,7 @@ import EmpresasPage from '../modules/empresas/pages/EmpresasPage';
 import PedidosPage from '../modules/pedidos/pages/PedidosPage';
 import ProveedoresPage from '../modules/proveedores/pages/ProveedoresPage';
 import DetalleProveedoresPage from '../modules/proveedores/pages/DetalleProveedoresPage';
-import ProductosProveedoresPage from '../modules/proveedores/pages/ProductosProveedoresPage';
+import CatalogoProductosPage from '../modules/catalogoProductos/pages/CatalogoProductosPage';
 import ReclamosAbiertosPage from '../modules/reclamos/pages/ReclamosAbiertosPage';
 import ReclamosCerradosPage from '../modules/reclamos/pages/ReclamosCerradosPage';
 import ConfiguracionesPage from '../modules/configuraciones/pages/ConfiguracionesPage';
@@ -46,7 +46,7 @@ export default function AppRoutes() {
         <Route path="/usuarios/proveedores" element={<UsuariosExternosPage />} />
         <Route path="/proveedores" element={<ProveedoresPage />} />
         <Route path="/proveedores/detalle" element={<DetalleProveedoresPage />} />
-        <Route path="/productos-proveedores" element={<ProductosProveedoresPage />} />
+        <Route path="/catalogo-productos" element={<CatalogoProductosPage />} />
 
         <Route path="/calificacion" element={<CalificacionPage />} />
         <Route path="/pedidos" element={<PedidosPage />} />
