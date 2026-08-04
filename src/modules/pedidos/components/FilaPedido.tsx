@@ -98,7 +98,12 @@ export default function FilaPedido({
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700">
                                 <rect x="3" y="4" width="18" height="18" rx="2" /><path d="m9 16 2 2 4-4" />
                             </svg>
-                            Esperada {formatearFecha(pedido.fecha_recepcion_esperada)}
+                            Esperada {formatearFecha(pedido.fecha_recepcion_efectiva)}
+                            {pedido.usa_fecha_registro_como_recepcion && (
+                                <span className="text-xs text-brand-900/40" title="Business Central no envió fecha de recepción; se usa la de registro">
+                                    (estimada)
+                                </span>
+                            )}
                         </span>
                         <span>{pedido.lineas.length} {pedido.lineas.length === 1 ? 'ítem' : 'ítems'}</span>
                     </div>

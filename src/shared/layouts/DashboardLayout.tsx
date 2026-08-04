@@ -89,7 +89,8 @@ const PASOS_PROVEEDOR_APROBADO: GuiaPasoPublico[] = [
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { usuario, empresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } = useAuth();
+  const { usuario, empresaActiva, idEmpresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } =
+    useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
@@ -98,13 +99,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [cambiandoEmpresa, setCambiandoEmpresa] = useState(false);
   const [tourVisible, setTourVisible] = useState(false);
 
-  const claveTour = usuario ? `tour_completado_${usuario.id}` : null;
-
-  useEffect(() => {
-    if (usuario?.tipo_usuario === 'Proveedor' && claveTour && localStorage.getItem(claveTour) !== 'true') {
-      setTourVisible(true);
-    }
-  }, [usuario, claveTour]);
+  // Clave por usuario Y EMPRESA. El mismo proveedor puede ser Aspirante en una
+  // empresa y llevar meses Aprobado en otra; con una sola clave por usuario,
+  // cerrar el tour en una lo apagaba en todas, y al revés: aparecía en la
+  // empresa donde ya venía trabajando desde antes.
+  const claveTour =
+    usuario && idEmpresaActiva ? `tour_completado_${usuario.id}_emp${idEmpresaActiva}` : null;
 
   useEffect(() => {
     function abrirTour() {
@@ -141,14 +141,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // para un proveedor que en realidad seguía siendo Aspirante.
   const esAspirante = !esProveedor ? false : cargandoFicha || ficha?.estado?.trim().toLowerCase() === 'aspirante';
 
+  useEffect(() => {
+    // El tour se abre solo ÚNICAMENTE para el Aspirante, que es quien necesita
+    // que le expliquen los pasos. Al proveedor ya Aprobado no se le interrumpe:
+    // su tour (PASOS_PROVEEDOR_APROBADO) sigue disponible bajo demanda desde el
+    // botón "Guía de inicio" del panel y desde HanaBot, pero no salta solo.
+    if (!claveTour) return;
+    if (usuario?.tipo_usuario !== 'Proveedor') return;
+    // Hay que esperar el dato real de la ficha: mientras carga, esAspirante
+    // viene forzado a true, y decidir antes se lo mostraba a todos un instante.
+    if (cargandoFicha) return;
+    if (!esAspirante) return;
+    if (localStorage.getItem(claveTour) === 'true') return;
+
+    setTourVisible(true);
+  }, [usuario, claveTour, esAspirante, cargandoFicha]);
+
   async function handleCambiarEmpresa(idEmpresa: number) {
     setCambiandoEmpresa(true);
     try {
+      // cambiarEmpresa() ya guarda la empresa de esta pestaña y recarga en la
+      // raíz. Antes acá había un reload() de la MISMA URL: si estabas en
+      // /pedidos y saltabas a una empresa donde eres Aspirante, seguías ahí.
       await cambiarEmpresa(idEmpresa);
-      // Recarga completa a propósito: garantiza que TODA la app (Mi Ficha,
-      // Documentos, Productos, etc.) vuelva a pedir sus datos frescos para
-      // la nueva empresa activa, sin tener que auditar cada página.
-      window.location.reload();
     } catch {
       setCambiandoEmpresa(false);
       alert('No se pudo cambiar de empresa. Intenta de nuevo.');
