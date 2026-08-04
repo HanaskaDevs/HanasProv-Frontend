@@ -1,6 +1,13 @@
 import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import * as authApi from '../api/authApi';
 import { ROLES, type Usuario, type EmpresaAcceso } from '../types';
+// En su propio módulo, sin dependencias: si viviera acá, apiClient tendría que
+// importar este archivo y se formaría un ciclo que rompe todas las peticiones.
+import {
+  guardarEmpresaDePestana,
+  leerEmpresaDePestana,
+  olvidarEmpresaDePestana,
+} from '../../../shared/utils/empresaPestana';
 
 interface AuthContextValue {
   usuario: Usuario | null;
@@ -38,15 +45,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await authApi.me();
     setUsuario(data.usuario);
 
-    if (data.id_empresa_activa) {
-      setIdEmpresaActiva(data.id_empresa_activa);
-    } else if (data.usuario.empresas.length > 0) {
-      const primeraEmpresa = data.usuario.empresas[0].id_empresa;
-      await authApi.cambiarEmpresa(primeraEmpresa);
-      setIdEmpresaActiva(primeraEmpresa);
+    // Number() en todo: el driver de SQL Server devuelve estos ids como string
+    // ("2" en vez de 2), y una comparación entre tipos distintos nunca casa.
+    const disponibles = data.usuario.empresas.map((e) => Number(e.id_empresa));
+    const dePestana = leerEmpresaDePestana();
+    const delServidor = Number(data.id_empresa_activa) || 0;
+
+    let idElegido = 0;
+
+    if (dePestana && disponibles.includes(dePestana)) {
+      // Esta pestaña ya eligió su empresa -> MANDA ella. Esta rama es la que
+      // hace que volver a la pestaña (visibilitychange, más abajo) no la
+      // arrastre a la empresa que eligió otra pestaña.
+      idElegido = dePestana;
+    } else if (delServidor && disponibles.includes(delServidor)) {
+      // Pestaña nueva: arranca en la última empresa usada.
+      idElegido = delServidor;
+    } else if (disponibles.length > 0) {
+      idElegido = disponibles[0];
+      await authApi.cambiarEmpresa(idElegido);
+    }
+
+    if (idElegido) {
+      guardarEmpresaDePestana(idElegido);
+      setIdEmpresaActiva(idElegido);
     }
   } catch {
     localStorage.removeItem('token');
+    olvidarEmpresaDePestana();
     setUsuario(null);
     setIdEmpresaActiva(null);
   } finally {
@@ -77,13 +103,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   localStorage.setItem('token', token);
   setUsuario(usuarioLogueado);
 
-  if (id_empresa_activa) {
-    setIdEmpresaActiva(id_empresa_activa);
-  } else if (usuarioLogueado.empresas.length > 0) {
-    const primeraEmpresa = usuarioLogueado.empresas[0].id_empresa;
-    await authApi.cambiarEmpresa(primeraEmpresa);
-    setIdEmpresaActiva(primeraEmpresa);
+  // El backend sólo devuelve id_empresa_activa cuando el usuario tiene UNA
+  // sola empresa; con varias llega null y hay que elegir la primera.
+  let idEmpresa = Number(id_empresa_activa) || 0;
+
+  if (!idEmpresa && usuarioLogueado.empresas.length > 0) {
+    idEmpresa = Number(usuarioLogueado.empresas[0].id_empresa);
+    await authApi.cambiarEmpresa(idEmpresa);
   }
+
+  if (idEmpresa) {
+    guardarEmpresaDePestana(idEmpresa);
+  }
+  setIdEmpresaActiva(idEmpresa || null);
 
   return usuarioLogueado;
 }
@@ -93,14 +125,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authApi.logout();
     } finally {
       localStorage.removeItem('token');
+      olvidarEmpresaDePestana();
       setUsuario(null);
       setIdEmpresaActiva(null);
     }
   }
 
+  /**
+   * Cambia la empresa de ESTA pestaña y recarga en la raíz.
+   *
+   * Va al INICIO DEL DASHBOARD ('/panel') y no a la ruta actual: si estás en
+   * /pedidos (visible sólo para proveedores aprobados) y saltas a una empresa
+   * donde eres Aspirante, te quedarías dentro de una pantalla que no te
+   * corresponde aunque el menú ya no la muestre.
+   *
+   * OJO: tiene que ser '/panel', NO '/'. La raíz es la LandingPage pública, así
+   * que mandar ahí parece que te hubiera cerrado la sesión.
+   *
+   * Es recarga completa (href) y no navigate() para que TODA la app vuelva a
+   * pedir sus datos con la nueva empresa, sin auditar página por página.
+   * sessionStorage sobrevive la recarga, así que la pestaña conserva su empresa.
+   */
   async function cambiarEmpresa(idEmpresa: number) {
-    const { id_empresa_activa } = await authApi.cambiarEmpresa(idEmpresa);
-    setIdEmpresaActiva(id_empresa_activa);
+    await authApi.cambiarEmpresa(idEmpresa);
+    guardarEmpresaDePestana(idEmpresa);
+    window.location.href = '/panel';
   }
 
   // Comparación con Number() en ambos lados: el driver de SQL Server a

@@ -12,6 +12,9 @@ export interface PedidoCompra {
   nro_pedido: string;
   fecha_registro_bc: string;
   fecha_recepcion_esperada: string | null;
+  /** Fecha con la que se clasifica en Vigentes/Históricos (esperada, o registro si no vino de BC). */
+  fecha_recepcion_efectiva: string;
+  usa_fecha_registro_como_recepcion: boolean;
   estado: 'Abierto' | 'Cerrado';
   porcentaje_entrega: number;
   lineas: LineaPedido[];
