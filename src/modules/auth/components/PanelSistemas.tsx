@@ -49,6 +49,22 @@ function IconoReclamo({ className = '' }: { className?: string }) {
   );
 }
 
+function IconoPedido({ className = '' }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+      <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+    </svg>
+  );
+}
+
+function formatearFecha(fecha: string | null): string {
+  if (!fecha) return '—';
+  const d = new Date(fecha);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 const COLOR_ESTADO: Record<string, string> = {
   Aspirante: 'bg-amber-50 text-amber-700',
   Aprobado: 'bg-emerald-50 text-emerald-700',
@@ -180,6 +196,39 @@ export default function PanelSistemas() {
           }
           to="/reclamos/abiertos"
         />
+      </div>
+
+      <div className="rounded-lg border border-brand-900/8 bg-white p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <IconoPedido className="text-brand-900/40" />
+          <p className="text-sm font-semibold text-brand-900">Pedidos próximos a recibir</p>
+        </div>
+
+        {(data?.pedidos_proximos ?? []).length === 0 ? (
+          <p className="text-xs text-brand-900/50">No hay pedidos abiertos en esta empresa por el momento.</p>
+        ) : (
+          <div className="divide-y divide-brand-900/6">
+            {(data?.pedidos_proximos ?? []).map((pedido) => (
+              <div key={pedido.nro_pedido} className="flex items-center justify-between py-2.5 text-sm">
+                <div className="min-w-0">
+                  <p className="font-medium text-brand-900 truncate">Pedido #{pedido.nro_pedido}</p>
+                  <p className="text-xs text-brand-900/50 truncate">{pedido.proveedor ?? 'Proveedor sin nombre'}</p>
+                </div>
+                <span
+                  className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-md ${
+                    pedido.vencido ? 'bg-brand-wine/10 text-brand-wine' : 'bg-brand-900/5 text-brand-900/60'
+                  }`}
+                >
+                  {pedido.vencido ? 'Vencido' : 'Esperado'} {formatearFecha(pedido.fecha_recepcion_esperada)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Link to="/pedidos" className="inline-block mt-3 text-xs font-medium text-brand-700 hover:underline">
+          Ver todos los Pedidos →
+        </Link>
       </div>
     </div>
   );
