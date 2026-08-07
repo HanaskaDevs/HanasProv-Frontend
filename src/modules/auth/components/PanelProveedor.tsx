@@ -128,7 +128,7 @@ function TarjetaStat({
       <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${color}`}>{icono}</div>
       <div className="min-w-0">
         <p className="text-lg font-semibold text-brand-900 leading-none">{valor}</p>
-        <p className="text-[11px] text-brand-900/50 truncate mt-1">{etiqueta}</p>
+        <p className="text-[12px] text-brand-900/50 truncate mt-1">{etiqueta}</p>
       </div>
     </Link>
   );
@@ -405,7 +405,7 @@ export default function PanelProveedor() {
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-brand-900 truncate">{p.nro_pedido}</p>
-                      <p className="text-[11px] text-brand-900/45">
+                      <p className="text-[12px] text-brand-900/45">
                         {p.fecha_recepcion_esperada ? `Recepción esperada ${p.fecha_recepcion_esperada}` : 'Sin fecha esperada'}
                       </p>
                     </div>

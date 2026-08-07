@@ -164,7 +164,7 @@ function PedidosProveedor() {
                         }`}
                     >
                         {t === 'Abierto' ? 'Vigentes' : 'Históricos'}
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                        <span className={`text-[12px] px-1.5 py-0.5 rounded-full ${
                             tab === t
                                 ? 'bg-brand-700 text-white'
                                 : 'bg-brand-900/8 text-brand-900/40'

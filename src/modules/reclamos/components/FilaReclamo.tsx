@@ -1,10 +1,16 @@
-import type { Reclamo } from '../types';
+import type { ImpactoProveedor, Reclamo } from '../types';
 
 function formatearFecha(fecha: string): string {
     const d = new Date(fecha);
     if (isNaN(d.getTime())) return '—';
     return d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
 }
+
+const COLOR_IMPACTO: Record<ImpactoProveedor, string> = {
+    Alto: 'bg-red-50 text-red-800',
+    Medio: 'bg-amber-50 text-amber-800',
+    Bajo: 'bg-emerald-50 text-emerald-800',
+};
 
 export default function FilaReclamo({ reclamo, onAbrir }: { reclamo: Reclamo; onAbrir: () => void }) {
     return (
@@ -22,6 +28,16 @@ export default function FilaReclamo({ reclamo, onAbrir }: { reclamo: Reclamo; on
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2.5 flex-wrap mb-1">
                     <span className="text-sm font-semibold text-brand-900">{reclamo.asunto}</span>
+                    {reclamo.tipo_reclamo && (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-900/8 text-brand-900/70">
+                            {reclamo.tipo_reclamo}
+                        </span>
+                    )}
+                    {reclamo.impacto_proveedor && (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${COLOR_IMPACTO[reclamo.impacto_proveedor]}`}>
+                            Impacto {reclamo.impacto_proveedor}
+                        </span>
+                    )}
                     {reclamo.estado === 'Cerrado' && (
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800">
                             Cerrado

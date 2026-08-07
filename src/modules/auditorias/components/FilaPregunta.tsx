@@ -46,7 +46,7 @@ export default function FilaPregunta({
         <div className="px-4 sm:px-5 py-4">
             <div className="flex items-start gap-3">
                 <span
-                    className={`mt-0.5 shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-semibold transition-colors ${
+                    className={`mt-0.5 shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[12px] font-semibold transition-colors ${
                         respondida ? 'bg-emerald-600 text-white' : 'bg-brand-900/8 text-brand-900/40'
                     }`}
                 >
@@ -76,7 +76,7 @@ export default function FilaPregunta({
                     type="button"
                     onClick={alternarNoAplica}
                     disabled={soloLectura}
-                    className={`h-8 px-3 rounded-full text-[11px] font-medium transition-colors disabled:opacity-60 ${
+                    className={`h-8 px-3 rounded-full text-[12px] font-medium transition-colors disabled:opacity-60 ${
                         noAplica ? 'bg-brand-900 text-white' : 'bg-brand-900/6 text-brand-900/50 hover:bg-brand-900/10'
                     }`}
                 >

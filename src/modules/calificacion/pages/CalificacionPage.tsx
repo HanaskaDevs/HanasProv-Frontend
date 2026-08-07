@@ -81,7 +81,7 @@ function TarjetaCategoria({
           </span>
           <div>
             <h3 className="font-display text-sm font-semibold text-brand-900">{titulo}</h3>
-            <p className="text-[11px] text-brand-900/50 mt-0.5">{detalle}</p>
+            <p className="text-[12px] text-brand-900/50 mt-0.5">{detalle}</p>
           </div>
         </div>
         <BadgeEstado estado={estado} />

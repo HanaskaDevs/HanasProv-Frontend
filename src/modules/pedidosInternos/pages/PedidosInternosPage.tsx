@@ -177,13 +177,13 @@ export default function PedidosInternosPage() {
                                 >
                                     <span className={`h-2 w-2 rounded-full ${acento.dot}`} />
                                     {cod}
-                                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                                    <span className={`text-[12px] px-1.5 py-0.5 rounded-full ${
                                         activa ? acento.chipActivo : 'bg-brand-900/8 text-brand-900/40'
                                     }`}>
                                         {total}
                                     </span>
                                     {total > 0 && (
-                                        <span className="text-[11px] text-brand-900/40">{porcentaje}% entregado</span>
+                                        <span className="text-[12px] text-brand-900/40">{porcentaje}% entregado</span>
                                     )}
                                 </button>
                             );

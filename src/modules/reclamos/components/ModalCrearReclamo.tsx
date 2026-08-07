@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as reclamosApi from '../api/reclamosApi';
-import type { ContactoProveedor, ProveedorBusqueda } from '../types';
+import type { ContactoProveedor, ImpactoProveedor, ProveedorBusqueda, TipoReclamo } from '../types';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+
+const OPCIONES_TIPO_RECLAMO: TipoReclamo[] = ['Calidad', 'Salubridad', 'Inocuidad'];
+const OPCIONES_IMPACTO_PROVEEDOR: ImpactoProveedor[] = ['Alto', 'Medio', 'Bajo'];
 
 export default function ModalCrearReclamo({ onClose }: { onClose: () => void }) {
     const queryClient = useQueryClient();
@@ -14,6 +17,8 @@ export default function ModalCrearReclamo({ onClose }: { onClose: () => void }) 
     const [proveedorSeleccionado, setProveedorSeleccionado] = useState<ProveedorBusqueda | null>(null);
     const [contactosSeleccionados, setContactosSeleccionados] = useState<ContactoProveedor[]>([]);
     const [asunto, setAsunto] = useState('');
+    const [tipoReclamo, setTipoReclamo] = useState<TipoReclamo | ''>('');
+    const [impactoProveedor, setImpactoProveedor] = useState<ImpactoProveedor | ''>('');
     const [mensaje, setMensaje] = useState('');
     const [imagenes, setImagenes] = useState<File[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -64,6 +69,8 @@ export default function ModalCrearReclamo({ onClose }: { onClose: () => void }) 
             reclamosApi.crearReclamo({
                 id_proveedor: proveedorSeleccionado!.id_proveedor,
                 asunto,
+                tipo_reclamo: tipoReclamo as TipoReclamo,
+                impacto_proveedor: impactoProveedor as ImpactoProveedor,
                 mensaje,
                 destinatarios: contactosSeleccionados.map((c) => ({
                     rol_contacto: c.rol_contacto,
@@ -84,6 +91,10 @@ export default function ModalCrearReclamo({ onClose }: { onClose: () => void }) 
 
         if (!asunto.trim() || !mensaje.trim()) {
             setError('El asunto y la descripción son obligatorios.');
+            return;
+        }
+        if (!tipoReclamo || !impactoProveedor) {
+            setError('Selecciona el tipo de reclamo y el impacto en el proveedor.');
             return;
         }
         if (contactosSeleccionados.length === 0) {
@@ -159,6 +170,40 @@ export default function ModalCrearReclamo({ onClose }: { onClose: () => void }) 
                                 placeholder="Ej. Producto dañado en el pedido CP-PD-0000021369"
                                 className="w-full rounded-md border border-brand-900/15 px-3 py-2 text-sm"
                             />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-sm font-medium text-brand-900 block mb-1.5">Tipo de reclamo</label>
+                                <select
+                                    value={tipoReclamo}
+                                    onChange={(e) => setTipoReclamo(e.target.value as TipoReclamo)}
+                                    className="w-full rounded-md border border-brand-900/15 px-3 py-2 text-sm text-brand-900"
+                                >
+                                    <option value="">Selecciona...</option>
+                                    {OPCIONES_TIPO_RECLAMO.map((opcion) => (
+                                        <option key={opcion} value={opcion}>
+                                            {opcion}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-brand-900 block mb-1.5">Impacto en proveedor</label>
+                                <select
+                                    value={impactoProveedor}
+                                    onChange={(e) => setImpactoProveedor(e.target.value as ImpactoProveedor)}
+                                    className="w-full rounded-md border border-brand-900/15 px-3 py-2 text-sm text-brand-900"
+                                >
+                                    <option value="">Selecciona...</option>
+                                    {OPCIONES_IMPACTO_PROVEEDOR.map((opcion) => (
+                                        <option key={opcion} value={opcion}>
+                                            {opcion}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         <div>

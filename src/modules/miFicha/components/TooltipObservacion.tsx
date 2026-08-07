@@ -43,7 +43,7 @@ export default function TooltipObservacion({ texto }: { texto: string | null }) 
         <span
           role="tooltip"
           className="absolute z-20 left-1/2 -translate-x-1/2 top-full mt-1.5 w-56 rounded-md bg-brand-900 px-2.5 py-1.5
-            text-[11px] leading-snug text-white shadow-lg"
+            text-[12px] leading-snug text-white shadow-lg"
         >
           <span className="font-semibold">Observación:</span> {texto}
           <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rotate-45 bg-brand-900" />

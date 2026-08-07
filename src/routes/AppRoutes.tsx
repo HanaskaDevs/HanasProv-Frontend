@@ -24,6 +24,7 @@ import ConfiguracionesPage from '../modules/configuraciones/pages/Configuracione
 import AuditoriasPage from '../modules/auditorias/pages/AuditoriasPage';
 import PoliticasPage from '../modules/politicas/pages/PoliticasPage';
 import CatalogosPage from '../modules/catalogos/pages/CatalogosPage';
+import CambiosPrecioPage from '../modules/cambiosPrecio/pages/CambiosPrecioPage';
 
 export default function AppRoutes() {
   return (
@@ -52,6 +53,7 @@ export default function AppRoutes() {
         <Route path="/pedidos" element={<PedidosPage />} />
         <Route path="/reclamos/abiertos" element={<ReclamosAbiertosPage />} />
         <Route path="/reclamos/cerrados" element={<ReclamosCerradosPage />} />
+        <Route path="/cambios-precio" element={<CambiosPrecioPage />} />
         <Route path="/auditorias" element={<AuditoriasPage />} />
         <Route path="/politicas" element={<PoliticasPage />} />
         <Route path="/calendario" element={<ProximamentePage titulo="Calendario" />} />

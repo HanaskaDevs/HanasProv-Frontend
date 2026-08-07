@@ -77,6 +77,35 @@ export default function HanaBot() {
         };
     }, []);
 
+    // Saludo proactivo SIN que el usuario abra el chat: casi siempre la
+    // API devuelve null (ver asistenteApi.obtenerBienvenidaProactiva) y
+    // acá no pasa nada. Cuando sí trae texto (proveedor recién Aprobado,
+    // primera vez que entra), abrimos el panel solos y metemos el
+    // mensaje como si Hana ya lo hubiera escrito, con la misma
+    // animación de salto que usa 'hana:celebrar'.
+    useEffect(() => {
+        let cancelado = false;
+
+        const timeout = setTimeout(async () => {
+            try {
+                const mensaje = await asistenteApi.obtenerBienvenidaProactiva();
+                if (cancelado || !mensaje) return;
+
+                setMensajes((prev) => [...prev, { rol: 'hana', contenido: mensaje }]);
+                setChatAbierto(true);
+                reproducirSegmento(SEGMENTOS.salto, { prioridad: true });
+            } catch {
+                // Silencioso a propósito: es un extra proactivo, no debe
+                // interrumpir ni mostrar error si falla.
+            }
+        }, 1200);
+
+        return () => {
+            cancelado = true;
+            clearTimeout(timeout);
+        };
+    }, []);
+
     useEffect(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, [mensajes, enviando]);

@@ -104,7 +104,7 @@ function DetalleProveedoresContent() {
                             <p className="text-brand-900 font-medium text-sm truncate">
                               {p.nombre_comercial ?? p.razon_social}
                             </p>
-                            <p className="text-[11px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
+                            <p className="text-[12px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
                           </div>
                         </div>
                       </td>

@@ -1,5 +1,5 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { DestinatarioInput, ProveedorBusqueda, Reclamo, ReclamoMensaje } from '../types';
+import type { DestinatarioInput, ImpactoProveedor, ProveedorBusqueda, Reclamo, ReclamoMensaje, TipoReclamo } from '../types';
 
 function construirFormData(mensaje: string, imagenes: File[]): FormData {
     const formData = new FormData();
@@ -35,6 +35,8 @@ export async function buscarProveedores(termino: string): Promise<ProveedorBusqu
 export async function crearReclamo(payload: {
     id_proveedor: number;
     asunto: string;
+    tipo_reclamo: TipoReclamo;
+    impacto_proveedor: ImpactoProveedor;
     mensaje: string;
     destinatarios: DestinatarioInput[];
     imagenes: File[];
@@ -42,6 +44,8 @@ export async function crearReclamo(payload: {
     const formData = new FormData();
     formData.append('id_proveedor', String(payload.id_proveedor));
     formData.append('asunto', payload.asunto);
+    formData.append('tipo_reclamo', payload.tipo_reclamo);
+    formData.append('impacto_proveedor', payload.impacto_proveedor);
     formData.append('mensaje', payload.mensaje);
 
     payload.destinatarios.forEach((d, i) => {

@@ -135,7 +135,7 @@ function TarjetaProducto({
       </div>
 
       {producto.documentos.length === 0 ? (
-        <p className="text-[11px] text-brand-900/35 italic">Sin documentos cargados.</p>
+        <p className="text-[12px] text-brand-900/35 italic">Sin documentos cargados.</p>
       ) : (
         <div className="space-y-1">
           {producto.documentos.map((doc) => (
@@ -145,7 +145,7 @@ function TarjetaProducto({
               className="w-full flex items-center justify-between gap-2 rounded-md bg-brand-700/[0.04] px-2 py-1
                 text-left hover:bg-brand-700/10 transition-colors"
             >
-              <span className="min-w-0 text-[11px] text-brand-900/70 truncate">{doc.nombre_documento}</span>
+              <span className="min-w-0 text-[12px] text-brand-900/70 truncate">{doc.nombre_documento}</span>
               <span className="shrink-0 inline-flex items-center gap-1 text-[10.5px] font-medium text-brand-700">
                 <IconoOjo /> Ver
               </span>

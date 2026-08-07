@@ -79,7 +79,7 @@ export default function ControlesCalificacion({
               Rechazado
             </Badge>
           )}
-          {fecha && <span className="text-[11px] text-brand-900/40">{formateaFecha(fecha)}</span>}
+          {fecha && <span className="text-[12px] text-brand-900/40">{formateaFecha(fecha)}</span>}
           {!soloLectura && (
             <button
               onClick={() => {
@@ -87,7 +87,7 @@ export default function ControlesCalificacion({
                 setModoRechazo(false);
                 setTextoObservacion(observacion ?? '');
               }}
-              className="text-[11px] font-medium text-brand-700 hover:underline"
+              className="text-[12px] font-medium text-brand-700 hover:underline"
             >
               Volver a calificar
             </button>
@@ -164,7 +164,7 @@ export default function ControlesCalificacion({
       {modoRecalificar && (
         <button
           onClick={() => setModoRecalificar(false)}
-          className="text-[11px] text-brand-900/40 hover:text-brand-900"
+          className="text-[12px] text-brand-900/40 hover:text-brand-900"
         >
           Cancelar
         </button>
