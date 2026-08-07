@@ -34,7 +34,7 @@ function TarjetaResumen({ valor, etiqueta, tono }: { valor: number; etiqueta: st
       <p className={`text-lg font-display font-bold leading-none ${tono === 'wine' ? 'text-brand-wine' : 'text-brand-900'}`}>
         {valor}
       </p>
-      <p className="text-[11px] text-brand-900/50 mt-1">{etiqueta}</p>
+      <p className="text-[12px] text-brand-900/50 mt-1">{etiqueta}</p>
     </div>
   );
 }
@@ -217,7 +217,7 @@ function CatalogoProductosContent() {
                       <td className="px-4 py-2.5">
                         <p className="text-brand-900 font-medium text-sm">{p.nombre_producto}</p>
                         {p.bloqueado && (
-                          <span className="text-[11px] text-brand-wine">En revisión / bloqueado</span>
+                          <span className="text-[12px] text-brand-wine">En revisión / bloqueado</span>
                         )}
                       </td>
                       <td className="px-4 py-2.5">
@@ -239,7 +239,7 @@ function CatalogoProductosContent() {
                       </td>
                       <td className="px-4 py-2.5">
                         <p className="text-brand-900 text-sm truncate max-w-[16rem]">{p.razon_social ?? '—'}</p>
-                        <p className="text-[11px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
+                        <p className="text-[12px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
                       </td>
                     </tr>
                   ))}
@@ -248,7 +248,7 @@ function CatalogoProductosContent() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-brand-900/8">
-              <p className="text-[11px] text-brand-900/50">
+              <p className="text-[12px] text-brand-900/50">
                 {paginado?.total ?? 0} producto{(paginado?.total ?? 0) === 1 ? '' : 's'} encontrado
                 {(paginado?.total ?? 0) === 1 ? '' : 's'}
               </p>

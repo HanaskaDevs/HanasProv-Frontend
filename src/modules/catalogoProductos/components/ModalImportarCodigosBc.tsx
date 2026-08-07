@@ -25,7 +25,7 @@ function Metrica({ valor, etiqueta, tono }: { valor: number; etiqueta: string; t
   return (
     <div className={`rounded-lg border px-3 py-2 ${clases}`}>
       <p className="text-lg font-display font-bold leading-none">{valor}</p>
-      <p className="text-[11px] opacity-70 mt-1">{etiqueta}</p>
+      <p className="text-[12px] opacity-70 mt-1">{etiqueta}</p>
     </div>
   );
 }

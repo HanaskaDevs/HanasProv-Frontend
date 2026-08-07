@@ -28,9 +28,14 @@ export interface ReclamoMensaje {
   imagenes: ReclamoMensajeImagen[];
 }
 
+export type TipoReclamo = 'Calidad' | 'Salubridad' | 'Inocuidad';
+export type ImpactoProveedor = 'Alto' | 'Medio' | 'Bajo';
+
 export interface Reclamo {
   id_reclamo: number;
   asunto: string;
+  tipo_reclamo: TipoReclamo | null;
+  impacto_proveedor: ImpactoProveedor | null;
   estado: 'Abierto' | 'Cerrado';
   fecha_creacion: string;
   fecha_cierre: string | null;

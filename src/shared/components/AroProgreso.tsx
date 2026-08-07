@@ -41,7 +41,7 @@ export default function AroProgreso({ porcentaje, rechazado = false }: { porcent
         y="22"
         textAnchor="middle"
         dominantBaseline="middle"
-        className="rotate-90 fill-brand-900 text-[10px] font-bold"
+        className="rotate-90 fill-brand-900 text-[11px] font-bold"
         style={{ transformOrigin: '22px 22px' }}
       >
         {porcentaje}%

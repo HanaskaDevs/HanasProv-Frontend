@@ -143,7 +143,7 @@ function FilaDocumento({
 
       <button
         onClick={() => onVer(doc)}
-        className="inline-flex items-center gap-1 rounded-md bg-brand-700/8 px-2 py-1 text-[11px]
+        className="inline-flex items-center gap-1 rounded-md bg-brand-700/8 px-2 py-1 text-[12px]
           font-medium text-brand-700 hover:bg-brand-700/15 transition-colors"
       >
         <IconoOjo /> Ver documento
@@ -273,7 +273,7 @@ export default function SeccionCalificarDocumentos({ idProveedor }: { idProveedo
                   <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
                     {categoria}
                   </h3>
-                  <span className="text-[11px] text-brand-900/40">
+                  <span className="text-[12px] text-brand-900/40">
                     {calificadosCategoria}/{documentosCategoria.length} calificados
                   </span>
                 </div>

@@ -1,5 +1,5 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { NuevoProducto, Producto, ResumenRegistro, UnidadPresentacion } from '../types';
+import type { NuevoProducto, Producto, ResumenRegistro, SolicitudCambioPrecio, UnidadPresentacion } from '../types';
 
 export interface RespuestaPaginada<T> {
   data: T[];
@@ -95,4 +95,31 @@ export async function eliminarDocumentoProducto(idDocumentoProducto: number): Pr
 
 export async function confirmarCorreccionProducto(idProducto: number): Promise<void> {
   await apiClient.post(`/mis-productos/${idProducto}/confirmar-correccion`);
+}
+
+/**
+ * Pide cambiar el precio de un producto ya creado (solo si el proveedor
+ * está Aprobado -> lo valida el backend). Bloquea el precio hasta que
+ * Admin/Calidad de la empresa lo apruebe o lo rechace.
+ */
+export async function solicitarCambioPrecio(idProducto: number, precioNuevo: number): Promise<SolicitudCambioPrecio> {
+  const { data } = await apiClient.patch<SolicitudCambioPrecio>(`/mis-productos/${idProducto}/precio`, {
+    precio_nuevo: precioNuevo,
+  });
+  return data;
+}
+
+export async function listarCambiosPrecioPendientes(): Promise<SolicitudCambioPrecio[]> {
+  const { data } = await apiClient.get<SolicitudCambioPrecio[]>('/cambios-precio');
+  return data;
+}
+
+export async function aprobarCambioPrecio(idSolicitud: number): Promise<SolicitudCambioPrecio> {
+  const { data } = await apiClient.post<SolicitudCambioPrecio>(`/cambios-precio/${idSolicitud}/aprobar`);
+  return data;
+}
+
+export async function rechazarCambioPrecio(idSolicitud: number, motivo?: string): Promise<SolicitudCambioPrecio> {
+  const { data } = await apiClient.post<SolicitudCambioPrecio>(`/cambios-precio/${idSolicitud}/rechazar`, { motivo });
+  return data;
 }

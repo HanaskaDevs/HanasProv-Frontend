@@ -13,6 +13,7 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import FiltroMultiple from '../../../shared/components/FiltroMultiple';
 import Paginador from '../../../shared/components/Paginador';
 import ModalCrearProducto from './ModalCrearProducto';
+import ModalEditarPrecio from './ModalEditarPrecio';
 import ModalConfirmarRegistro from './ModalConfirmarRegistro';
 import ModalDocumentosProducto, {
   contarDocumentosPorObligatoriedad,
@@ -36,12 +37,12 @@ function EncabezadoListaProductos() {
       style={{ gridTemplateColumns: PLANTILLA_COLUMNAS_LISTA }}
     >
       <span />
-      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide">Producto</span>
-      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide text-center">
+      <span className="text-[12px] font-medium text-brand-900/40 uppercase tracking-wide">Producto</span>
+      <span className="text-[12px] font-medium text-brand-900/40 uppercase tracking-wide text-center">
         Documentos registrados
       </span>
-      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide">Estado</span>
-      <span className="text-[11px] font-medium text-brand-900/40 uppercase tracking-wide">Acciones</span>
+      <span className="text-[12px] font-medium text-brand-900/40 uppercase tracking-wide">Estado</span>
+      <span className="text-[12px] font-medium text-brand-900/40 uppercase tracking-wide">Acciones</span>
       <span />
     </div>
   );
@@ -54,6 +55,7 @@ function FilaProducto({
   onEliminar,
   eliminando,
   onAbrirDocumentos,
+  onEditarPrecio,
   indice,
 }: {
   producto: Producto;
@@ -62,6 +64,7 @@ function FilaProducto({
   onEliminar: () => void;
   eliminando: boolean;
   onAbrirDocumentos: () => void;
+  onEditarPrecio: () => void;
   indice: number;
 }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
@@ -104,13 +107,36 @@ function FilaProducto({
 
       <div className="min-w-0">
         <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
-        <p className="text-[11px] text-brand-900/50 truncate">
-          {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
-          {producto.precio != null && ` · $${producto.precio}`}
+        <p className="text-[12px] text-brand-900/50 truncate flex items-center gap-1">
+          <span>
+            {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
+            {producto.precio != null && ` · $${producto.precio}`}
+          </span>
+          {producto.precio_en_revision ? (
+            <span
+              className="inline-flex items-center gap-0.5 text-amber-700 font-medium shrink-0"
+              title="El precio está pendiente de aprobación"
+            >
+              🔒 Precio en revisión
+            </span>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditarPrecio();
+              }}
+              className="shrink-0 text-brand-900/30 hover:text-brand-700 transition-colors"
+              title="Solicitar cambio de precio"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              </svg>
+            </button>
+          )}
         </p>
       </div>
 
-      <div className="text-[11px] leading-tight text-center">
+      <div className="text-[12px] leading-tight text-center">
         <p className={obligatoriosSubidos === obligatoriosTotal ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>
           {obligatoriosSubidos}/{obligatoriosTotal} Obligatorios
         </p>
@@ -132,19 +158,19 @@ function FilaProducto({
                 setConfirmandoEliminar(false);
               }}
               disabled={eliminando}
-              className="text-[11px] font-medium px-2 py-1 rounded-md bg-brand-wine text-white transition-transform active:scale-95"
+              className="text-[12px] font-medium px-2 py-1 rounded-md bg-brand-wine text-white transition-transform active:scale-95"
             >
               Confirmar
             </button>
             <button
               onClick={() => setConfirmandoEliminar(false)}
-              className="text-[11px] font-medium px-1.5 py-1 text-brand-900/40"
+              className="text-[12px] font-medium px-1.5 py-1 text-brand-900/40"
             >
               Cancelar
             </button>
           </div>
         ) : (
-          <Button className="!text-[11px] !px-2.5 !py-1" onClick={onAbrirDocumentos}>
+          <Button className="!text-[12px] !px-2.5 !py-1" onClick={onAbrirDocumentos}>
             Ver registro
           </Button>
         )}
@@ -176,6 +202,7 @@ export default function ListaProductos() {
   // cada tarjeta, sin duplicar el flujo de validación.
   const [idsParaRegistrar, setIdsParaRegistrar] = useState<number[] | null>(null);
   const [idProductoAbierto, setIdProductoAbierto] = useState<number | null>(null);
+  const [idProductoEditandoPrecio, setIdProductoEditandoPrecio] = useState<number | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<EstadoFiltroProducto[]>([]);
   const [pagina, setPagina] = useState(1);
@@ -262,6 +289,7 @@ export default function ListaProductos() {
   // documento mientras el modal está abierto, se refleje al toque -> la
   // invalidación de 'mis-productos' ya refresca este arreglo solo.
   const productoAbierto = productos.find((p) => p.id_producto === idProductoAbierto) ?? null;
+  const productoEditandoPrecio = productos.find((p) => p.id_producto === idProductoEditandoPrecio) ?? null;
   // Solo los que se pueden seleccionar (los bloqueados ni siquiera
   // muestran el checkbox) -> "seleccionar todo" tiene que ignorarlos,
   // si no quedaría marcando productos que no se pueden tocar.
@@ -384,6 +412,7 @@ export default function ListaProductos() {
                 onEliminar={() => eliminarUno.mutate(producto.id_producto)}
                 eliminando={eliminarUno.isPending}
                 onAbrirDocumentos={() => setIdProductoAbierto(producto.id_producto)}
+                onEditarPrecio={() => setIdProductoEditandoPrecio(producto.id_producto)}
               />
             ))}
           </div>
@@ -391,7 +420,7 @@ export default function ListaProductos() {
           <Paginador pagina={paginaSegura} totalPaginas={totalPaginas} onCambiar={setPagina} />
 
           {data && (
-            <p className="text-center text-[11px] text-brand-900/40">
+            <p className="text-center text-[12px] text-brand-900/40">
               {data.meta.total} producto{data.meta.total === 1 ? '' : 's'} en total
             </p>
           )}
@@ -399,6 +428,10 @@ export default function ListaProductos() {
       )}
 
       {modalAbierto && <ModalCrearProducto onClose={() => setModalAbierto(false)} />}
+
+      {productoEditandoPrecio && (
+        <ModalEditarPrecio producto={productoEditandoPrecio} onClose={() => setIdProductoEditandoPrecio(null)} />
+      )}
 
       {productoAbierto && (
         <ModalDocumentosProducto

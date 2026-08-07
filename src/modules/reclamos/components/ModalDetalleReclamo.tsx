@@ -103,7 +103,7 @@ export default function ModalDetalleReclamo({
                                     <div key={m.id_reclamo_mensaje} className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${esMio ? 'bg-brand-900 text-white' : 'bg-white border border-brand-900/8 text-brand-900'
                                             }`}>
-                                            <p className={`text-[11px] font-medium mb-1 ${esMio ? 'text-white/60' : 'text-brand-900/40'}`}>
+                                            <p className={`text-[12px] font-medium mb-1 ${esMio ? 'text-white/60' : 'text-brand-900/40'}`}>
                                                 {m.autor.nombre_completo} · {m.autor.tipo_usuario === 'Proveedor' ? 'Proveedor' : 'Interno'}
                                             </p>
                                             <p className="text-sm whitespace-pre-wrap">{m.mensaje}</p>
@@ -117,7 +117,7 @@ export default function ModalDetalleReclamo({
                                                                     ? reclamosApi.verImagenMiReclamo(img.id_reclamo_mensaje_imagen)
                                                                     : reclamosApi.verImagenReclamo(img.id_reclamo_mensaje_imagen)
                                                             }
-                                                            className={`text-[11px] px-2 py-1 rounded-md flex items-center gap-1 hover:opacity-80 transition-opacity ${
+                                                            className={`text-[12px] px-2 py-1 rounded-md flex items-center gap-1 hover:opacity-80 transition-opacity ${
                                                                 esMio ? 'bg-white/10' : 'bg-brand-900/5'
                                                             }`}
                                                         >
@@ -129,7 +129,7 @@ export default function ModalDetalleReclamo({
                                                     ))}
                                                 </div>
                                             )}
-                                            <p className={`text-[10px] mt-1.5 ${esMio ? 'text-white/40' : 'text-brand-900/30'}`}>
+                                            <p className={`text-[11px] mt-1.5 ${esMio ? 'text-white/40' : 'text-brand-900/30'}`}>
                                                 {formatearFechaHora(m.fecha_creacion)}
                                             </p>
                                         </div>

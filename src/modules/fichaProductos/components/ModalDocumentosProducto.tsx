@@ -187,7 +187,7 @@ function CasillaDocumento({
             }`}
           >
             <p
-              className={`text-[11px] font-medium ${
+              className={`text-[12px] font-medium ${
                 !puedeEditar ? (enRevision ? 'text-brand-700' : 'text-emerald-700/70') : 'text-emerald-800'
               }`}
             >
@@ -229,7 +229,7 @@ function CasillaDocumento({
           </div>
         ) : bloqueado && !puedeEditar ? (
           <div className="w-full rounded-md border-2 border-dashed border-brand-900/10 px-2.5 py-1.5 bg-brand-900/[0.02]">
-            <p className="text-[11px] font-medium text-brand-900/40">
+            <p className="text-[12px] font-medium text-brand-900/40">
               {tipo.etiqueta}
               {tipo.obligatorio && <span> *</span>}
             </p>
@@ -251,7 +251,7 @@ function CasillaDocumento({
                 : 'border-brand-900/15 hover:border-brand-900/30 hover:bg-brand-900/5'
               }`}
           >
-            <p className="text-[11px] font-medium text-brand-900">
+            <p className="text-[12px] font-medium text-brand-900">
               {subir.isPending ? <Spinner className="h-3 w-3 inline mr-1" /> : null}
               Cargue aquí {tipo.etiqueta.toLowerCase()}
               {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
@@ -261,7 +261,7 @@ function CasillaDocumento({
         )}
       </div>
 
-      {error && <span className="text-[10px] text-brand-wine block mt-1">{error}</span>}
+      {error && <span className="text-[11px] text-brand-wine block mt-1">{error}</span>}
 
       {mostrarVisor && yaSubido && (
         <ModalVisorPdf
@@ -314,12 +314,16 @@ export default function ModalDocumentosProducto({
       <p className="text-xs text-brand-900/50 -mt-2 mb-3">
         {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
         {producto.precio != null && ` · $${producto.precio}`}
+        {producto.precio_en_revision && ' · 🔒 Precio en revisión'}
+        {producto.peso != null && ` · ${producto.peso} kg`}
+        {producto.volumen != null && ` · ${producto.volumen} m³`}
+        {producto.unidad_por_caja != null && ` · ${producto.unidad_por_caja} u/caja`}
       </p>
 
       {producto.estado_calificacion === 'Rechazado' && producto.comentario_calificacion && (
         <div className="mb-3 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1.5">
-          <p className="text-[11px] font-medium text-amber-800">Motivo</p>
-          <p className="text-[11px] text-brand-900/70 mt-0.5">{producto.comentario_calificacion}</p>
+          <p className="text-[12px] font-medium text-amber-800">Motivo</p>
+          <p className="text-[12px] text-brand-900/70 mt-0.5">{producto.comentario_calificacion}</p>
         </div>
       )}
 

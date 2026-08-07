@@ -125,7 +125,7 @@ export default function GuiaInicioTour({
 
                 <div className="p-4">
                     <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-yellow">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-yellow">
                             {pasoActual.Titulo}
                         </span>
                         <button onClick={onCerrar} className="text-white/40 hover:text-white text-xs">

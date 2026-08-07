@@ -59,7 +59,7 @@ function TarjetaResumen({ valor, etiqueta, tono }: { valor: number; etiqueta: st
       <p className={`text-lg font-display font-bold leading-none ${tono === 'wine' ? 'text-brand-wine' : 'text-brand-900'}`}>
         {valor}
       </p>
-      <p className="text-[11px] text-brand-900/50 mt-1">{etiqueta}</p>
+      <p className="text-[12px] text-brand-900/50 mt-1">{etiqueta}</p>
     </div>
   );
 }
@@ -195,7 +195,7 @@ function ProveedoresContent() {
                           <Avatar nombre={p.razon_social} className="h-8 w-8" />
                           <div className="min-w-0">
                             <p className="text-brand-900 font-medium text-sm truncate">{p.razon_social}</p>
-                            <p className="text-[11px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
+                            <p className="text-[12px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
                           </div>
                         </div>
                       </td>

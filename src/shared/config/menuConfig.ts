@@ -21,6 +21,11 @@ const RECLAMOS: MenuItem = {
   ],
 };
 
+// Solo lo ven Admin/Calidad/Sistemas (mismos roles que puede
+// aprobar/rechazar en el backend, ver SolicitudCambioPrecioService::
+// verificarEsAdminOCalidad) -> Compras nunca aprueba precios.
+const CAMBIOS_PRECIO: MenuItem = { label: 'Cambios de Precio', to: '/cambios-precio' };
+
 const MENU_PROVEEDOR: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
   { label: 'Mi Ficha', to: '/mi-ficha' },
@@ -78,6 +83,7 @@ const MENU_SISTEMAS: MenuItem[] = [
   { label: 'Catálogo de Productos', to: '/catalogo-productos' },
   PEDIDOS,
   RECLAMOS,
+  CAMBIOS_PRECIO,
   { label: 'Auditorías', to: '/auditorias' },
   { label: 'Políticas', to: '/politicas' },
   { label: 'Calendario', to: '/calendario' },
@@ -102,13 +108,16 @@ const MENU_ADMIN: MenuItem[] = [
   { label: 'Catálogo de Productos', to: '/catalogo-productos' },
   PEDIDOS,
   RECLAMOS,
+  CAMBIOS_PRECIO,
   { label: 'Auditorías', to: '/auditorias' },
   { label: 'Políticas', to: '/politicas' },
   { label: 'Calendario', to: '/calendario' },
   { label: 'Reportes', to: '/reportes' },
 ];
 
-const MENU_CALIDAD_COMPRAS: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
+const MENU_COMPRAS: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
+
+const MENU_CALIDAD: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS, CAMBIOS_PRECIO];
 
 export function obtenerMenu(
   rolActivo: string | null,
@@ -131,8 +140,9 @@ export function obtenerMenu(
     case ROLES.ADMIN:
       return MENU_ADMIN;
     case ROLES.CALIDAD:
+      return MENU_CALIDAD;
     case ROLES.COMPRAS:
-      return MENU_CALIDAD_COMPRAS;
+      return MENU_COMPRAS;
     default:
       return [];
   }

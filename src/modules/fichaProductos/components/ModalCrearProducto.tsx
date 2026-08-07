@@ -11,6 +11,9 @@ const schema = z.object({
   codigo_barras: z.string().optional(),
   id_unidad_presentacion: z.coerce.number().min(1, 'Selecciona una unidad'),
   precio: z.coerce.number().min(0, 'El precio debe ser positivo').optional(),
+  peso: z.coerce.number().min(0, 'El peso debe ser positivo').optional(),
+  volumen: z.coerce.number().min(0, 'El volumen debe ser positivo').optional(),
+  unidad_por_caja: z.coerce.number().int().min(1, 'Debe ser al menos 1').optional(),
 });
 
 type FormInput = z.input<typeof schema>;
@@ -88,6 +91,18 @@ export default function ModalCrearProducto({ onClose }: { onClose: () => void })
           </div>
 
           <Input label="Precio" type="number" step="0.01" {...register('precio')} error={errors.precio?.message} />
+
+          <div className="grid grid-cols-3 gap-2">
+            <Input label="Peso (kg)" type="number" step="0.001" {...register('peso')} error={errors.peso?.message} />
+            <Input label="Volumen (m³)" type="number" step="0.001" {...register('volumen')} error={errors.volumen?.message} />
+            <Input
+              label="Unidad por caja"
+              type="number"
+              step="1"
+              {...register('unidad_por_caja')}
+              error={errors.unidad_por_caja?.message}
+            />
+          </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={onClose}>

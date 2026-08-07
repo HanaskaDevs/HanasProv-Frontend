@@ -59,7 +59,7 @@ const CampoFicha = forwardRef<HTMLInputElement, CampoFichaProps>(
           />
           {accesorio}
         </div>
-        {error && <span className="pl-0.5 text-[11px] text-brand-wine">{error}</span>}
+        {error && <span className="pl-0.5 text-[12px] text-brand-wine">{error}</span>}
       </div>
     );
   }

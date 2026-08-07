@@ -209,7 +209,7 @@ function ArchivoSubido({
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => setVisorAbierto(true)}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-brand-700 hover:text-brand-900"
           >
             <IconoOjo /> Ver
           </button>
@@ -217,7 +217,7 @@ function ArchivoSubido({
             <button
               onClick={() => onCambiarReemplazando(!reemplazando)}
               disabled={reemplazar.isPending}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-900/50 hover:text-brand-900"
+              className="inline-flex items-center gap-1 text-[12px] font-medium text-brand-900/50 hover:text-brand-900"
             >
               <IconoRepetir /> Reemplazar
             </button>
@@ -225,7 +225,7 @@ function ArchivoSubido({
           {puedeEditar && !tipo.obligatorio && (
             <button
               onClick={() => setConfirmandoBorrar(true)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-wine/70 hover:text-brand-wine"
+              className="inline-flex items-center gap-1 text-[12px] font-medium text-brand-wine/70 hover:text-brand-wine"
             >
               <IconoBasura /> Borrar
             </button>
@@ -234,14 +234,14 @@ function ArchivoSubido({
       </div>
 
       {rechazado && doc.comentario_calificacion && (
-        <p className="mt-1 text-[11px] text-brand-wine bg-brand-wine/5 border border-brand-wine/15 rounded px-2 py-1">
+        <p className="mt-1 text-[12px] text-brand-wine bg-brand-wine/5 border border-brand-wine/15 rounded px-2 py-1">
           <span className="font-semibold">Motivo:</span> {doc.comentario_calificacion}
         </p>
       )}
 
       {puedeEditar && reemplazando && (
         <div className="mt-1.5 rounded-md border border-brand-700/20 bg-brand-700/[0.04] p-2">
-          <p className="text-[10px] font-medium text-brand-700 mb-1">
+          <p className="text-[11px] font-medium text-brand-700 mb-1">
             Sube el archivo que reemplaza a "{doc.nombre_original}"
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -253,7 +253,7 @@ function ArchivoSubido({
                 value={nuevoNombre}
                 onChange={(e) => setNuevoNombre(e.target.value.toUpperCase())}
                 placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
-                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px] uppercase placeholder:normal-case
+                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[12px] uppercase placeholder:normal-case
                   text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
               />
             )}
@@ -262,7 +262,7 @@ function ArchivoSubido({
                 type="date"
                 value={nuevaFecha}
                 onChange={(e) => setNuevaFecha(e.target.value)}
-                className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+                className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[12px]
                   text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
               />
             )}
@@ -270,7 +270,7 @@ function ArchivoSubido({
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={reemplazar.isPending}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 hover:text-brand-900"
+              className="inline-flex items-center gap-1 text-[12px] font-medium text-brand-700 hover:text-brand-900"
             >
               {reemplazar.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir />}
               Elegir PDF
@@ -284,7 +284,7 @@ function ArchivoSubido({
                 setError(null);
               }}
               disabled={reemplazar.isPending}
-              className="text-[11px] text-brand-900/40 hover:text-brand-900"
+              className="text-[12px] text-brand-900/40 hover:text-brand-900"
             >
               Cancelar
             </button>
@@ -292,7 +292,7 @@ function ArchivoSubido({
         </div>
       )}
 
-      {error && <span className="text-[10px] text-brand-wine block mt-1">{error}</span>}
+      {error && <span className="text-[11px] text-brand-wine block mt-1">{error}</span>}
 
       {confirmandoBorrar && (
         <Modal onClose={() => !borrar.isPending && setConfirmandoBorrar(false)} title="Borrar documento">
@@ -424,7 +424,7 @@ function FilaDocumento({
           {tipo.obligatorio && <span className="text-brand-wine"> *</span>}
         </span>
         {tipo.permite_multiples && (
-          <span className="text-[10px] text-brand-700/60 shrink-0 hidden lg:inline">(varios)</span>
+          <span className="text-[11px] text-brand-700/60 shrink-0 hidden lg:inline">(varios)</span>
         )}
       </div>
 
@@ -451,7 +451,7 @@ function FilaDocumento({
       ))}
 
       {soloLectura && !yaSubido && !mostrarCuadroCarga && (
-        <p className="text-[11px] text-brand-900/35 italic mt-1">No se cargó ningún archivo.</p>
+        <p className="text-[12px] text-brand-900/35 italic mt-1">No se cargó ningún archivo.</p>
       )}
 
       {mostrarCuadroCarga && (
@@ -464,7 +464,7 @@ function FilaDocumento({
               value={nombreDocumento}
               onChange={(e) => setNombreDocumento(e.target.value.toUpperCase())}
               placeholder={etiquetaNombreArchivo(tipo.nombre_documento)}
-              className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px] uppercase placeholder:normal-case
+              className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[12px] uppercase placeholder:normal-case
                 text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
             />
           )}
@@ -473,7 +473,7 @@ function FilaDocumento({
               type="date"
               value={fechaCaducidad}
               onChange={(e) => setFechaCaducidad(e.target.value)}
-              className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[11px]
+              className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[12px]
                 text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-700 focus:border-brand-700"
             />
           )}
@@ -481,7 +481,7 @@ function FilaDocumento({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={subir.isPending}
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium transition-colors ${
               faltaObligatorio
                 ? 'bg-brand-wine/10 text-brand-wine hover:bg-brand-wine/15'
                 : 'bg-brand-700/10 text-brand-700 hover:bg-brand-700/15'
@@ -490,11 +490,11 @@ function FilaDocumento({
             {subir.isPending ? <Spinner className="h-3 w-3" /> : <IconoSubir />}
             {yaSubido ? 'Clic para cargar otro' : 'Clic para subir tu archivo'}
           </button>
-          <span className="text-[10px] text-brand-900/35">PDF, máx. 4MB</span>
+          <span className="text-[11px] text-brand-900/35">PDF, máx. 4MB</span>
         </div>
       )}
 
-      {error && <span className="text-[10px] text-brand-wine block mt-1">{error}</span>}
+      {error && <span className="text-[11px] text-brand-wine block mt-1">{error}</span>}
     </div>
   );
 }
@@ -528,7 +528,7 @@ function AroProgreso({ porcentaje }: { porcentaje: number }) {
         y="22"
         textAnchor="middle"
         dominantBaseline="middle"
-        className="rotate-90 fill-brand-900 text-[10px] font-bold"
+        className="rotate-90 fill-brand-900 text-[11px] font-bold"
         style={{ transformOrigin: '22px 22px' }}
       >
         {porcentaje}%
@@ -686,7 +686,7 @@ function FranjaSuperior({
                   <span
                     role="tooltip"
                     className="pointer-events-none absolute z-20 right-0 top-full mt-1.5 w-56 rounded-md bg-brand-900
-                      px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 invisible
+                      px-2.5 py-1.5 text-[12px] leading-snug text-white shadow-lg opacity-0 invisible
                       group-hover:opacity-100 group-hover:visible transition-opacity"
                   >
                     Se habilita al corregir {documentosRechazados.length === 1 ? 'el documento marcado' : 'los documentos marcados'}
@@ -695,7 +695,7 @@ function FranjaSuperior({
               </span>
 
               {confirmarCorrecciones.isError && (
-                <p className="text-[10px] text-brand-wine mt-1">
+                <p className="text-[11px] text-brand-wine mt-1">
                   {axios.isAxiosError(confirmarCorrecciones.error) && confirmarCorrecciones.error.response?.data?.errors
                     ? Object.values(confirmarCorrecciones.error.response.data.errors).flat().join(' ')
                     : 'No se pudo confirmar. Intenta de nuevo.'}
@@ -724,7 +724,7 @@ function FranjaSuperior({
                 Registrar documentación
               </Button>
               {faltantes.length > 0 && (
-                <p className="text-[10px] text-brand-900/40 mt-1">
+                <p className="text-[11px] text-brand-900/40 mt-1">
                   Se habilita al cargar los {faltantes.length === 1 ? 'obligatorio' : 'obligatorios'} que faltan
                 </p>
               )}
