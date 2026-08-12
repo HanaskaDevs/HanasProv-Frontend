@@ -17,6 +17,7 @@ import ModalEditarPrecio from './ModalEditarPrecio';
 import ModalConfirmarRegistro from './ModalConfirmarRegistro';
 import ModalDocumentosProducto, {
   contarDocumentosPorObligatoriedad,
+  useTiposDocumentoProducto,
   BadgeCalificacion,
 } from './ModalDocumentosProducto';
 import Modal from '../../../shared/components/Modal';
@@ -68,8 +69,9 @@ function FilaProducto({
   indice: number;
 }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+  const { data: tiposDocumento = [] } = useTiposDocumentoProducto();
   const { obligatoriosSubidos, obligatoriosTotal, opcionalesSubidos, opcionalesTotal } =
-    contarDocumentosPorObligatoriedad(producto);
+    contarDocumentosPorObligatoriedad(producto, tiposDocumento);
 
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ' ') {

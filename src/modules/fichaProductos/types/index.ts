@@ -5,8 +5,24 @@ export interface UnidadPresentacion {
 
 export interface DocumentoProducto {
   id_documento_producto: number;
+  id_tipo_documento_producto: number;
   tipo: string;
   nombre_original: string;
+  fecha_caducidad: string | null;
+}
+
+/**
+ * Catálogo de tipos de documento de producto -> viene del backend
+ * (GET /mis-productos/tipos-documento), ya no está hardcodeado en el
+ * frontend. Ver ModalDocumentosProducto.tsx.
+ */
+export interface TipoDocumentoProducto {
+  id_tipo_documento_producto: number;
+  nombre_documento: string;
+  carpeta_slug: string;
+  obligatorio: boolean;
+  permite_multiples: boolean;
+  requiere_fecha_caducidad: boolean;
 }
 
 export interface Producto {
