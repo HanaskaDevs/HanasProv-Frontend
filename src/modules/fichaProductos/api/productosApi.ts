@@ -1,5 +1,12 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { NuevoProducto, Producto, ResumenRegistro, SolicitudCambioPrecio, UnidadPresentacion } from '../types';
+import type {
+  NuevoProducto,
+  Producto,
+  ResumenRegistro,
+  SolicitudCambioPrecio,
+  TipoDocumentoProducto,
+  UnidadPresentacion,
+} from '../types';
 
 export interface RespuestaPaginada<T> {
   data: T[];
@@ -45,10 +52,14 @@ export async function crearProducto(payload: NuevoProducto): Promise<Producto> {
 export async function subirDocumentoProducto(
   idProducto: number,
   idTipoDocumento: number,
-  archivo: File
+  archivo: File,
+  fechaCaducidad?: string,
+  nombreDocumento?: string
 ): Promise<void> {
   const formData = new FormData();
   formData.append('archivo', archivo);
+  if (fechaCaducidad) formData.append('fecha_caducidad', fechaCaducidad);
+  if (nombreDocumento) formData.append('nombre_documento', nombreDocumento);
 
   await apiClient.post(`/mis-productos/${idProducto}/documentos/${idTipoDocumento}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -57,6 +68,16 @@ export async function subirDocumentoProducto(
 
 export async function listarUnidadesPresentacion(): Promise<UnidadPresentacion[]> {
   const { data } = await apiClient.get<UnidadPresentacion[]>('/mis-productos/unidades-presentacion');
+  return data;
+}
+
+/**
+ * Catálogo activo de tipos de documento de producto (dinámico, viene
+ * del backend) -> reemplaza el TIPOS_DOCUMENTO hardcodeado que antes
+ * vivía en ModalDocumentosProducto.tsx.
+ */
+export async function listarTiposDocumentoProducto(): Promise<TipoDocumentoProducto[]> {
+  const { data } = await apiClient.get<TipoDocumentoProducto[]>('/mis-productos/tipos-documento');
   return data;
 }
 
