@@ -38,8 +38,8 @@ export default function AuditoriasPage() {
     });
 
     const { data: proveedores, isLoading: cargandoProveedores } = useQuery({
-        queryKey: ['auditorias-proveedores'],
-        queryFn: auditoriasApi.listarProveedores,
+        queryKey: ['auditorias-proveedores', idTipoElegido],
+        queryFn: () => auditoriasApi.listarProveedores(idTipoElegido ?? undefined),
         enabled: tieneAcceso && idTipoElegido !== null,
     });
 
@@ -334,7 +334,14 @@ export default function AuditoriasPage() {
                                     className="w-full text-left px-4 py-3 hover:bg-brand-200/[0.06] transition-colors flex items-center justify-between gap-2"
                                 >
                                     <div>
-                                        <p className="text-sm font-medium text-brand-900">{p.nombre_comercial ?? p.razon_social}</p>
+                                        <p className="text-sm font-medium text-brand-900 flex items-center gap-1.5">
+                                            {p.nombre_comercial ?? p.razon_social}
+                                            {p.sugerido && (
+                                                <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                                    Sugerido
+                                                </span>
+                                            )}
+                                        </p>
                                         <p className="text-xs text-brand-900/50">{p.ruc} {p.clases.length > 0 && `· ${p.clases.join(', ')}`}</p>
                                     </div>
                                     {p.estado && (

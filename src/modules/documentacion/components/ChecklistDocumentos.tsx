@@ -75,6 +75,16 @@ function IconoAlerta({ className = '' }: { className?: string }) {
   );
 }
 
+function IconoDescargaPlantilla({ className = '' }: { className?: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
 function IconoBasura({ className = '' }: { className?: string }) {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -353,6 +363,18 @@ function FilaDocumento({
   // idénticos en pantalla al mismo tiempo (uno para reemplazar el
   // archivo rechazado, otro para agregar uno adicional).
   const [reemplazandoId, setReemplazandoId] = useState<number | null>(null);
+  const [descargandoPlantilla, setDescargandoPlantilla] = useState(false);
+
+  async function handleDescargarPlantilla() {
+    setDescargandoPlantilla(true);
+    try {
+      await documentacionApi.descargarPlantilla(tipo.id_tipo_documento, tipo.nombre_documento);
+    } catch {
+      setError('No se pudo descargar la plantilla. Intenta de nuevo.');
+    } finally {
+      setDescargandoPlantilla(false);
+    }
+  }
 
   const subir = useMutation({
     mutationFn: (archivo: File) =>
@@ -428,13 +450,24 @@ function FilaDocumento({
         )}
       </div>
 
-      <div className="mt-1">
+      <div className="mt-1 flex items-center gap-2 flex-wrap">
         {yaSubido ? (
           <Badge tone="success">Cargado</Badge>
         ) : faltaObligatorio ? (
           <Badge tone="danger">Pendiente (Obligatorio)</Badge>
         ) : (
           <Badge tone="neutral">Pendiente (Opcional)</Badge>
+        )}
+        {tipo.tiene_plantilla && (
+          <button
+            type="button"
+            onClick={handleDescargarPlantilla}
+            disabled={descargandoPlantilla}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700/70 hover:text-brand-700"
+          >
+            {descargandoPlantilla ? <Spinner className="h-2.5 w-2.5" /> : <IconoDescargaPlantilla />}
+            Descargar plantilla
+          </button>
         )}
       </div>
 

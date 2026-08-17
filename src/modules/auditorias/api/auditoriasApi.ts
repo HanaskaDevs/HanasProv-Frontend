@@ -6,8 +6,10 @@ export async function listarTipos(): Promise<TipoAuditoria[]> {
   return data;
 }
 
-export async function listarProveedores(): Promise<ProveedorParaAuditoria[]> {
-  const { data } = await apiClient.get<ProveedorParaAuditoria[]>('/auditorias/proveedores');
+export async function listarProveedores(idTipoAuditoria?: number): Promise<ProveedorParaAuditoria[]> {
+  const { data } = await apiClient.get<ProveedorParaAuditoria[]>('/auditorias/proveedores', {
+    params: idTipoAuditoria ? { id_tipo_auditoria: idTipoAuditoria } : undefined,
+  });
   return data;
 }
 

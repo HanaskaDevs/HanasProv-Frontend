@@ -50,6 +50,32 @@ export async function confirmarCorrecciones(): Promise<void> {
   await apiClient.post('/mi-documentos/confirmar-correcciones');
 }
 
+/**
+ * Descarga la plantilla .docx en blanco de un Tipo_Documento (ej.
+ * "Check list autoevaluación de proveedores", "Carta de Garantia") para
+ * que el proveedor la llene y luego suba el archivo completo por el
+ * flujo normal (subirDocumento). Se fuerza la descarga con un <a
+ * download> (a diferencia de descargarDocumento, acá SÍ queremos que se
+ * descargue el archivo, no que se abra en una pestaña -> es un .docx,
+ * no un PDF que el navegador pueda previsualizar).
+ */
+export async function descargarPlantilla(idTipoDocumento: number, nombreDocumento: string): Promise<void> {
+  const { data } = await apiClient.get(`/mi-documentos/plantilla/${idTipoDocumento}`, {
+    responseType: 'blob',
+  });
+  const blob = new Blob([data], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = `${nombreDocumento}.docx`;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  setTimeout(() => window.URL.revokeObjectURL(url), 10_000);
+}
+
 export async function descargarDocumento(idDocumentoProveedor: number): Promise<void> {
   const { data } = await apiClient.get(`/mi-documentos/${idDocumentoProveedor}/descargar`, {
     responseType: 'blob',
