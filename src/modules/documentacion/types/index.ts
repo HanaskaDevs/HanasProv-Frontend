@@ -20,6 +20,10 @@ export interface TipoDocumentoChecklist {
   obligatorio: boolean;
   permite_multiples: boolean;
   requiere_fecha_caducidad: boolean;
+  /** true = hay una plantilla .docx en blanco descargable para este tipo
+   *  (ver documentacionApi.descargarPlantilla) -> ej. "Check list
+   *  autoevaluación de proveedores" y "Carta de Garantia". */
+  tiene_plantilla: boolean;
   documentos: DocumentoSubido[];
 }
 

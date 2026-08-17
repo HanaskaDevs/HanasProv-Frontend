@@ -10,6 +10,10 @@ export interface ProveedorParaAuditoria {
   ruc: string | null;
   estado: string | null;
   clases: string[];
+  /** true = alguna Clase de Proveedor de este proveedor corresponde al
+   *  Tipo_Auditoria elegido (ver Tipo_Auditoria_Clase en el backend) ->
+   *  el front lo usa para sugerirlo primero en la lista. */
+  sugerido: boolean;
 }
 
 export interface PreguntaAuditoria {
