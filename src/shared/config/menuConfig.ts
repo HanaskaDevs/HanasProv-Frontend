@@ -1,8 +1,13 @@
 import { ROLES } from '../../modules/auth/types';
+import type { NombreIconoModulo } from '../components/IconoModulo';
 
 export interface SubMenuItem {
   to: string;
   label: string;
+  /** Ícono del panel agrupado. Sin ícono, la fila se dibuja sin él. */
+  icono?: NombreIconoModulo;
+  /** Una línea de contexto, para no tener que adivinar qué hay detrás. */
+  descripcion?: string;
 }
 
 export interface MenuItem {
@@ -11,20 +16,183 @@ export interface MenuItem {
   children?: SubMenuItem[];
 }
 
+/**
+ * ORGANIZACIÓN DEL MENÚ PRINCIPAL
+ *
+ * Los roles internos llegaron a tener demasiados módulos para una barra
+ * horizontal: Sistemas mostraba 14 ítems de primer nivel y Admin 11, así que
+ * la barra se saturaba y se partía en dos líneas.
+ *
+ * Ahora esos dos roles agrupan sus módulos en 5 ÁREAS (Proveedores,
+ * Operación, Calidad, Administración y Reportes), cada una con un panel que
+ * lista sus módulos con ícono y una línea de descripción. Sistemas pasa de
+ * 14 a 6 ítems y Admin de 11 a 5, sin que se pierda ni se mueva ninguna
+ * ruta: es puro reagrupamiento visual.
+ *
+ * Los roles con pocos módulos (Proveedor, Calidad, Compras) siguen PLANOS a
+ * propósito: agruparlos escondería 3 o 4 ítems detrás de un clic sin ganar
+ * nada. Un usuario de Calidad no necesita un menú llamado "Calidad".
+ */
+
+// ---------------------------------------------------------------------------
+// Módulos individuales, definidos una sola vez y reusados en cada menú
+// ---------------------------------------------------------------------------
+
+const PEDIDOS_ITEM: SubMenuItem = {
+  to: '/pedidos',
+  label: 'Pedidos',
+  icono: 'camion',
+  descripcion: 'Pedidos de compra y % de entrega',
+};
+
+const RECLAMOS_ABIERTOS: SubMenuItem = {
+  to: '/reclamos/abiertos',
+  label: 'Reclamos abiertos',
+  icono: 'reclamo',
+  descripcion: 'En curso, esperando respuesta',
+};
+
+const RECLAMOS_CERRADOS: SubMenuItem = {
+  to: '/reclamos/cerrados',
+  label: 'Reclamos cerrados',
+  icono: 'reclamo',
+  descripcion: 'Historial de reclamos resueltos',
+};
+
+const CAMBIOS_PRECIO_ITEM: SubMenuItem = {
+  to: '/cambios-precio',
+  label: 'Cambios de precio',
+  icono: 'etiqueta',
+  descripcion: 'Solicitudes pendientes de aprobar',
+};
+
+const AUDITORIAS_CALIFICACION: SubMenuItem = {
+  to: '/auditorias',
+  label: 'Auditorías de calificación',
+  icono: 'portapapeles',
+  descripcion: 'Formulario completo por clase de proveedor',
+};
+
+const AUDITORIAS_RECEPCIONES: SubMenuItem = {
+  to: '/auditorias/recepciones',
+  label: 'Calificación de recepciones',
+  icono: 'recepcion',
+  descripcion: 'Evaluación de calidad en la recepción',
+};
+
+const POLITICAS_ITEM: SubMenuItem = {
+  to: '/politicas',
+  label: 'Políticas',
+  icono: 'documento',
+  descripcion: 'Políticas vigentes del portal',
+};
+
+// ---------------------------------------------------------------------------
+// Menús planos (roles con pocos módulos)
+// ---------------------------------------------------------------------------
+
 const PEDIDOS: MenuItem = { label: 'Pedidos', to: '/pedidos' };
 
 const RECLAMOS: MenuItem = {
   label: 'Reclamos',
-  children: [
-    { to: '/reclamos/abiertos', label: 'Reclamos Abiertos' },
-    { to: '/reclamos/cerrados', label: 'Reclamos Cerrados' },
-  ],
+  children: [RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
 };
 
 // Solo lo ven Admin/Calidad/Sistemas (mismos roles que puede
 // aprobar/rechazar en el backend, ver SolicitudCambioPrecioService::
 // verificarEsAdminOCalidad) -> Compras nunca aprueba precios.
 const CAMBIOS_PRECIO: MenuItem = { label: 'Cambios de Precio', to: '/cambios-precio' };
+
+const AUDITORIAS: MenuItem = {
+  label: 'Auditorías',
+  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES],
+};
+
+// ---------------------------------------------------------------------------
+// Áreas agrupadas (Sistemas y Admin)
+// ---------------------------------------------------------------------------
+
+const AREA_PROVEEDORES: MenuItem = {
+  label: 'Proveedores',
+  children: [
+    {
+      to: '/proveedores/detalle',
+      label: 'Detalle de proveedores',
+      icono: 'usuarios',
+      descripcion: 'Ficha completa de cada proveedor',
+    },
+    {
+      to: '/proveedores',
+      label: 'Calificación de proveedores',
+      icono: 'checklist',
+      descripcion: 'Revisar ficha, documentos y productos',
+    },
+    {
+      to: '/usuarios/proveedores',
+      label: 'Cuentas de proveedores',
+      icono: 'llave',
+      descripcion: 'Accesos al portal y activaciones',
+    },
+    {
+      to: '/catalogo-productos',
+      label: 'Catálogo de productos',
+      icono: 'caja',
+      descripcion: 'Todos los productos con su código BC',
+    },
+  ],
+};
+
+const AREA_OPERACION: MenuItem = {
+  label: 'Operación',
+  children: [PEDIDOS_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
+};
+
+const AREA_CALIDAD: MenuItem = {
+  label: 'Calidad',
+  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
+};
+
+const AREA_ADMINISTRACION: MenuItem = {
+  label: 'Administración',
+  children: [
+    {
+      to: '/empresas',
+      label: 'Empresas',
+      icono: 'empresa',
+      descripcion: 'Empresas del grupo y su código BC',
+    },
+    {
+      to: '/usuarios/internos',
+      label: 'Usuarios internos',
+      icono: 'usuarioInterno',
+      descripcion: 'Staff, roles y bodegas asignadas',
+    },
+    {
+      to: '/catalogos',
+      label: 'Catálogos',
+      icono: 'catalogos',
+      descripcion: 'Clases, categorías y tipos de documento',
+    },
+    {
+      to: '/configuraciones',
+      label: 'Configuraciones',
+      icono: 'configuracion',
+      descripcion: 'Contenido del sitio y reglas de documentos',
+    },
+  ],
+};
+
+const AREA_REPORTES: MenuItem = {
+  label: 'Reportes',
+  children: [
+    { to: '/reportes', label: 'Reportes', icono: 'reporte', descripcion: 'Indicadores del portal' },
+    { to: '/calendario', label: 'Calendario', icono: 'calendario', descripcion: 'Vencimientos y auditorías' },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Menús por rol
+// ---------------------------------------------------------------------------
 
 const MENU_PROVEEDOR: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
@@ -61,63 +229,30 @@ const ETIQUETAS_OCULTAS_PARA_ASPIRANTE = ['Pedidos', 'Reclamos', 'Políticas'];
 
 const MENU_SISTEMAS: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
-  { label: 'Empresas', to: '/empresas' },
-  {
-    label: 'Usuarios',
-    children: [
-      { to: '/usuarios/internos', label: 'Usuarios Internos' },
-      // Renombrado de "Proveedores" a "Cuentas de Proveedores" -> ahora
-      // que "Proveedores" es un desplegable de nivel superior (ver
-      // abajo), dejarlo igual acá generaba dos ítems con el mismo
-      // nombre en el mismo menú, apuntando a cosas distintas.
-      { to: '/usuarios/proveedores', label: 'Cuentas de Proveedores' },
-    ],
-  },
-  {
-    label: 'Proveedores',
-    children: [
-      { to: '/proveedores/detalle', label: 'Detalle de Proveedores' },
-      { to: '/proveedores', label: 'Calificación de Proveedores' },
-    ],
-  },
-  { label: 'Catálogo de Productos', to: '/catalogo-productos' },
-  PEDIDOS,
-  RECLAMOS,
-  CAMBIOS_PRECIO,
-  { label: 'Auditorías', to: '/auditorias' },
-  { label: 'Políticas', to: '/politicas' },
-  { label: 'Calendario', to: '/calendario' },
-  { label: 'Reportes', to: '/reportes' },
-  { label: 'Catálogos', to: '/catalogos' },
-  { label: 'Configuraciones', to: '/configuraciones' },
+  AREA_PROVEEDORES,
+  AREA_OPERACION,
+  AREA_CALIDAD,
+  AREA_ADMINISTRACION,
+  AREA_REPORTES,
 ];
 
 const MENU_ADMIN: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
-  {
-    label: 'Usuarios',
-    children: [{ to: '/usuarios/proveedores', label: 'Cuentas de Proveedores' }],
-  },
-  {
-    label: 'Proveedores',
-    children: [
-      { to: '/proveedores/detalle', label: 'Detalle de Proveedores' },
-      { to: '/proveedores', label: 'Calificación de Proveedores' },
-    ],
-  },
-  { label: 'Catálogo de Productos', to: '/catalogo-productos' },
-  PEDIDOS,
-  RECLAMOS,
-  CAMBIOS_PRECIO,
-  { label: 'Auditorías', to: '/auditorias' },
-  { label: 'Políticas', to: '/politicas' },
-  { label: 'Calendario', to: '/calendario' },
-  { label: 'Reportes', to: '/reportes' },
+  AREA_PROVEEDORES,
+  AREA_OPERACION,
+  AREA_CALIDAD,
+  AREA_REPORTES,
 ];
 
-const MENU_COMPRAS: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS];
+// Compras NO lleva Auditorías: el backend solo deja auditar a Sistemas,
+// Admin y Calidad (ver AuditoriaService::verificarAcceso y
+// CalificacionRecepcionService::verificarAcceso), así que tenerlo en el menú
+// solo lo llevaba a una pantalla que responde 403. Si algún día se decide
+// que Compras también audite, hay que habilitarlo en esos dos services
+// además de volver a poner AUDITORIAS acá.
+const MENU_COMPRAS: MenuItem[] = [PEDIDOS, RECLAMOS];
 
-const MENU_CALIDAD: MenuItem[] = [PEDIDOS, { label: 'Auditorías', to: '/auditorias' }, RECLAMOS, CAMBIOS_PRECIO];
+const MENU_CALIDAD: MenuItem[] = [PEDIDOS, AUDITORIAS, RECLAMOS, CAMBIOS_PRECIO];
 
 export function obtenerMenu(
   rolActivo: string | null,
