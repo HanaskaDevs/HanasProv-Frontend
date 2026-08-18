@@ -6,8 +6,9 @@ import TabLoginImagen from '../components/TabLoginImagen';
 import TabBotReglas from '../components/TabBotReglas';
 import TabGuiaPasos from '../components/TabGuiaPasos';
 import TabPoliticas from '../components/TabPoliticas';
+import TabDocumentos from '../components/TabDocumentos';
 
-type Tab = 'home' | 'login' | 'bot' | 'guia' | 'politicas';
+type Tab = 'home' | 'login' | 'bot' | 'guia' | 'politicas' | 'documentos';
 
 export default function ConfiguracionesPage() {
   const { esSistemas } = useAuth();
@@ -29,6 +30,7 @@ export default function ConfiguracionesPage() {
     { id: 'bot', label: 'Bot' },
     { id: 'guia', label: 'Guía de inicio' },
     { id: 'politicas', label: 'Políticas' },
+    { id: 'documentos', label: 'Documentos' },
   ];
 
   return (
@@ -41,7 +43,7 @@ export default function ConfiguracionesPage() {
           Configuraciones
         </h1>
         <p className="text-brand-900/50 text-xs mt-0.5">
-          Contenido editable del sitio: Home, Login, Bot, Guía de inicio y Políticas.
+          Contenido editable del sitio y reglas de documentación de proveedores.
         </p>
       </div>
 
@@ -66,6 +68,7 @@ export default function ConfiguracionesPage() {
       {tab === 'bot' && <TabBotReglas />}
       {tab === 'guia' && <TabGuiaPasos />}
       {tab === 'politicas' && <TabPoliticas />}
+      {tab === 'documentos' && <TabDocumentos />}
     </div>
   );
 }

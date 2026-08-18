@@ -1,9 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="es-EC">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="https://irp.cdn-website.com/1d4a0921/site_favicon_16_1783022415645.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Fuentes de marca (Sora display / Inter body). Van acá y NO como
+         @import dentro de index.css: ahí quedaban DESPUÉS del @import de
+         Tailwind, que expande reglas, así que el build las descartaba por
+         completo ("@import rules must precede all rules") y en producción
+         toda la tipografía caía al font de sistema. Además, cargarlas desde
+         el HTML deja que el preload scanner las descubra de entrada, sin
+         esperar a que se baje y parsee el CSS. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    />
+
     <title>Portal Proveedores - Hanaska</title>
   </head>
   <body>

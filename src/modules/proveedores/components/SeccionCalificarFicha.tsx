@@ -12,7 +12,6 @@ import Spinner from '../../../shared/components/Spinner';
 import Badge from '../../../shared/components/Badge';
 import Modal from '../../../shared/components/Modal';
 import { ETIQUETAS_CAMPOS_FICHA, type CampoFichaCalificable } from '../../../shared/constants/camposFichaProveedor';
-import type { FichaProveedor } from '../../miFicha/types';
 
 type CalificacionCampo = { estado: string; observacion: string | null; fecha: string | null };
 

@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+/* Las fuentes Sora/Inter se cargan con <link> desde index.html, no con
+   @import acá (el build lo descartaba silenciosamente; ver el comentario
+   en index.html). Los nombres siguen declarados abajo en @theme. */
 
 @theme {
   /* Paleta Hanaska */

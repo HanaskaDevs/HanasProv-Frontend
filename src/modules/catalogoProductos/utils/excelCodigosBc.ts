@@ -1,5 +1,5 @@
 // src/modules/catalogoProductos/utils/excelCodigosBc.ts
-import * as XLSX from 'xlsx';
+import type { WorkBook } from 'xlsx';
 import type { FilaImportacion, ProductoCatalogo } from '../types';
 
 /**
@@ -8,6 +8,16 @@ import type { FilaImportacion, ProductoCatalogo } from '../types';
  * datos que ya trajimos del API, y al subirlo lo convertimos a JSON y
  * mandamos solo ID + código. Así el backend no necesita ninguna
  * librería de Office.
+ *
+ * OJO con el import de 'xlsx': arriba entra SOLO como tipo (se borra al
+ * compilar) y la librería de verdad se pide con `await import('xlsx')`
+ * dentro de cada función. Son ~440 kB minificados: con un import normal
+ * viajaban en el chunk de la pantalla, así que abrir el Catálogo de
+ * Productos los bajaba siempre, aunque el usuario nunca toque Excel.
+ * Así se bajan recién al pulsar "Descargar Excel" o al elegir un
+ * archivo para importar. ErrorLecturaExcel queda como export normal a
+ * propósito -> no depende de xlsx y el `instanceof` del modal necesita
+ * poder importarlo sin esperar nada.
  */
 
 /** Encabezados. El orden acá define el orden de las columnas del archivo. */
@@ -55,7 +65,12 @@ export function nombreArchivoCatalogo(): string {
  * izquierda ("0012" -> 12) y al volver a subir el archivo el código ya
  * no coincidiría con Business Central.
  */
-export function descargarExcelCatalogo(filas: ProductoCatalogo[], nombreArchivo = nombreArchivoCatalogo()): void {
+export async function descargarExcelCatalogo(
+  filas: ProductoCatalogo[],
+  nombreArchivo = nombreArchivoCatalogo()
+): Promise<void> {
+  const XLSX = await import('xlsx');
+
   const datos: string[][] = [
     [...ENCABEZADOS],
     ...filas.map((f) => [
@@ -109,9 +124,10 @@ export class ErrorLecturaExcel extends Error {}
  * que se usan se ubican POR NOMBRE de encabezado, no por posición.
  */
 export async function leerExcelCodigosBc(archivo: File): Promise<FilaImportacion[]> {
+  const XLSX = await import('xlsx');
   const buffer = await archivo.arrayBuffer();
 
-  let libro: XLSX.WorkBook;
+  let libro: WorkBook;
   try {
     libro = XLSX.read(buffer, { type: 'array' });
   } catch {

@@ -2,7 +2,8 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../modules/auth/hooks/useAuth';
-import { obtenerMenu } from '../config/menuConfig';
+import { obtenerMenu, type MenuItem } from '../config/menuConfig';
+import IconoModulo from '../components/IconoModulo';
 import LogoLink from '../components/LogoLink';
 import Avatar from '../components/Avatar';
 import ModalCambiarPassword from '../../modules/auth/components/ModalCambiarPassword';
@@ -171,6 +172,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   const menu = obtenerMenu(rolActivo, usuario?.tipo_usuario ?? 'Interno', esAspirante);
+
+  /**
+   * ¿La ruta actual está dentro de esta área? Con el menú agrupado hace
+   * falta: la ruta activa vive DENTRO del panel, así que si el ítem de la
+   * barra no se marcara, el usuario pierde la referencia de en qué área está
+   * parado. Se compara la ruta exacta o su prefijo (ej. estando en
+   * /proveedores/detalle, el área "Proveedores" queda marcada).
+   */
+  function areaContieneRutaActual(item: MenuItem): boolean {
+    return (item.children ?? []).some(
+      (sub) => location.pathname === sub.to || location.pathname.startsWith(`${sub.to}/`)
+    );
+  }
   const [conScroll, setConScroll] = useState(false);
 
   async function handleLogout() {
@@ -269,7 +283,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex items-center justify-center gap-1 px-6 border-t border-white/10">
+        <nav className="flex items-center justify-center gap-0.5 px-6 border-t border-white/10">
           {menu.map((item) =>
             item.children ? (
               <div
@@ -280,26 +294,66 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               >
                 <button
                   id={item.label === 'Reclamos' ? 'tour-reclamos' : undefined}
-                  className="px-3 py-2.5 text-sm font-medium text-white/80 hover:text-white rounded-md hover:bg-white/5 transition-colors"
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                    areaContieneRutaActual(item) || menuAbierto === item.label
+                      ? 'bg-white/10 text-white'
+                      : 'text-white/80 hover:text-white hover:bg-white/5'
+                  }`}
                 >
-                  {item.label} <span className="ml-1 text-xs">▾</span>
+                  {item.label}
+                  <span
+                    className={`text-[10px] leading-none transition-transform duration-200 ${
+                      menuAbierto === item.label ? 'rotate-180' : ''
+                    }`}
+                  >
+                    ▾
+                  </span>
                 </button>
 
                 {menuAbierto === item.label && (
-                  <div className="absolute left-0 top-full bg-white rounded-md shadow-lg border border-brand-900/10 py-1 min-w-[200px] z-20">
-                    {item.children.map((sub) => (
-                      <NavLink
-                        key={sub.to}
-                        to={sub.to}
-                        className={({ isActive }) =>
-                          `block px-4 py-2 text-sm ${
-                            isActive ? 'text-brand-700 font-medium bg-brand-200/20' : 'text-brand-900/80'
-                          } hover:bg-brand-200/30`
-                        }
-                      >
-                        {sub.label}
-                      </NavLink>
-                    ))}
+                  /* El pt-1 va en este contenedor y no como margen del panel:
+                     deja un puente invisible entre el botón y el panel para
+                     que al bajar el mouse no se cierre en el hueco. */
+                  <div className="absolute left-0 top-full pt-1 z-20">
+                    <div className="animar-entrada-pagina min-w-[300px] rounded-lg border border-brand-900/10 bg-white p-1.5 shadow-xl">
+                      {item.children.map((sub) => (
+                        <NavLink
+                          key={sub.to}
+                          to={sub.to}
+                          className={({ isActive }) =>
+                            `flex items-start gap-2.5 rounded-md px-2.5 py-2 transition-colors ${
+                              isActive ? 'bg-brand-200/35' : 'hover:bg-brand-900/[0.04]'
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              {sub.icono && (
+                                <span
+                                  className={`mt-0.5 shrink-0 ${isActive ? 'text-brand-700' : 'text-brand-900/35'}`}
+                                >
+                                  <IconoModulo nombre={sub.icono} />
+                                </span>
+                              )}
+                              <span className="min-w-0">
+                                <span
+                                  className={`block text-sm leading-snug ${
+                                    isActive ? 'font-medium text-brand-700' : 'text-brand-900'
+                                  }`}
+                                >
+                                  {sub.label}
+                                </span>
+                                {sub.descripcion && (
+                                  <span className="mt-0.5 block text-[11.5px] leading-snug text-brand-900/45">
+                                    {sub.descripcion}
+                                  </span>
+                                )}
+                              </span>
+                            </>
+                          )}
+                        </NavLink>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

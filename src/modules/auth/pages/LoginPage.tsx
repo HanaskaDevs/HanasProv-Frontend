@@ -1,13 +1,14 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../../../shared/layouts/AuthLayout';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
+import { CLAVE_MOTIVO_SALIDA } from '../../../shared/api/apiClient';
 
 const loginSchema = z.object({
   email: z.string().email('Correo inválido'),
@@ -20,6 +21,21 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+
+  // Si al usuario lo sacó el interceptor por estar suspendido, se muestra
+  // acá el motivo y se limpia -> es un aviso de una sola vez, no debe
+  // reaparecer cada vez que vuelva a la pantalla de login.
+  useEffect(() => {
+    try {
+      const motivo = sessionStorage.getItem(CLAVE_MOTIVO_SALIDA);
+      if (motivo) {
+        setErrorGeneral(motivo);
+        sessionStorage.removeItem(CLAVE_MOTIVO_SALIDA);
+      }
+    } catch {
+      // sin sessionStorage no hay motivo que mostrar, no pasa nada
+    }
+  }, []);
 
   const {
     register,
@@ -34,7 +50,15 @@ export default function LoginPage() {
       navigate('/panel');
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) {
-        setErrorGeneral('Las credenciales no son válidas.');
+        // Se muestra el mensaje que manda el backend, no uno fijo: además de
+        // "credenciales no válidas", el login puede responder que la cuenta
+        // está suspendida y hay que contactar al administrador (ver
+        // AuthService::MENSAJE_ACCESO_SUSPENDIDO). Antes acá se pisaba
+        // siempre con el texto de credenciales y ese aviso no se veía nunca.
+        const errores = error.response.data?.errors as Record<string, string[]> | undefined;
+        setErrorGeneral(
+          errores ? Object.values(errores).flat()[0] : (error.response.data?.message ?? 'Las credenciales no son válidas.')
+        );
       } else {
         setErrorGeneral('Ocurrió un error al iniciar sesión. Intenta de nuevo.');
       }

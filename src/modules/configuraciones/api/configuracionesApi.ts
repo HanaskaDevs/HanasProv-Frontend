@@ -164,3 +164,25 @@ export async function extraerTextoPdfPolitica(pdf: File): Promise<{ texto: strin
   });
   return data;
 }
+
+// ---- Suspensión automática por documentos vencidos ----
+
+export interface ConfigSuspensionDocumentos {
+  activa: boolean;
+  /** Plazos que aplica el backend; se muestran para no repetirlos acá. */
+  dias_primer_aviso: number;
+  dias_entre_avisos: number;
+  dias_gracia: number;
+}
+
+export async function obtenerSuspensionDocumentos(): Promise<ConfigSuspensionDocumentos> {
+  const { data } = await apiClient.get<ConfigSuspensionDocumentos>('/configuraciones/suspension-documentos');
+  return data;
+}
+
+export async function definirSuspensionDocumentos(activa: boolean): Promise<ConfigSuspensionDocumentos> {
+  const { data } = await apiClient.put<ConfigSuspensionDocumentos>('/configuraciones/suspension-documentos', {
+    activa,
+  });
+  return data;
+}

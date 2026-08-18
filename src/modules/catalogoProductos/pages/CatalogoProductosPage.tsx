@@ -103,7 +103,7 @@ function CatalogoProductosContent() {
         return;
       }
 
-      descargarExcelCatalogo(filas);
+      await descargarExcelCatalogo(filas);
     } catch {
       setErrorDescarga('No se pudo generar el archivo. Intenta de nuevo.');
     } finally {
