@@ -142,9 +142,16 @@ const AREA_PROVEEDORES: MenuItem = {
   ],
 };
 
+const SEGUIMIENTO_HOY_ITEM: SubMenuItem = {
+  to: '/calendario/seguimiento',
+  label: 'Seguimiento de hoy',
+  icono: 'recepcion',
+  descripcion: 'Arribo, recepción y entrega en vivo de hoy',
+};
+
 const AREA_OPERACION: MenuItem = {
   label: 'Operación',
-  children: [PEDIDOS_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
+  children: [PEDIDOS_ITEM, SEGUIMIENTO_HOY_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
 };
 
 const AREA_CALIDAD: MenuItem = {
@@ -182,11 +189,18 @@ const AREA_ADMINISTRACION: MenuItem = {
   ],
 };
 
+const CALENDARIO_HORARIOS: SubMenuItem = {
+  to: '/calendario',
+  label: 'Calendario de horarios',
+  icono: 'calendario',
+  descripcion: 'Día, andén y hora de entrega por proveedor',
+};
+
 const AREA_REPORTES: MenuItem = {
   label: 'Reportes',
   children: [
     { to: '/reportes', label: 'Reportes', icono: 'reporte', descripcion: 'Indicadores del portal' },
-    { to: '/calendario', label: 'Calendario', icono: 'calendario', descripcion: 'Vencimientos y auditorías' },
+    CALENDARIO_HORARIOS,
   ],
 };
 
@@ -250,9 +264,24 @@ const MENU_ADMIN: MenuItem[] = [
 // solo lo llevaba a una pantalla que responde 403. Si algún día se decide
 // que Compras también audite, hay que habilitarlo en esos dos services
 // además de volver a poner AUDITORIAS acá.
-const MENU_COMPRAS: MenuItem[] = [PEDIDOS, RECLAMOS];
+// Calendario de horarios: Compras y Calidad también lo VEN (pedido
+// explícito del usuario), aunque no puedan gestionarlo (eso queda solo
+// para Sistemas/Admin, ver ModalGestionHorarios). Como son menús planos,
+// se agrega directo como ítem de primer nivel.
+const CALENDARIO_HORARIOS_PLANO: MenuItem = { label: 'Calendario de horarios', to: '/calendario' };
 
-const MENU_CALIDAD: MenuItem[] = [PEDIDOS, AUDITORIAS, RECLAMOS, CAMBIOS_PRECIO];
+// Seguimiento de hoy (Arribo/Atrasado/En recepción/Entregado): Compras
+// marca "entregado" ahí -> lo necesita en su menú. Calidad solo ve el
+// calendario semanal, no participa del seguimiento en vivo.
+const SEGUIMIENTO_HOY_PLANO: MenuItem = { label: 'Seguimiento de hoy', to: '/calendario/seguimiento' };
+
+const MENU_COMPRAS: MenuItem[] = [PEDIDOS, CALENDARIO_HORARIOS_PLANO, SEGUIMIENTO_HOY_PLANO, RECLAMOS];
+
+const MENU_CALIDAD: MenuItem[] = [PEDIDOS, AUDITORIAS, CALENDARIO_HORARIOS_PLANO, RECLAMOS, CAMBIOS_PRECIO];
+
+// El Guardia es un rol de un solo propósito: marcar que un proveedor
+// arribó en el seguimiento de hoy -> no necesita nada más del portal.
+const MENU_GUARDIA: MenuItem[] = [SEGUIMIENTO_HOY_PLANO];
 
 export function obtenerMenu(
   rolActivo: string | null,
@@ -278,6 +307,8 @@ export function obtenerMenu(
       return MENU_CALIDAD;
     case ROLES.COMPRAS:
       return MENU_COMPRAS;
+    case ROLES.GUARDIA:
+      return MENU_GUARDIA;
     default:
       return [];
   }

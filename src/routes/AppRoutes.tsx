@@ -50,6 +50,9 @@ const PoliticasPage = lazy(() => import('../modules/politicas/pages/PoliticasPag
 const ConfiguracionesPage = lazy(() => import('../modules/configuraciones/pages/ConfiguracionesPage'));
 const CatalogosPage = lazy(() => import('../modules/catalogos/pages/CatalogosPage'));
 const ProximamentePage = lazy(() => import('../shared/pages/ProximamentePage'));
+const CalendarioHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/CalendarioHorariosPage'));
+const ModoTvHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/ModoTvHorariosPage'));
+const SeguimientoHoyPage = lazy(() => import('../modules/horariosEntrega/pages/SeguimientoHoyPage'));
 
 export default function AppRoutes() {
   return (
@@ -61,6 +64,10 @@ export default function AppRoutes() {
         <Route path="/olvide-password" element={<OlvidePasswordPage />} />
         <Route path="/restablecer-password" element={<RestablecerPasswordPage />} />
 
+        {/* Modo TV del calendario: pantalla completa a propósito, fuera de
+            ProtectedRoute (que fuerza DashboardLayout con header y menú).
+            Valida sesión y rol a mano, ver el propio componente. */}
+        <Route path="/calendario/modo-tv" element={<ModoTvHorariosPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/panel" element={<DashboardHomePage />} />
@@ -83,7 +90,8 @@ export default function AppRoutes() {
           <Route path="/auditorias" element={<AuditoriasPage />} />
           <Route path="/auditorias/recepciones" element={<CalificacionRecepcionesPage />} />
           <Route path="/politicas" element={<PoliticasPage />} />
-          <Route path="/calendario" element={<ProximamentePage titulo="Calendario" />} />
+          <Route path="/calendario" element={<CalendarioHorariosPage />} />
+          <Route path="/calendario/seguimiento" element={<SeguimientoHoyPage />} />
           <Route path="/reportes" element={<ProximamentePage titulo="Reportes" />} />
           <Route path="/configuraciones" element={<ConfiguracionesPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />

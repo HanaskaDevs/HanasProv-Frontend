@@ -37,4 +37,7 @@ export const ROLES = {
   CALIDAD: 'Calidad',
   COMPRAS: 'Compras',
   PROVEEDOR: 'Proveedor',
+  // Guardia de recepción: solo marca "el proveedor arribó" en el
+  // seguimiento en vivo del calendario de horarios de entrega.
+  GUARDIA: 'Guardia',
 } as const;
