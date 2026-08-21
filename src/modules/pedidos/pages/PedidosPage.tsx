@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth/hooks/useAuth';
 import * as pedidosApi from '../api/pedidosApi';
@@ -217,16 +218,60 @@ function PedidosProveedor() {
     );
 }
 
+/**
+ * Botón que redirige al Modo TV del calendario de horarios de entrega
+ * (pedido explícito del usuario: "dentro de pedidos crear el botón que
+ * redirige a la pantalla completa"). Visible para los mismos roles que
+ * pueden VER el calendario (Sistemas/Admin/Compras/Calidad) -> un
+ * proveedor nunca lo ve, así que este botón vive fuera de PedidosProveedor.
+ */
+function BotonModoTv() {
+    const navigate = useNavigate();
+
+    // La pantalla completa se pide ACÁ, dentro del propio clic -> es el
+    // único momento en que el navegador lo permite sin bloquearlo (fuera
+    // de un gesto real del usuario, requestFullscreen() se ignora en
+    // silencio). Si por lo que sea falla (navegador viejo, iframe, etc.)
+    // se navega igual: adentro queda el botón manual de respaldo.
+    async function irAModoTv() {
+        try {
+            await document.documentElement.requestFullscreen();
+        } catch {
+            // Sin pantalla completa por ahora, no bloquea la navegación.
+        }
+        navigate('/calendario/modo-tv');
+    }
+
+    return (
+        <div className="max-w-6xl mx-auto w-full flex justify-end -mb-1">
+            <button
+                onClick={irAModoTv}
+                className="flex items-center gap-1.5 text-xs font-medium text-brand-900/60 hover:text-brand-900 transition-colors"
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+                Ver calendario de horarios en Modo TV
+            </button>
+        </div>
+    );
+}
+
 export default function PedidosPage() {
-    const { esProveedor, puedeGestionarRecepciones } = useAuth();
+    const { esProveedor, esSistemas, esAdmin, esCompras, esCalidad, puedeGestionarRecepciones } = useAuth();
 
     if (esProveedor) {
         return <PedidosProveedor />;
     }
 
-    if (puedeGestionarRecepciones) {
-        return <PedidosInternosPage />;
-    }
+    const veCalendario = esSistemas || esAdmin || esCompras || esCalidad;
 
-    return <ProximamentePage titulo="Pedidos" />;
+    return (
+        <div className="space-y-2">
+            {veCalendario && <BotonModoTv />}
+            {puedeGestionarRecepciones ? <PedidosInternosPage /> : <ProximamentePage titulo="Pedidos" />}
+        </div>
+    );
 }

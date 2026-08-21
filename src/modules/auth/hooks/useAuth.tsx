@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
+import axios from 'axios';
 import * as authApi from '../api/authApi';
 import { ROLES, type Usuario, type EmpresaAcceso } from '../types';
 // En su propio módulo, sin dependencias: si viviera acá, apiClient tendría que
@@ -20,6 +21,7 @@ interface AuthContextValue {
   esAdmin: boolean;
   esCompras: boolean;
   esCalidad: boolean;
+  esGuardia: boolean;
   esProveedor: boolean;
   puedeGestionarRecepciones: boolean;
   login: (email: string, password: string) => Promise<Usuario>;
@@ -70,11 +72,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       guardarEmpresaDePestana(idElegido);
       setIdEmpresaActiva(idElegido);
     }
-  } catch {
-    localStorage.removeItem('token');
-    olvidarEmpresaDePestana();
-    setUsuario(null);
-    setIdEmpresaActiva(null);
+  } catch (error) {
+    // Solo se cierra la sesión de verdad si el backend contestó 401 (el
+    // token ya no es válido, p.ej. porque se cerró sesión desde otro
+    // lado). Antes esto se hacía para CUALQUIER error, incluido un
+    // simple corte de red -> eso es justo lo que pasaba en el celular
+    // (reportado como "se me cierra sesión sola al dejarlo un rato"):
+    // al volver de background, el `visibilitychange` de abajo dispara
+    // este mismo cargarUsuarioActual(), y si en ese instante el celular
+    // todavía no había reconectado el wifi/datos, la petición fallaba
+    // SIN respuesta del servidor (no es un 401, es que ni llegó) y este
+    // catch borraba el token de todas formas, como si la sesión hubiera
+    // expirado -> obligaba a loguearse de nuevo con clave y todo. Con
+    // el token intacto, el próximo intento (otro visibilitychange, o
+    // recargar) entra solo apenas vuelva la conexión.
+    const tokenInvalido = axios.isAxiosError(error) && error.response?.status === 401;
+    if (tokenInvalido) {
+      localStorage.removeItem('token');
+      olvidarEmpresaDePestana();
+      setUsuario(null);
+      setIdEmpresaActiva(null);
+    }
   } finally {
     setIsLoading(false);
   }
@@ -176,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         esAdmin: rolActivo === ROLES.ADMIN,
         esCompras: rolActivo === ROLES.COMPRAS,
         esCalidad: rolActivo === ROLES.CALIDAD,
+        esGuardia: rolActivo === ROLES.GUARDIA,
         esProveedor: usuario?.tipo_usuario === 'Proveedor',
         puedeGestionarRecepciones:
           rolActivo === ROLES.SISTEMAS || rolActivo === ROLES.ADMIN || rolActivo === ROLES.COMPRAS,

@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import Card from '../../../shared/components/Card';
@@ -7,7 +8,15 @@ import PanelSistemas from '../components/PanelSistemas';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 
 export default function DashboardHomePage() {
-  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin } = useAuth();
+  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esGuardia } = useAuth();
+
+  // El Guardia no tiene nada que hacer en el "inicio" genérico -> pedido
+  // explícito del usuario: que entre directo a la pantalla donde marca
+  // arribos. Esto cubre tanto el primer login (que siempre navega a
+  // '/panel') como si llega aquí por un bookmark o el botón "atrás".
+  if (esGuardia) {
+    return <Navigate to="/calendario/seguimiento" replace />;
+  }
 
   // Comparte queryKey con DashboardLayout/MiFichaPage -> React Query lo
   // sirve de caché en vez de duplicar la llamada. Mismo criterio

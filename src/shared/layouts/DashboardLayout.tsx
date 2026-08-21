@@ -59,6 +59,25 @@ function IconoEmpresa({ className = '' }: { className?: string }) {
   );
 }
 
+function IconoHamburguesa({ className = '' }: { className?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+function IconoX({ className = '' }: { className?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
 // Tour para el proveedor YA APROBADO -> apunta a lo que se le acaba de
 // habilitar (Pedidos, Reclamos), no a Ficha/Documentación (ya las
 // completó y aprobó hace rato, y de hecho ya ni están en el menú de
@@ -90,12 +109,13 @@ const PASOS_PROVEEDOR_APROBADO: GuiaPasoPublico[] = [
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { usuario, empresaActiva, idEmpresaActiva, rolActivo, esProveedor, cambiarEmpresa, logout } =
+  const { usuario, empresaActiva, idEmpresaActiva, rolActivo, esProveedor, esGuardia, cambiarEmpresa, logout } =
     useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const [cambiandoEmpresa, setCambiandoEmpresa] = useState(false);
   const [tourVisible, setTourVisible] = useState(false);
@@ -187,6 +207,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
   const [conScroll, setConScroll] = useState(false);
 
+  // Por si la ruta cambia sin pasar por el onClick de un link de acá
+  // adentro (botón "atrás" del navegador, por ejemplo) -> el panel no se
+  // queda abierto tapando la pantalla en la página nueva.
+  useEffect(() => {
+    setMenuMovilAbierto(false);
+  }, [location.pathname]);
+
   async function handleLogout() {
     await logout();
     navigate('/login');
@@ -195,18 +222,30 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-brand-200/10">
       <header className="bg-brand-900 text-white shrink-0 transition-all duration-300">
-        <div className={`flex items-center justify-between pl-10 pr-6 transition-all duration-300 ${conScroll ? 'py-1' : 'py-2'}`}>
-          <LogoLink className={`transition-all duration-300 ${conScroll ? 'h-12' : 'h-20'}`} variant="light" />
+        {/* Header pensado para escritorio (pl-10, logo h-20 = 80px) se veía
+         *  aplastado en celular: el logo gigante empujaba la píldora de
+         *  empresa a partirse en 2 líneas contra el avatar, todo apretado
+         *  arriba de la pantalla -> pedido explícito del usuario al
+         *  probarlo en su celular. Abajo de `sm` todo se achica: menos
+         *  padding lateral, logo más chico, píldora de empresa sin ícono
+         *  y con el texto truncado en 1 línea en vez de partirse. */}
+        <div className={`flex items-center justify-between gap-2 pl-4 sm:pl-10 pr-3 sm:pr-6 transition-all duration-300 ${conScroll ? 'py-1' : 'py-1.5 sm:py-2'}`}>
+          <LogoLink className={`shrink-0 transition-all duration-300 ${conScroll ? 'h-8 sm:h-12' : 'h-10 sm:h-20'}`} variant="light" />
 
-          <div className="flex items-center gap-4">
+          {/* Pedido explícito del usuario: en celular que SOLO se vea el
+           *  logo, y que la empresa/el perfil/el resto vivan en un menú
+           *  hamburguesa aparte -> este bloque (empresa + avatar) se
+           *  esconde abajo de `sm` y reaparece completo en escritorio,
+           *  sin tocar nada de esa lógica. */}
+          <div className="hidden sm:flex items-center gap-2 sm:gap-4 min-w-0">
             {usuario && usuario.empresas.length > 1 ? (
-              <div className="flex items-center gap-2 bg-white/10 rounded-md px-3 py-1.5 border border-white/20">
-                <IconoEmpresa className="text-white/60 shrink-0" />
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-white/10 rounded-md px-2 sm:px-3 py-1.5 border border-white/20 min-w-0">
+                <IconoEmpresa className="text-white/60 shrink-0 hidden sm:block" />
                 <select
                   value={empresaActiva ? String(empresaActiva.id_empresa) : ''}
                   onChange={(e) => handleCambiarEmpresa(Number(e.target.value))}
                   disabled={cambiandoEmpresa}
-                  className="bg-transparent text-white text-sm focus:outline-none"
+                  className="bg-transparent text-white text-xs sm:text-sm focus:outline-none min-w-0 max-w-[110px] sm:max-w-none truncate"
                 >
                   {usuario.empresas.map((e) => (
                     <option key={e.id_empresa} value={String(e.id_empresa)} className="text-brand-900">
@@ -217,9 +256,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </div>
             ) : (
               empresaActiva && (
-                <div className="flex items-center gap-2 bg-white/10 rounded-md px-3 py-1.5 border border-white/20">
-                  <IconoEmpresa className="text-white/60 shrink-0" />
-                  <span className="text-white text-sm">
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-white/10 rounded-md px-2 sm:px-3 py-1.5 border border-white/20 min-w-0">
+                  <IconoEmpresa className="text-white/60 shrink-0 hidden sm:block" />
+                  <span className="text-white text-xs sm:text-sm whitespace-nowrap truncate max-w-[110px] sm:max-w-none">
                     {empresaActiva.nombre_comercial ?? empresaActiva.razon_social}
                   </span>
                 </div>
@@ -227,11 +266,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             )}
 
             <div
-              className="relative"
+              className="relative shrink-0"
               onMouseEnter={() => setMenuUsuarioAbierto(true)}
               onMouseLeave={() => setMenuUsuarioAbierto(false)}
             >
-              <button className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/5 transition-colors">
+              <button className="flex items-center gap-2 px-1.5 sm:px-2 py-1.5 rounded-md hover:bg-white/5 transition-colors">
                 <Avatar nombre={usuario?.nombre_completo ?? '?'} />
                 <span className="text-sm text-white/80 hidden md:inline">{usuario?.nombre_completo}</span>
                 <span className="text-xs text-white/50">▾</span>
@@ -281,14 +320,36 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               )}
             </div>
           </div>
+
+          {/* Hamburguesa: solo en celular/tablet angosta. Abre el panel de
+           *  abajo con empresa + perfil + navegación, todo lo que en
+           *  escritorio vive repartido en la barra de arriba. */}
+          <button
+            onClick={() => setMenuMovilAbierto((v) => !v)}
+            className="sm:hidden flex items-center justify-center h-9 w-9 rounded-md hover:bg-white/10 transition-colors shrink-0"
+            aria-label={menuMovilAbierto ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={menuMovilAbierto}
+          >
+            {menuMovilAbierto ? <IconoX /> : <IconoHamburguesa />}
+          </button>
         </div>
 
-        <nav className="flex items-center justify-center gap-0.5 px-6 border-t border-white/10">
+        {/* Barra de navegación de escritorio: en celular queda escondida
+         *  -> sus mismos ítems (`menu`) se repiten dentro del panel
+         *  hamburguesa de más abajo, no hay 2 navegaciones a la vez.
+         *  IMPORTANTE: sin overflow-x-auto acá -> ese overflow (aunque
+         *  sea solo en X) fuerza a los navegadores a recortar también en
+         *  Y, y eso tapaba los paneles desplegables de "Proveedores",
+         *  "Operación", etc. que aparecen al pasar el mouse (se salen
+         *  hacia abajo del <nav> con position absolute). Como esta barra
+         *  ya solo se ve en escritorio (sm+, ver arriba), no hace falta
+         *  que se deslice -> se sacó del todo, no hay bug de recorte. */}
+        <nav className="hidden sm:flex items-center justify-center gap-0.5 px-6 border-t border-white/10">
           {menu.map((item) =>
             item.children ? (
               <div
                 key={item.label}
-                className="relative"
+                className="relative shrink-0"
                 onMouseEnter={() => setMenuAbierto(item.label)}
                 onMouseLeave={() => setMenuAbierto(null)}
               >
@@ -375,7 +436,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                             : undefined
                 }
                 className={({ isActive }) =>
-                  `px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                  `shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
                     isActive ? 'bg-white/10 text-white' : 'text-white/80 hover:text-white hover:bg-white/5'
                   }`
                 }
@@ -386,6 +447,147 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
         </nav>
       </header>
+
+      {/* Panel hamburguesa (solo celular/tablet angosta): junta lo que en
+       *  escritorio está repartido entre la píldora de empresa, el
+       *  dropdown de usuario y la barra de navegación -> pedido explícito
+       *  del usuario. El fondo oscuro cierra al tocar afuera, igual que
+       *  el Modal genérico. */}
+      {menuMovilAbierto && (
+        <div
+          className="sm:hidden fixed inset-0 bg-brand-900/60 z-30"
+          onClick={() => setMenuMovilAbierto(false)}
+        >
+          <div
+            className="absolute inset-x-0 top-0 bg-brand-900 text-white shadow-xl max-h-screen overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <LogoLink className="h-8" variant="light" />
+              <button
+                onClick={() => setMenuMovilAbierto(false)}
+                className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-white/10"
+                aria-label="Cerrar menú"
+              >
+                <IconoX />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
+              <Avatar nombre={usuario?.nombre_completo ?? '?'} />
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{usuario?.nombre_completo}</p>
+                {rolActivo && <p className="text-xs text-white/50 truncate">{rolActivo}</p>}
+              </div>
+            </div>
+
+            <div className="px-4 py-3 border-b border-white/10">
+              <p className="text-[11px] uppercase tracking-wide text-white/40 mb-1.5">Empresa</p>
+              {usuario && usuario.empresas.length > 1 ? (
+                <select
+                  value={empresaActiva ? String(empresaActiva.id_empresa) : ''}
+                  onChange={(e) => handleCambiarEmpresa(Number(e.target.value))}
+                  disabled={cambiandoEmpresa}
+                  className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white"
+                >
+                  {usuario.empresas.map((e) => (
+                    <option key={e.id_empresa} value={String(e.id_empresa)} className="text-brand-900">
+                      {e.nombre_comercial ?? e.razon_social}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                empresaActiva && (
+                  <p className="text-sm">{empresaActiva.nombre_comercial ?? empresaActiva.razon_social}</p>
+                )
+              )}
+            </div>
+
+            {/* Mismos ítems que la barra de escritorio (`menu`), listados
+             *  en vez de en pestañas -> los que tienen sub-ítems (áreas)
+             *  se muestran como un pequeño título de sección seguido de
+             *  sus enlaces. */}
+            <div className="py-2 border-b border-white/10">
+              {menu.map((item) =>
+                item.children ? (
+                  <div key={item.label}>
+                    <p className="px-4 pt-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/40">
+                      {item.label}
+                    </p>
+                    {item.children.map((sub) => (
+                      <NavLink
+                        key={sub.to}
+                        to={sub.to}
+                        onClick={() => setMenuMovilAbierto(false)}
+                        className={({ isActive }) =>
+                          `block px-4 py-2.5 text-sm ${
+                            isActive ? 'bg-white/10 text-white font-medium' : 'text-white/80'
+                          }`
+                        }
+                      >
+                        {sub.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                ) : (
+                  <NavLink
+                    key={item.label}
+                    to={item.to!}
+                    onClick={() => setMenuMovilAbierto(false)}
+                    className={({ isActive }) =>
+                      `block px-4 py-2.5 text-sm ${
+                        isActive ? 'bg-white/10 text-white font-medium' : 'text-white/80'
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                )
+              )}
+            </div>
+
+            <div className="py-2">
+              {esProveedor && !esAspirante && (
+                <>
+                  <Link
+                    to="/mi-ficha"
+                    onClick={() => setMenuMovilAbierto(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80"
+                  >
+                    <IconoFicha className="text-white/40 shrink-0" />
+                    Mi Ficha
+                  </Link>
+                  <Link
+                    to="/documentos"
+                    onClick={() => setMenuMovilAbierto(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80"
+                  >
+                    <IconoCarpeta className="text-white/40 shrink-0" />
+                    Mi Documentación
+                  </Link>
+                </>
+              )}
+              <button
+                onClick={() => {
+                  setMenuMovilAbierto(false);
+                  setModalPasswordAbierto(true);
+                }}
+                className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm text-white/80"
+              >
+                <IconoCandado className="text-white/40 shrink-0" />
+                Cambiar contraseña
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm text-brand-wine"
+              >
+                <IconoSalir className="text-brand-wine/70 shrink-0" />
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main
         className="flex-1 overflow-y-auto flex flex-col"
@@ -414,7 +616,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         pasos={esProveedor && !esAspirante ? PASOS_PROVEEDOR_APROBADO : undefined}
       />
 
-      <HanaBot />
+      {/* Pedido explícito del usuario: el Guardia no debe ver a HanaBot ->
+       *  su pantalla es solo marcar arribos, no tiene sentido el
+       *  asistente ahí y además reduce distracciones en un celular en
+       *  el andén. */}
+      {!esGuardia && <HanaBot />}
     </div>
   );
 }
