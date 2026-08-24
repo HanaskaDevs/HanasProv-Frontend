@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Antes esto era un set de imágenes PNG de tamaño fijo por densidad y
+    orientación (drawable-port-xxxhdpi/splash.png, etc.), heredadas de la
+    plantilla vieja de Capacitor. El problema: Android usa esa imagen como
+    fondo de TODA la ventana, y para hacerlo la ESTIRA para cubrir
+    exactamente el tamaño de pantalla del celular. Como esos tamaños
+    fijos (ej. 1280x1920) casi nunca coinciden con la proporción real de
+    pantalla de un celular moderno (ej. 1080x2400, mucho más alargada),
+    el logo terminaba deformado (aplastado/estirado) para rellenar esa
+    diferencia de proporción.
+
+    Con este layer-list en cambio:
+    - La capa de fondo es un color sólido -> cubre cualquier tamaño de
+      pantalla sin ningún tipo de distorsión, porque un color no tiene
+      "proporción" que pueda deformarse.
+    - El logo se pone con android:gravity="center", lo que lo dibuja a su
+      tamaño NATURAL (sin estirarlo para llenar la pantalla), sea cual
+      sea el tamaño/proporción real del celular.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap
+            android:src="@drawable/splash_logo"
+            android:gravity="center" />
+    </item>
+</layer-list>

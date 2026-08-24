@@ -41,7 +41,14 @@ export default function LandingPage() {
           bloque centrado con padding, dejando el video chico a un
           costado) -> HeroCarousel se encarga de que el video/imagen
           cubra esto entero, con el texto superpuesto encima. */}
-      <main className="flex-1 relative min-h-[600px] overflow-hidden bg-brand-900">
+      {/* "isolate" crea su propio contexto de apilamiento (stacking
+          context) para todo lo de adentro -> los z-10/z-20/z-30 que usa
+          HeroCarousel para ordenar sus capas ENTRE ELLAS quedan
+          encerrados acá, y no compiten con el z-10 del header de arriba.
+          Sin esto, el header (sticky) terminaba tapado por el degradado/
+          texto del carrusel al hacer scroll, porque esos z-index vivían
+          en el mismo contexto global que el header. */}
+      <main className="flex-1 relative isolate min-h-[600px] overflow-hidden bg-brand-900">
         <HeroCarousel />
       </main>
 
