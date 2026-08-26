@@ -1,6 +1,11 @@
 interface PanelEstadisticasProps {
     totalAbiertos: number;
     totalCerrados: number;
+    /**
+     * Fill rate: promedio del porcentaje de entrega de los pedidos ya
+     * cerrados. Es el MISMO número que vale el 50% de la calificación
+     * global del proveedor, no un promedio suelto de esta pantalla.
+     */
     porcentajeEntregaPromedio: number;
 }
 
@@ -10,7 +15,7 @@ export default function PanelEstadisticas({ totalAbiertos, totalCerrados, porcen
     const tarjetas = [
         { emoji: '📦', valor: totalAbiertos, etiqueta: 'Pedidos vigentes', bg: '#EAF1FB' },
         { emoji: '✅', valor: totalCerrados, etiqueta: 'Pedidos históricos', bg: '#EAF3DE' },
-        { emoji: '📊', valor: `${porcentajeEntregaPromedio}%`, etiqueta: 'Entrega promedio', bg: '#FAEEDA' },
+        { emoji: '📊', valor: `${porcentajeEntregaPromedio}%`, etiqueta: 'Fill rate (cuenta para tu nota)', bg: '#FAEEDA' },
         { emoji: '📋', valor: total, etiqueta: 'Total de pedidos', bg: '#F1EFE8' },
     ];
 

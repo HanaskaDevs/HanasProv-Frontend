@@ -2,7 +2,12 @@
 <html lang="es-EC">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://irp.cdn-website.com/1d4a0921/site_favicon_16_1783022415645.ico" />
+    <!-- El favicon vive en el repo (public/favicon.ico), no en el CDN del sitio
+         corporativo. Antes se pedía a irp.cdn-website.com: una petición a un
+         tercero en cada carga, con su propio DNS y TLS, para un archivo de 9 KB
+         que no cambia nunca. Es el mismo ícono (la estrella de Hanaska), traído
+         tal cual. -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Fuentes de marca (Sora display / Inter body). Van acá y NO como
@@ -14,10 +19,26 @@
          esperar a que se baje y parsee el CSS. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- SIN BLOQUEAR EL RENDER. Una hoja de estilos en el <head> detiene el
+         primer pintado hasta que termina de bajar, y esta sale a un servidor de
+         Google: medido desde acá, ~0,4 s en los que la página no muestra nada.
+         El truco de media="print" la baja con prioridad baja y la aplica al
+         terminar (onload), así el HTML pinta de inmediato. No hay salto de
+         diseño porque display=swap ya hacía que el texto apareciera con la
+         tipografía de respaldo mientras la de marca cargaba.
+         El <noscript> cubre el caso sin JavaScript. -->
     <link
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'; this.onload=null;"
       href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
 
     <title>Portal Proveedores - Hanaska</title>
   </head>

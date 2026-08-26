@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 interface ModalProps {
   onClose: () => void;
@@ -44,17 +44,45 @@ function IconoContraer() {
 export default function Modal({ onClose, title, tituloExtra, children, maxWidth = 'max-w-md', expandible = false }: ModalProps) {
   const [expandido, setExpandido] = useState(false);
 
+  // Transición de entrada: el modal se monta ya visible en el DOM y en el
+  // siguiente frame se le enciende la clase de "montado". Sin ese salto de un
+  // frame el navegador no ve un cambio de estado y no hay transición, aparece
+  // de golpe.
+  const [montado, setMontado] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMontado(true));
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // Escape cierra. Es lo que espera cualquiera que abra un diálogo, y en
+  // pantallas donde el modal tapa todo era la única salida que faltaba.
+  useEffect(() => {
+    function alPresionar(evento: KeyboardEvent) {
+      if (evento.key === 'Escape') onClose();
+    }
+
+    window.addEventListener('keydown', alPresionar);
+
+    return () => window.removeEventListener('keydown', alPresionar);
+  }, [onClose]);
+
   return (
     <div
-      className={`fixed inset-0 bg-brand-900/50 flex items-center justify-center z-[60] transition-all ${
-        expandido ? 'p-2' : 'p-4'
-      }`}
+      role="dialog"
+      aria-modal="true"
+      className={`fixed inset-0 flex items-center justify-center z-[60] transition-[background-color,padding] duration-200 ${
+        montado ? 'bg-brand-900/50' : 'bg-brand-900/0'
+      } ${expandido ? 'p-2' : 'p-4'}`}
       onClick={onClose}
     >
       <div
-        className={`rounded-lg bg-white shadow-xl flex flex-col transition-all ${
-          expandido ? 'w-full h-full max-w-none' : `w-full ${maxWidth} max-h-[85vh]`
-        }`}
+        className={`rounded-xl bg-white shadow-2xl flex flex-col
+          transition-[opacity,transform,width,height,max-width,max-height] duration-200 ease-out
+          motion-reduce:transition-none
+          ${montado ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
+          ${expandido ? 'w-full h-full max-w-none' : `w-full ${maxWidth} max-h-[85vh]`}`}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (

@@ -1,5 +1,7 @@
 // src/modules/miFicha/pages/MiFichaPage.tsx
 import { useEffect, useState } from 'react';
+import RoleRoute from '../../../routes/RoleRoute';
+import { useAuth } from '../../auth/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
@@ -147,7 +149,7 @@ function TarjetaSeccionFicha({ seccion }: { seccion: SeccionInfo }) {
   );
 }
 
-export default function MiFichaPage() {
+function MiFichaPageContenido() {
   const [ficha, setFicha] = useState<FichaProveedor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
@@ -320,5 +322,23 @@ export default function MiFichaPage() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Pantalla EXCLUSIVA del usuario proveedor. El backend ya la niega a un
+ * usuario interno (miProveedor() lanza AccessDenied si el Tipo_Usuario no es
+ * Proveedor), así que no era un agujero de seguridad; el problema era de cara
+ * al usuario: un interno que llegara por URL directa veía la pantalla
+ * dibujada y cada consulta fallando por detrás, sin ningún mensaje que
+ * explicara qué pasaba.
+ */
+export default function MiFichaPage() {
+  const { esProveedor } = useAuth();
+
+  return (
+    <RoleRoute allow={esProveedor}>
+      <MiFichaPageContenido />
+    </RoleRoute>
   );
 }

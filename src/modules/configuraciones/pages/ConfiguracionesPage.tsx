@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import RoleRoute from '../../../routes/RoleRoute';
 import { useAuth } from '../../auth/hooks/useAuth';
 import Card from '../../../shared/components/Card';
 import TabHomeSlides from '../components/TabHomeSlides';
@@ -10,7 +11,7 @@ import TabDocumentos from '../components/TabDocumentos';
 
 type Tab = 'home' | 'login' | 'bot' | 'guia' | 'politicas' | 'documentos';
 
-export default function ConfiguracionesPage() {
+function ConfiguracionesPageContenido() {
   const { esSistemas } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
 
@@ -70,5 +71,22 @@ export default function ConfiguracionesPage() {
       {tab === 'politicas' && <TabPoliticas />}
       {tab === 'documentos' && <TabDocumentos />}
     </div>
+  );
+}
+
+/**
+ * Solo Sistemas. El backend ya lo exige (esSistemasGlobal en cada endpoint),
+ * pero sin esta guarda el resto de los roles llegaba a la pantalla por URL
+ * directa y la veía dibujada, chocando después contra 403 en cada acción. El
+ * caso concreto que lo destapó: la tarjeta "Empresas activas" del panel de
+ * Inicio enlazaba a /empresas y también se le mostraba al Admin.
+ */
+export default function ConfiguracionesPage() {
+  const { esSistemas } = useAuth();
+
+  return (
+    <RoleRoute allow={esSistemas}>
+      <ConfiguracionesPageContenido />
+    </RoleRoute>
   );
 }

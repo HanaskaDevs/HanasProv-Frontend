@@ -85,6 +85,19 @@ export default function FilaPedido({
                         }`}>
                             {pedido.porcentaje_entrega}% entregado
                         </span>
+
+                        {/* Un pedido en curso muestra su porcentaje igual,
+                            pero todavía no pesa en la nota: sin este aviso
+                            el proveedor ve un 40% y no entiende por qué su
+                            fill rate no bajó. */}
+                        {!pedido.cuenta_para_calificacion && (
+                            <span
+                                className="text-xs font-medium px-2.5 py-1 rounded-full bg-brand-900/6 text-brand-900/55"
+                                title="Entra al fill rate de tu calificación cuando el pedido se cierre"
+                            >
+                                Aún no cuenta para tu nota
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-5 text-sm text-brand-900/60 flex-wrap">

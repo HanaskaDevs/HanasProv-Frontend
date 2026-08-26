@@ -70,7 +70,6 @@ export interface ProveedorParaRecepcion {
   ruc: string | null;
   estado: string | null;
   /** Fecha que el sistema le asignó este año (reparto estable por Id). */
-  fecha_programada: string;
   le_toca_hoy: boolean;
   calificaciones_del_anio: number;
   /** false = ya llegó al máximo de 2 calificaciones en el año. */

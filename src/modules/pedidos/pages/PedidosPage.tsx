@@ -70,8 +70,16 @@ function PedidosProveedor() {
         const listaAbiertos = abiertos ?? [];
         const listaCerrados = cerrados ?? [];
         const todos = [...listaAbiertos, ...listaCerrados];
-        const promedio = todos.length > 0
-            ? Math.round(todos.reduce((acc, p) => acc + p.porcentaje_entrega, 0) / todos.length)
+
+        // Solo los pedidos que cuentan para la nota entran a este
+        // promedio. Antes entraban todos, incluidos los que todavía se
+        // están entregando -> esta tarjeta mostraba un número y la
+        // calificación del proveedor otro, sin forma de explicar la
+        // diferencia. Ahora es exactamente el fill rate que vale el 50%
+        // de su nota (ver CalificacionGlobalService en el backend).
+        const computables = todos.filter((p) => p.cuenta_para_calificacion);
+        const promedio = computables.length > 0
+            ? Math.round(computables.reduce((acc, p) => acc + p.porcentaje_entrega, 0) / computables.length)
             : 0;
 
         return {

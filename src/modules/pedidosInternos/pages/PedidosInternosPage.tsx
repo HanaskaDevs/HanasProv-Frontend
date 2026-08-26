@@ -21,8 +21,14 @@ const ACENTOS: Record<string, { dot: string; borderActivo: string; chipActivo: s
 };
 
 export default function PedidosInternosPage() {
-    const { esAdmin, esCompras } = useAuth();
-    const tieneAcceso = esAdmin || esCompras;
+    const { puedeGestionarRecepciones } = useAuth();
+    // Se usa puedeGestionarRecepciones del contexto y NO una condición
+    // propia. Acá había `esAdmin || esCompras`, que se olvidaba de Sistemas:
+    // PedidosPage lo dejaba entrar (su condición sí incluía Sistemas) y esta
+    // pantalla le respondía "módulo en construcción". El backend
+    // (PedidoInternoService) siempre le dio acceso a Sistemas, así que era
+    // solo esta copia desincronizada.
+    const tieneAcceso = puedeGestionarRecepciones;
 
     const [bodega, setBodega] = useState<string | null>(null);
     const [pagina, setPagina] = useState(1);

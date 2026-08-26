@@ -1,5 +1,8 @@
 // src/modules/calificacion/pages/CalificacionPage.tsx
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import RoleRoute from '../../../routes/RoleRoute';
+import { useAuth } from '../../auth/hooks/useAuth';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 import * as documentacionApi from '../../documentacion/api/documentacionApi';
@@ -7,6 +10,8 @@ import * as productosApi from '../../fichaProductos/api/productosApi';
 import Card from '../../../shared/components/Card';
 import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
+import CalificacionGlobal from '../../../shared/components/CalificacionGlobal';
+import * as calificacionGlobalApi from '../../../shared/api/calificacionGlobalApi';
 
 type EstadoGeneral = 'Aprobado' | 'Rechazado' | 'En revisión' | 'Incompleto' | 'Sin iniciar';
 
@@ -111,7 +116,7 @@ function TarjetaCategoria({
   );
 }
 
-export default function CalificacionPage() {
+function CalificacionPageContenido() {
   const ficha = useQuery({ queryKey: ['mi-ficha'], queryFn: fichaApi.obtenerMiFicha, retry: false });
   const documentos = useQuery({ queryKey: ['mi-documentos'], queryFn: documentacionApi.obtenerChecklist, retry: false });
   // Ojo: NO se usa productosApi.listarProductos() acá -> esa función
@@ -125,6 +130,36 @@ export default function CalificacionPage() {
     retry: false,
   });
 
+  // La nota global se pide aparte y NO entra en el `cargando` de abajo a
+  // propósito: si este endpoint falla o tarda, el resumen de postulación
+  // (que es el contenido principal de la pantalla) tiene que mostrarse
+  // igual. El bloque de la nota simplemente no se dibuja.
+  const calificacionGlobal = useQuery({
+    queryKey: ['mi-calificacion-global'],
+    queryFn: calificacionGlobalApi.obtenerMiCalificacionGlobal,
+    retry: false,
+  });
+
+  // El cartel de felicitación se apaga en el servidor la primera vez que se
+  // muestra, así que no vuelve a salir ni en otro navegador ni en el celular.
+  const apagarFelicitacion = useMutation({
+    mutationFn: calificacionGlobalApi.marcarFelicitacionVista,
+  });
+
+  const felicitacionPendiente = calificacionGlobal.data?.felicitacion_pendiente ?? false;
+
+  // Ref y no estado: solo sirve para no disparar la mutación dos veces
+  // (React monta los efectos dos veces en desarrollo), y no tiene que
+  // provocar un render.
+  const yaSeApago = useRef(false);
+
+  useEffect(() => {
+    if (felicitacionPendiente && !yaSeApago.current) {
+      yaSeApago.current = true;
+      apagarFelicitacion.mutate();
+    }
+  }, [felicitacionPendiente, apagarFelicitacion]);
+
   const cargando = ficha.isLoading || documentos.isLoading || resumenProductos.isLoading;
 
   if (cargando) {
@@ -134,15 +169,6 @@ export default function CalificacionPage() {
       </div>
     );
   }
-
-  // Estado GENERAL del proveedor (Aspirante/Aprobado) -> distinto de
-  // estado_calificacion_general, que es solo el veredicto de la Ficha
-  // en sí. El proveedor pasa a "Aprobado" automáticamente cuando se
-  // cumplen las 3 condiciones mínimas (ver
-  // CalificacionProveedorService::activarSiCorresponde): ficha
-  // aprobada + toda la documentación aprobada + al menos 1 producto
-  // aprobado.
-  const proveedorAprobado = ficha.data?.estado?.trim().toLowerCase() === 'aprobado';
 
   // --- Ficha ---
   const porcentajeFicha = ficha.data ? Number(ficha.data.porcentaje_completado) : 0;
@@ -206,14 +232,27 @@ export default function CalificacionPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <div>
-        <h1 className="font-display text-2xl font-semibold text-brand-900">Calificación</h1>
-        <p className="text-sm text-brand-900/60 mt-1">
-          Resumen de cómo va tu postulación: Ficha, Documentación y Ficha de Productos.
-        </p>
+      {/* La nota global va arriba a la derecha, separada del resumen de
+          postulación de abajo: son dos cosas distintas y conviene que se
+          lean como tales. La de abajo dice si entraste al portal; esta
+          dice cómo te está yendo una vez adentro (entregas, auditorías,
+          documentación al día, reclamos). */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-semibold text-brand-900">Calificación</h1>
+          <p className="text-sm text-brand-900/60 mt-1">
+            Resumen de cómo va tu postulación: Ficha, Documentación y Ficha de Productos.
+          </p>
+        </div>
+
+        {calificacionGlobal.data && (
+          <div className="w-full shrink-0 md:w-80">
+            <CalificacionGlobal datos={calificacionGlobal.data} titulo="Tu calificación" />
+          </div>
+        )}
       </div>
 
-      {proveedorAprobado && (
+      {felicitacionPendiente && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-start gap-3">
           <span className="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -300,5 +339,23 @@ export default function CalificacionPage() {
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Pantalla EXCLUSIVA del usuario proveedor. El backend ya la niega a un
+ * usuario interno (miProveedor() lanza AccessDenied si el Tipo_Usuario no es
+ * Proveedor), así que no era un agujero de seguridad; el problema era de cara
+ * al usuario: un interno que llegara por URL directa veía la pantalla
+ * dibujada y cada consulta fallando por detrás, sin ningún mensaje que
+ * explicara qué pasaba.
+ */
+export default function CalificacionPage() {
+  const { esProveedor } = useAuth();
+
+  return (
+    <RoleRoute allow={esProveedor}>
+      <CalificacionPageContenido />
+    </RoleRoute>
   );
 }
