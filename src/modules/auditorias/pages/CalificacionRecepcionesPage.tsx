@@ -15,14 +15,6 @@ import AroProgreso from '../../../shared/components/AroProgreso';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import FilaParametroRecepcion from '../components/FilaParametroRecepcion';
 
-function formatearFecha(iso: string | null): string {
-    if (!iso) return '—';
-    return new Date(`${iso}T00:00:00`).toLocaleDateString('es-EC', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    });
-}
 
 /** Paso 1: a quién calificar. Los que tocan hoy vienen primero del backend. */
 function SeleccionProveedor({
@@ -111,7 +103,7 @@ function SeleccionProveedor({
                                         {!p.puede_calificar && <Badge tone="neutral">Tope del año</Badge>}
                                     </div>
                                     <p className="text-[12px] text-brand-900/50 mt-0.5">
-                                        {p.ruc ?? 'Sin RUC'} · agendada {formatearFecha(p.fecha_programada)} ·{' '}
+                                        {p.ruc ?? 'Sin RUC'} ·{' '}
                                         {p.calificaciones_del_anio} de 2 este año
                                     </p>
                                 </div>

@@ -1,5 +1,7 @@
 // src/modules/catalogos/pages/CatalogosPage.tsx
 import { useState } from 'react';
+import RoleRoute from '../../../routes/RoleRoute';
+import { useAuth } from '../../auth/hooks/useAuth';
 import CrudCatalogoGenerico from '../components/CrudCatalogoGenerico';
 import {
   claseProveedorApi,
@@ -24,7 +26,7 @@ const PESTANAS = [
 
 type IdPestana = (typeof PESTANAS)[number]['id'];
 
-export default function CatalogosPage() {
+function CatalogosPageContenido() {
   const [pestana, setPestana] = useState<IdPestana>('clases');
 
   return (
@@ -180,5 +182,22 @@ export default function CatalogosPage() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Solo Sistemas. El backend ya lo exige (esSistemasGlobal en cada endpoint),
+ * pero sin esta guarda el resto de los roles llegaba a la pantalla por URL
+ * directa y la veía dibujada, chocando después contra 403 en cada acción. El
+ * caso concreto que lo destapó: la tarjeta "Empresas activas" del panel de
+ * Inicio enlazaba a /empresas y también se le mostraba al Admin.
+ */
+export default function CatalogosPage() {
+  const { esSistemas } = useAuth();
+
+  return (
+    <RoleRoute allow={esSistemas}>
+      <CatalogosPageContenido />
+    </RoleRoute>
   );
 }

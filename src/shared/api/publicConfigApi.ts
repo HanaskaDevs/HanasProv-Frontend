@@ -13,6 +13,13 @@ export interface HomeSlidePublico {
   Descripcion: string;
   Ruta_Media: string | null;
   Tipo_Media: 'imagen' | 'video' | null;
+  /**
+   * Primer cuadro del video, si el repositorio lo tiene al lado del archivo.
+   * Pesa ~25 KB contra los ~450 KB del video, así que el hero puede mostrar la
+   * imagen mientras el video termina de cargar. Null en las imágenes y en los
+   * videos que se subieron sin poster (ver ConfiguracionService::urlDelPoster).
+   */
+  Ruta_Poster?: string | null;
 }
 
 export interface GuiaPasoPublico {

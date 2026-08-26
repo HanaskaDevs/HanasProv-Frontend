@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, type ReactNode
 import axios from 'axios';
 import * as authApi from '../api/authApi';
 import { ROLES, type Usuario, type EmpresaAcceso } from '../types';
+import { marcarSaludoPendiente, olvidarSaludoPendiente } from '../../../shared/utils/saludoDeSesion';
 // En su propio módulo, sin dependencias: si viviera acá, apiClient tendría que
 // importar este archivo y se formaría un ciclo que rompe todas las peticiones.
 import {
@@ -90,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (tokenInvalido) {
       localStorage.removeItem('token');
       olvidarEmpresaDePestana();
+      olvidarSaludoPendiente();
       setUsuario(null);
       setIdEmpresaActiva(null);
     }
@@ -121,6 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   localStorage.setItem('token', token);
   setUsuario(usuarioLogueado);
 
+  // Habilita el saludo proactivo de Hana para ESTE inicio de sesión. HanaBot
+  // lo consume una vez y lo borra; sin esta marca no saluda, así que una
+  // recarga o un cambio de empresa ya no repiten el saludo.
+  marcarSaludoPendiente();
+
   // El backend sólo devuelve id_empresa_activa cuando el usuario tiene UNA
   // sola empresa; con varias llega null y hay que elegir la primera.
   let idEmpresa = Number(id_empresa_activa) || 0;
@@ -144,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       localStorage.removeItem('token');
       olvidarEmpresaDePestana();
+      olvidarSaludoPendiente();
       setUsuario(null);
       setIdEmpresaActiva(null);
     }

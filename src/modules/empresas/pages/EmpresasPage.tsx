@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import RoleRoute from '../../../routes/RoleRoute';
+import { useAuth } from '../../auth/hooks/useAuth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as empresasApi from '../api/empresasApi';
 import type { Empresa } from '../types';
@@ -10,7 +12,7 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import ModalEmpresa from '../components/ModalEmpresa';
 
-export default function EmpresasPage() {
+function EmpresasPageContenido() {
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [empresaEditando, setEmpresaEditando] = useState<Empresa | null>(null);
@@ -146,5 +148,22 @@ export default function EmpresasPage() {
 
       {modalAbierto && <ModalEmpresa empresa={empresaEditando} onClose={() => setModalAbierto(false)} />}
     </div>
+  );
+}
+
+/**
+ * Solo Sistemas. El backend ya lo exige (esSistemasGlobal en cada endpoint),
+ * pero sin esta guarda el resto de los roles llegaba a la pantalla por URL
+ * directa y la veía dibujada, chocando después contra 403 en cada acción. El
+ * caso concreto que lo destapó: la tarjeta "Empresas activas" del panel de
+ * Inicio enlazaba a /empresas y también se le mostraba al Admin.
+ */
+export default function EmpresasPage() {
+  const { esSistemas } = useAuth();
+
+  return (
+    <RoleRoute allow={esSistemas}>
+      <EmpresasPageContenido />
+    </RoleRoute>
   );
 }

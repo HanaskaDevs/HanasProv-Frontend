@@ -12,8 +12,12 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import Paginador from '../../../shared/components/Paginador';
 import * as proveedoresApi from '../api/proveedoresApi';
+import * as calificacionGlobalApi from '../../../shared/api/calificacionGlobalApi';
+import { DesgloseCalificacion } from '../../../shared/components/CalificacionGlobal';
+import { colorTexto, formatearNota } from '../../../shared/utils/formatoCalificacion';
 import type { ProveedorListado } from '../types';
 import ModalCalificarProveedor from '../components/ModalCalificarProveedor';
+import Modal from '../../../shared/components/Modal';
 
 const POR_PAGINA = 8;
 
@@ -49,6 +53,35 @@ function todoRevisado(p: ProveedorListado): boolean {
   return fichaRevisada && documentosRevisados;
 }
 
+/**
+ * La nota global en una celda de tabla: número grande con su color y, debajo,
+ * sobre cuánto se la evaluó. Ese "sobre cuánto" no es decorativo -> una nota
+ * de 100 calculada sobre 25 de los 100 puntos del esquema no significa lo
+ * mismo que una de 100 evaluada completa, y en una tabla de comparación esa
+ * diferencia tiene que verse.
+ */
+function CeldaNota({ calificacion }: { calificacion?: calificacionGlobalApi.CalificacionGlobalEnLote }) {
+  if (!calificacion) {
+    return <span className="text-xs text-brand-900/30">—</span>;
+  }
+
+  if (calificacion.puntaje_total === null) {
+    return <span className="text-xs text-brand-900/40">Sin datos</span>;
+  }
+
+  return (
+    <div className="leading-tight">
+      <span className={`font-display text-base font-semibold tabular-nums ${colorTexto(calificacion.puntaje_total)}`}>
+        {formatearNota(calificacion.puntaje_total)}
+      </span>
+      <span className="text-[11px] text-brand-900/40">/100</span>
+      {calificacion.peso_evaluado < 100 && (
+        <p className="text-[10.5px] text-brand-900/40">sobre {calificacion.peso_evaluado} pts</p>
+      )}
+    </div>
+  );
+}
+
 function TarjetaResumen({ valor, etiqueta, tono }: { valor: number; etiqueta: string; tono: 'neutral' | 'wine' }) {
   return (
     <div
@@ -69,6 +102,24 @@ function ProveedoresContent() {
   const [filtroCalificacion, setFiltroCalificacion] = useState('');
   const [pagina, setPagina] = useState(1);
   const [proveedorCalificando, setProveedorCalificando] = useState<ProveedorListado | null>(null);
+  // Proveedor cuyo desglose se está mirando en el modal.
+  const [desgloseDe, setDesgloseDe] = useState<calificacionGlobalApi.CalificacionGlobalEnLote | null>(null);
+
+  // Las notas de todos, en una sola petición. Query aparte de la lista: si
+  // este endpoint falla o tarda, la tabla se muestra igual y la columna de
+  // calificación queda en "—".
+  const { data: calificaciones } = useQuery({
+    queryKey: ['calificaciones-globales'],
+    queryFn: calificacionGlobalApi.obtenerCalificacionesGlobales,
+    retry: false,
+  });
+
+  const calificacionPorProveedor = useMemo(() => {
+    const mapa = new Map<number, calificacionGlobalApi.CalificacionGlobalEnLote>();
+    (calificaciones ?? []).forEach((c) => mapa.set(c.id_proveedor, c));
+    return mapa;
+  }, [calificaciones]);
+
 
   const { data: proveedores, isLoading } = useQuery({
     queryKey: ['proveedores-lista'],
@@ -178,6 +229,7 @@ function ProveedoresContent() {
                   <th className="px-4 py-2.5 text-xs font-medium">Calificación Ficha</th>
                   <th className="px-4 py-2.5 text-xs font-medium">Documentación</th>
                   <th className="px-4 py-2.5 text-xs font-medium">Calificación Documentación</th>
+                  <th className="px-4 py-2.5 text-xs font-medium">Calificación global</th>
                   <th className="px-4 py-2.5 text-xs font-medium text-right">Acciones</th>
                 </tr>
               </thead>
@@ -185,6 +237,7 @@ function ProveedoresContent() {
                 {proveedoresPagina.map((p) => {
                   const atencion = necesitaAtencion(p);
                   const revisado = todoRevisado(p);
+                  const calificacion = calificacionPorProveedor.get(p.id);
                   return (
                     <tr
                       key={p.id}
@@ -223,16 +276,38 @@ function ProveedoresContent() {
                           <BadgeCalificacion estado={p.estado_calificacion_documentacion} />
                         )}
                       </td>
+                      <td className="px-4 py-2.5">
+                        {/* La nota ES el botón: se hace clic sobre el número
+                            y se abre el desglose. Antes había un botón
+                            "Desglose" aparte, que era una columna más para
+                            algo que el usuario ya intentaba clickear. */}
+                        {calificacion ? (
+                          <button
+                            type="button"
+                            onClick={() => setDesgloseDe(calificacion)}
+                            title="Ver el desglose de la calificación"
+                            className="-mx-2 -my-1 rounded-md px-2 py-1 text-left transition-colors
+                              hover:bg-brand-200/30
+                              focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-700"
+                          >
+                            <CeldaNota calificacion={calificacion} />
+                          </button>
+                        ) : (
+                          <CeldaNota calificacion={calificacion} />
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 text-right">
-                        <Button
-                          variant={revisado ? 'ghost' : atencion ? 'primary' : 'ghost'}
-                          className={`text-xs px-3 py-1.5 ${
-                            revisado ? '!bg-brand-200/40 hover:!bg-brand-200/60' : ''
-                          }`}
-                          onClick={() => setProveedorCalificando(p)}
-                        >
-                          {revisado ? 'Ver calificación' : 'Calificar'}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant={revisado ? 'ghost' : atencion ? 'primary' : 'ghost'}
+                            className={`text-xs px-3 py-1.5 ${
+                              revisado ? '!bg-brand-200/40 hover:!bg-brand-200/60' : ''
+                            }`}
+                            onClick={() => setProveedorCalificando(p)}
+                          >
+                            {revisado ? 'Ver calificación' : 'Calificar'}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -244,6 +319,19 @@ function ProveedoresContent() {
           </>
         )}
       </Card>
+
+      {desgloseDe && (
+        <Modal
+          onClose={() => setDesgloseDe(null)}
+          title="Calificación del proveedor"
+          maxWidth="max-w-xl"
+        >
+          <DesgloseCalificacion
+            datos={desgloseDe}
+            subtitulo={desgloseDe.razon_social ?? undefined}
+          />
+        </Modal>
+      )}
 
       {proveedorCalificando && (
         <ModalCalificarProveedor

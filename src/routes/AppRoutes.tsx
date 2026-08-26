@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import PantallaCarga from '../shared/components/PantallaCarga';
 
@@ -49,7 +49,14 @@ const CalificacionRecepcionesPage = lazy(() => import('../modules/auditorias/pag
 const PoliticasPage = lazy(() => import('../modules/politicas/pages/PoliticasPage'));
 const ConfiguracionesPage = lazy(() => import('../modules/configuraciones/pages/ConfiguracionesPage'));
 const CatalogosPage = lazy(() => import('../modules/catalogos/pages/CatalogosPage'));
-const ProximamentePage = lazy(() => import('../shared/pages/ProximamentePage'));
+const ReporteCalificacionProveedoresPage = lazy(() => import('../modules/reportes/pages/ReporteCalificacionProveedoresPage'));
+const ReporteCumplimientoEntregasPage = lazy(() => import('../modules/reportes/pages/ReporteCumplimientoEntregasPage'));
+
+// Páginas legales: PÚBLICAS a propósito (fuera de ProtectedRoute). Quien
+// necesita ejercer un derecho sobre sus datos puede ser justamente alguien
+// sin cuenta activa; exigir login sería negarle el derecho en la práctica.
+const PoliticaProteccionDatosPage = lazy(() => import('../modules/legal/pages/PoliticaProteccionDatosPage'));
+const FormularioDerechosPage = lazy(() => import('../modules/legal/pages/FormularioDerechosPage'));
 const CalendarioHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/CalendarioHorariosPage'));
 const ModoTvHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/ModoTvHorariosPage'));
 const SeguimientoHoyPage = lazy(() => import('../modules/horariosEntrega/pages/SeguimientoHoyPage'));
@@ -59,6 +66,8 @@ export default function AppRoutes() {
     <Suspense fallback={<PantallaCarga />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/politica-de-proteccion-de-datos" element={<PoliticaProteccionDatosPage />} />
+        <Route path="/formulario-atencion-de-derechos" element={<FormularioDerechosPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/activar-cuenta" element={<ActivarCuentaPage />} />
         <Route path="/olvide-password" element={<OlvidePasswordPage />} />
@@ -92,7 +101,9 @@ export default function AppRoutes() {
           <Route path="/politicas" element={<PoliticasPage />} />
           <Route path="/calendario" element={<CalendarioHorariosPage />} />
           <Route path="/calendario/seguimiento" element={<SeguimientoHoyPage />} />
-          <Route path="/reportes" element={<ProximamentePage titulo="Reportes" />} />
+          <Route path="/reportes" element={<Navigate to="/reportes/calificacion-proveedores" replace />} />
+          <Route path="/reportes/calificacion-proveedores" element={<ReporteCalificacionProveedoresPage />} />
+          <Route path="/reportes/cumplimiento-entregas" element={<ReporteCumplimientoEntregasPage />} />
           <Route path="/configuraciones" element={<ConfiguracionesPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
         </Route>

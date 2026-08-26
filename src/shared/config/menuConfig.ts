@@ -66,9 +66,12 @@ const CAMBIOS_PRECIO_ITEM: SubMenuItem = {
   descripcion: 'Solicitudes pendientes de aprobar',
 };
 
+// Nombre en paralelo con AUDITORIAS_RECEPCIONES: los dos son
+// "Calificación de X", así que en el menú se leen como dos variantes de lo
+// mismo (que es lo que son) y no como dos módulos distintos.
 const AUDITORIAS_CALIFICACION: SubMenuItem = {
   to: '/auditorias',
-  label: 'Auditorías de calificación',
+  label: 'Calificación de auditorías',
   icono: 'portapapeles',
   descripcion: 'Formulario completo por clase de proveedor',
 };
@@ -199,7 +202,18 @@ const CALENDARIO_HORARIOS: SubMenuItem = {
 const AREA_REPORTES: MenuItem = {
   label: 'Reportes',
   children: [
-    { to: '/reportes', label: 'Reportes', icono: 'reporte', descripcion: 'Indicadores del portal' },
+    {
+      to: '/reportes/calificacion-proveedores',
+      label: 'Calificación de proveedores',
+      icono: 'reporte',
+      descripcion: 'Comparativa por componente de la nota',
+    },
+    {
+      to: '/reportes/cumplimiento-entregas',
+      label: 'Cumplimiento de entregas',
+      icono: 'reporte',
+      descripcion: 'Fill rate por proveedor',
+    },
     CALENDARIO_HORARIOS,
   ],
 };

@@ -89,11 +89,21 @@ export default function HeroCarousel() {
   // Refs espejo del estado, para leer valores frescos dentro de callbacks
   // async (eventos del navegador, timeouts) sin depender de closures viejas.
   const slidesRef = useRef(slides);
-  slidesRef.current = slides;
   const activoRef = useRef(activo);
-  activoRef.current = activo;
   const capasRef = useRef(capas);
-  capasRef.current = capas;
+
+  // La sincronización va en un efecto y no en el cuerpo del componente:
+  // escribir una ref durante el render es justo lo que la regla
+  // react-hooks/refs prohíbe (y con razón, porque el render puede repetirse o
+  // descartarse). Un efecto SIN arreglo de dependencias corre después de cada
+  // render, que es exactamente lo que hacía la asignación directa, y los
+  // valores solo se leen desde callbacks asíncronos que ocurren después de
+  // pintar.
+  useEffect(() => {
+    slidesRef.current = slides;
+    activoRef.current = activo;
+    capasRef.current = capas;
+  });
 
   // Si cada capa ya está "lista" para mostrarse (los slides de respaldo,
   // al no tener video/imagen, arrancan listos de una vez).
@@ -127,16 +137,6 @@ export default function HeroCarousel() {
       .catch(() => {
         // Se queda con SLIDES_RESPALDO si falla.
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // --- Rotación automática cada 6s ---
-  useEffect(() => {
-    const intervalo = setInterval(() => {
-      intentarAvanzar();
-    }, INTERVALO_MS);
-    return () => clearInterval(intervalo);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function siguienteSlideDespuesDe(s: Slide): Slide {
@@ -199,6 +199,64 @@ export default function HeroCarousel() {
     }
   }
 
+  /**
+   * Con poster la capa se puede revelar SIN esperar al video.
+   *
+   * El motivo original de esperar el evento 'playing' era no mostrar el hueco
+   * de inicialización del <video> (el ícono de carga). El poster tapa ese
+   * hueco: es la misma imagen del primer cuadro, dentro del mismo elemento, y
+   * el video la reemplaza cuando arranca. Así el hero deja de mostrar el
+   * spinner durante toda la descarga del video, que es lo que se sentía lento.
+   *
+   * Se precarga con new Image() en vez de confiar en el navegador: hace falta
+   * saber CUÁNDO está pintable para marcar la capa lista, y el <video> no
+   * avisa por su poster. La imagen ya queda en caché, así que el elemento no
+   * la vuelve a pedir.
+   */
+  useEffect(() => {
+    const posters = ([0, 1] as const)
+      .map((capa) => {
+        const slide = capas[capa];
+
+        return { capa, poster: esSlideReal(slide) ? (slide.Ruta_Poster ?? null) : null };
+      })
+      .filter((x): x is { capa: 0 | 1; poster: string } => x.poster !== null);
+
+    const precargas = posters.map(({ capa, poster }) => {
+      const img = new Image();
+      img.src = poster;
+
+      const marcar = () => onCapaLista(capa);
+
+      if (img.complete) {
+        marcar();
+      } else {
+        img.addEventListener('load', marcar);
+      }
+
+      return { img, marcar };
+    });
+
+    return () => {
+      precargas.forEach(({ img, marcar }) => img.removeEventListener('load', marcar));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capas]);
+
+  // --- Rotación automática cada 6s ---
+  //
+  // Va DESPUÉS de intentarAvanzar y no antes: aunque la declaración de función
+  // se eleva, leerla desde arriba rompe el análisis del linter de hooks (y de
+  // paso se lee peor).
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      intentarAvanzar();
+    }, INTERVALO_MS);
+
+    return () => clearInterval(intervalo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function irA(slideDestino: Slide) {
     if (slideDestino === capasRef.current[activoRef.current]) return;
     const oculta = activoRef.current === 0 ? 1 : 0;
@@ -220,6 +278,7 @@ export default function HeroCarousel() {
     const activa = activo === capa;
     const ruta = esSlideReal(slide) ? slide.Ruta_Media : null;
     const tipo = esSlideReal(slide) ? slide.Tipo_Media : null;
+    const poster = esSlideReal(slide) ? (slide.Ruta_Poster ?? null) : null;
 
     return (
       <div
@@ -233,6 +292,11 @@ export default function HeroCarousel() {
             <video
               key={ruta}
               src={ruta}
+              // El poster tapa exactamente el hueco que antes obligaba a
+              // esperar: se pinta con ~25 KB y el video lo reemplaza sin salto
+              // cuando arranca. Si el slide no tiene poster, el atributo va
+              // vacío y todo se comporta como antes.
+              poster={poster ?? undefined}
               muted
               loop
               autoPlay

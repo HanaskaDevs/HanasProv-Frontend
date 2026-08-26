@@ -4,6 +4,8 @@ import Modal from '../../../shared/components/Modal';
 import Spinner from '../../../shared/components/Spinner';
 import Badge from '../../../shared/components/Badge';
 import * as proveedoresApi from '../api/proveedoresApi';
+import { DesgloseCalificacion } from '../../../shared/components/CalificacionGlobal';
+import * as calificacionGlobalApi from '../../../shared/api/calificacionGlobalApi';
 
 function Fila({ etiqueta, valor }: { etiqueta: string; valor: string | null | undefined }) {
   return (
@@ -49,6 +51,15 @@ export default function ModalDetalleProveedor({
     queryFn: () => proveedoresApi.obtenerFichaCalificacion(idProveedor),
   });
 
+  // Nota de desempeño del proveedor. Query aparte de la ficha: si el
+  // endpoint falla, el detalle del proveedor se muestra igual y solo
+  // desaparece el bloque de la nota.
+  const { data: calificacion } = useQuery({
+    queryKey: ['calificacion-global-proveedor', idProveedor],
+    queryFn: () => calificacionGlobalApi.obtenerCalificacionGlobalDeProveedor(idProveedor),
+    retry: false,
+  });
+
   const s1 = ficha?.seccion_1;
   const lat = s1?.latitud != null ? Number(s1.latitud) : null;
   const lng = s1?.longitud != null ? Number(s1.longitud) : null;
@@ -62,6 +73,22 @@ export default function ModalDetalleProveedor({
         </div>
       ) : (
         <div className="space-y-6">
+          {/* La nota va primero: es lo que Compras y Calidad vienen a ver.
+              En variante COMPACTA a propósito: acá es un bloque más de una
+              ficha que ya tiene datos generales, cuatro contactos y un mapa,
+              y en tamaño completo (anillo grande, barras por componente y
+              pie explicativo) se comía la pantalla antes de llegar a lo
+              demás. El desglose completo vive en la tabla de Calificación de
+              Proveedores, a un clic sobre la nota. */}
+          {calificacion && (
+            <div className="rounded-lg border border-brand-900/8 px-4 py-3">
+              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-brand-900/45 mb-2">
+                Calificación del proveedor
+              </p>
+              <DesgloseCalificacion datos={calificacion} compacto />
+            </div>
+          )}
+
           <div className="flex items-center gap-2 flex-wrap">
             <Badge tone={ficha.estado_calificacion_general === 'Aprobado' ? 'success' : 'neutral'}>
               Ficha: {ficha.estado_calificacion_general ?? 'En revisión'}

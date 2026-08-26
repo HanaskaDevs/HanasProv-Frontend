@@ -1,5 +1,6 @@
 // src/modules/auth/components/PanelSistemas.tsx
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import Spinner from '../../../shared/components/Spinner';
 import { obtenerResumenDashboard } from '../api/dashboardSistemasApi';
@@ -106,6 +107,11 @@ function TarjetaStat({
  * que el resto de las pantallas de administración.
  */
 export default function PanelSistemas() {
+  // Este panel lo ven Sistemas Y Admin, y no todas las tarjetas aplican a
+  // los dos: la de Empresas enlaza a /empresas, que es solo de Sistemas.
+  // Mostrársela al Admin lo mandaba a una pantalla que el backend le niega.
+  const { esSistemas } = useAuth();
+
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-sistemas'],
     queryFn: obtenerResumenDashboard,
@@ -124,14 +130,16 @@ export default function PanelSistemas() {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <TarjetaStat
-          icono={<IconoEmpresa />}
-          valor={data?.total_empresas ?? 0}
-          etiqueta="Empresas activas"
-          color="text-brand-700 bg-brand-700/10"
-          to="/empresas"
-        />
+      <div className={`grid gap-3 grid-cols-2 ${esSistemas ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+        {esSistemas && (
+          <TarjetaStat
+            icono={<IconoEmpresa />}
+            valor={data?.total_empresas ?? 0}
+            etiqueta="Empresas activas"
+            color="text-brand-700 bg-brand-700/10"
+            to="/empresas"
+          />
+        )}
         <TarjetaStat
           icono={<IconoFicha />}
           valor={data?.fichas_pendientes ?? 0}
