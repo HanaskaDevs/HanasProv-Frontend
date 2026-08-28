@@ -8,8 +8,10 @@ import TabBotReglas from '../components/TabBotReglas';
 import TabGuiaPasos from '../components/TabGuiaPasos';
 import TabPoliticas from '../components/TabPoliticas';
 import TabDocumentos from '../components/TabDocumentos';
+import TabModoTv from '../components/TabModoTv';
+import TabSeguridad from '../components/TabSeguridad';
 
-type Tab = 'home' | 'login' | 'bot' | 'guia' | 'politicas' | 'documentos';
+type Tab = 'home' | 'login' | 'bot' | 'guia' | 'politicas' | 'documentos' | 'modo-tv' | 'seguridad';
 
 function ConfiguracionesPageContenido() {
   const { esSistemas } = useAuth();
@@ -32,6 +34,8 @@ function ConfiguracionesPageContenido() {
     { id: 'guia', label: 'Guía de inicio' },
     { id: 'politicas', label: 'Políticas' },
     { id: 'documentos', label: 'Documentos' },
+    { id: 'modo-tv', label: 'Modo TV' },
+    { id: 'seguridad', label: 'Seguridad' },
   ];
 
   return (
@@ -70,6 +74,8 @@ function ConfiguracionesPageContenido() {
       {tab === 'guia' && <TabGuiaPasos />}
       {tab === 'politicas' && <TabPoliticas />}
       {tab === 'documentos' && <TabDocumentos />}
+      {tab === 'modo-tv' && <TabModoTv />}
+      {tab === 'seguridad' && <TabSeguridad />}
     </div>
   );
 }

@@ -186,3 +186,48 @@ export async function definirSuspensionDocumentos(activa: boolean): Promise<Conf
   });
   return data;
 }
+
+// ---------------------------------------------------------------------------
+// Anuncios por voz del Modo TV
+// ---------------------------------------------------------------------------
+
+export interface ConfigAnunciosVoz {
+  activa: boolean;
+}
+
+export async function obtenerAnunciosVoz(): Promise<ConfigAnunciosVoz> {
+  const { data } = await apiClient.get<ConfigAnunciosVoz>('/configuraciones/anuncios-voz');
+  return data;
+}
+
+export async function definirAnunciosVoz(activa: boolean): Promise<ConfigAnunciosVoz> {
+  const { data } = await apiClient.put<ConfigAnunciosVoz>('/configuraciones/anuncios-voz', { activa });
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// IP bloqueadas por fuerza bruta
+// ---------------------------------------------------------------------------
+
+export interface IpBloqueada {
+  Id_Ip_Bloqueada: number;
+  Ip: string;
+  Motivo: string | null;
+  Intentos: number;
+  Fecha_Bloqueo: string;
+  Desbloqueada_Por: number | null;
+  Fecha_Desbloqueo: string | null;
+  Activa: boolean;
+}
+
+/** Viven bajo /auth y no bajo /configuraciones porque una IP no pertenece a
+ *  ninguna empresa: el permiso es "Sistemas en cualquier empresa". */
+export async function listarIpsBloqueadas(): Promise<IpBloqueada[]> {
+  const { data } = await apiClient.get<IpBloqueada[]>('/auth/ips-bloqueadas');
+  return data;
+}
+
+export async function desbloquearIp(id: number): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>(`/auth/ips-bloqueadas/${id}/desbloquear`);
+  return data;
+}

@@ -7,6 +7,13 @@ export interface UsuarioInterno {
   cargo: string | null;
   telefono: string | null;
   activo: boolean;
+  /**
+   * Distinto de `activo`: el usuario se bloqueó SOLO, tras 3 intentos de
+   * login fallidos seguidos. `activo` sigue en true -> sin este campo, la
+   * pantalla mostraría "Inactivar" y no habría forma de destrabarlo.
+   */
+  bloqueado_por_intentos: boolean;
+  fecha_bloqueo: string | null;
   requiere_activacion: boolean;
   ultimo_acceso: string | null;
   rol: { id_rol: number | string; nombre_rol: string } | null;
@@ -18,6 +25,13 @@ export interface UsuarioExterno {
   email: string;
   nombre_completo: string;
   activo: boolean;
+  /**
+   * Distinto de `activo`: el usuario se bloqueó SOLO, tras 3 intentos de
+   * login fallidos seguidos. `activo` sigue en true -> sin este campo, la
+   * pantalla mostraría "Inactivar" y no habría forma de destrabarlo.
+   */
+  bloqueado_por_intentos: boolean;
+  fecha_bloqueo: string | null;
   requiere_activacion: boolean;
   ultimo_acceso: string | null;
   ficha_completada: boolean;

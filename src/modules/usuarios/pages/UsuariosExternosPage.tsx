@@ -58,6 +58,23 @@ function UsuariosExternosContent() {
     });
   }, [usuarios, busqueda, filtroEstado, filtroFicha]);
 
+  /**
+   * Desbloquea una cuenta que se trabó sola por 3 intentos de login
+   * fallidos. Usa el mismo endpoint que "Reactivar": el backend limpia el
+   * bloqueo y le manda un código para que defina una contraseña nueva
+   * (ver UsuarioService::reactivar).
+   */
+  async function desbloquear(u: UsuarioExterno) {
+    setProcesandoId(u.id);
+    try {
+      await reactivarUsuario(u.id);
+      setMensajeReenvio(`Cuenta desbloqueada. Se envió un código a ${u.email} para que defina una contraseña nueva.`);
+      await cargar();
+    } finally {
+      setProcesandoId(null);
+    }
+  }
+
   async function alternarEstado(u: UsuarioExterno) {
     setProcesandoId(u.id);
     try {
@@ -165,7 +182,11 @@ function UsuariosExternosContent() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <EstadoBadge activo={u.activo} requiereActivacion={u.requiere_activacion} />
+                    {u.bloqueado_por_intentos ? (
+                      <Badge tone="danger">Bloqueado</Badge>
+                    ) : (
+                      <EstadoBadge activo={u.activo} requiereActivacion={u.requiere_activacion} />
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => setUsuarioEditando(u.id)}>
@@ -188,14 +209,30 @@ function UsuariosExternosContent() {
                         Reenviar activación
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      className={`text-xs px-2 py-1 ${u.activo ? 'text-brand-wine' : 'text-emerald-700'}`}
-                      isLoading={procesandoId === u.id}
-                      onClick={() => alternarEstado(u)}
-                    >
-                      {u.activo ? 'Inactivar' : 'Reactivar'}
-                    </Button>
+                    {/* Bloqueado por intentos fallidos: `activo` sigue en true,
+                        así que sin este caso aparte el botón diría "Inactivar"
+                        y Sistemas no tendría forma de destrabar la cuenta.
+                        Reactivar además le manda un código para que ponga una
+                        contraseña nueva (ver UsuarioService::reactivar). */}
+                    {u.bloqueado_por_intentos ? (
+                      <Button
+                        variant="ghost"
+                        className="text-xs px-2 py-1 text-emerald-700"
+                        isLoading={procesandoId === u.id}
+                        onClick={() => desbloquear(u)}
+                      >
+                        Desbloquear
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        className={`text-xs px-2 py-1 ${u.activo ? 'text-brand-wine' : 'text-emerald-700'}`}
+                        isLoading={procesandoId === u.id}
+                        onClick={() => alternarEstado(u)}
+                      >
+                        {u.activo ? 'Inactivar' : 'Reactivar'}
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -21,11 +21,37 @@ export async function misHorarios(): Promise<HorarioEntrega[]> {
   return data;
 }
 
-/** Seguimiento en vivo de hoy: ya viene con el estado calculado y sin los "Recibido". */
-export async function listarHoy(clasificacion?: ClasificacionHorario): Promise<HorarioHoy[]> {
+/**
+ * Seguimiento en vivo de hoy, ya con el estado calculado.
+ *
+ * `incluirRecibidos` lo manda SOLO el Modo TV: necesita ver la fila pasar a
+ * "Recibido" para poder anunciar por voz que el proveedor entregó. Sin él
+ * (Seguimiento de hoy) el backend sigue ocultando los recibidos, igual que
+ * siempre -> una fila que desaparece no sirve para anunciar nada, porque
+ * también desaparece al cambiar de franja horaria o al recargar.
+ */
+export async function listarHoy(
+  clasificacion?: ClasificacionHorario,
+  incluirRecibidos = false
+): Promise<HorarioHoy[]> {
   const { data } = await apiClient.get<HorarioHoy[]>('/horarios-entrega/hoy', {
-    params: clasificacion ? { clasificacion } : undefined,
+    params: {
+      ...(clasificacion ? { clasificacion } : {}),
+      ...(incluirRecibidos ? { incluir_recibidos: 1 } : {}),
+    },
   });
+  return data;
+}
+
+/**
+ * ¿Están encendidos los anuncios por voz del Modo TV?
+ *
+ * Se lee de acá y no de /configuraciones porque quien tiene la TV abierta
+ * suele ser el Guardia o Compras, que no tienen acceso a Configuraciones.
+ * El interruptor lo cambia Sistemas desde Configuraciones -> Modo TV.
+ */
+export async function obtenerConfigAnuncios(): Promise<{ voz_activa: boolean }> {
+  const { data } = await apiClient.get<{ voz_activa: boolean }>('/horarios-entrega/config-anuncios');
   return data;
 }
 

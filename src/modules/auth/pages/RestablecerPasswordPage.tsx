@@ -8,12 +8,14 @@ import * as authApi from '../api/authApi';
 import AuthLayout from '../../../shared/layouts/AuthLayout';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
+import RequisitosPassword from '../../../shared/components/RequisitosPassword';
+import { passwordSegura } from '../../../shared/utils/reglasPassword';
 
 const schema = z
   .object({
     email: z.string().email('Correo inválido'),
     codigo: z.string().min(1, 'El código es requerido'),
-    password_nueva: z.string().min(8, 'Mínimo 8 caracteres'),
+    password_nueva: passwordSegura,
     password_nueva_confirmation: z.string().min(1, 'Requerido'),
   })
   .refine((data) => data.password_nueva === data.password_nueva_confirmation, {
@@ -48,6 +50,7 @@ export default function RestablecerPasswordPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -91,12 +94,15 @@ export default function RestablecerPasswordPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <CampoOscuro label="Correo" type="email" {...register('email')} error={errors.email?.message} />
         <CampoOscuro label="Código de recuperación" {...register('codigo')} error={errors.codigo?.message} />
-        <CampoOscuro
-          label="Nueva contraseña"
-          type="password"
-          {...register('password_nueva')}
-          error={errors.password_nueva?.message}
-        />
+        <div>
+          <CampoOscuro
+            label="Nueva contraseña"
+            type="password"
+            {...register('password_nueva')}
+            error={errors.password_nueva?.message}
+          />
+          <RequisitosPassword valor={watch('password_nueva') ?? ''} variante="oscura" />
+        </div>
         <CampoOscuro
           label="Confirmar contraseña"
           type="password"

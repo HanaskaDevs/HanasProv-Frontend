@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/hooks/useAuth';
 import * as horariosEntregaApi from '../api/horariosEntregaApi';
 import { CLASIFICACIONES, ESTADOS_HORARIO, type EstadoHorario, type HorarioHoy } from '../types';
 import PantallaCarga from '../../../shared/components/PantallaCarga';
+import { useAnunciosVoz } from '../useAnunciosVoz';
 
 /**
  * Filas que entran cómodas en una pantalla de TV con letra grande, sin
@@ -156,8 +157,16 @@ function useHorariosDeHoyPorClasificacion(habilitado: boolean) {
   const consultas = CLASIFICACIONES.map((c) =>
     // eslint-disable-next-line react-hooks/rules-of-hooks -- CLASIFICACIONES es un array fijo de 3, nunca cambia de tamaño.
     useQuery({
-      queryKey: ['horarios-entrega-hoy', c.valor],
-      queryFn: () => horariosEntregaApi.listarHoy(c.valor),
+      // El sufijo 'con-recibidos' NO es decorativo: Seguimiento de hoy usa
+      // ['horarios-entrega-hoy', tab] para la MISMA clasificación pero pide
+      // la lista SIN los recibidos. Con la clave compartida, entrar al Modo
+      // TV y salir a Seguimiento le mostraba a esa pantalla los recibidos
+      // cacheados acá, que es justo lo que ahí se oculta a propósito.
+      queryKey: ['horarios-entrega-hoy', c.valor, 'con-recibidos'],
+      // Con los recibidos incluidos (ver listarHoy): el Modo TV necesita ver
+      // la fila cambiar a "Recibido" para poder anunciar que el proveedor
+      // entregó, y de paso la muestra atenuada hasta que se le pase la franja.
+      queryFn: () => horariosEntregaApi.listarHoy(c.valor, true),
       enabled: habilitado,
       refetchInterval: MS_REFRESCO_DATOS,
     })
@@ -188,10 +197,33 @@ export default function ModoTvHorariosPage() {
   const navigate = useNavigate();
   const [indiceClasificacion, setIndiceClasificacion] = useState(0);
   const [paginaActual, setPaginaActual] = useState(0);
+  // Se incrementa en cada salto manual. Es dependencia del intervalo de
+  // rotación, así que cambiarlo lo vuelve a crear -> quien toca una
+  // categoría se la queda los 10 segundos completos, en vez de que la
+  // rotación se la lleve un segundo después porque el ciclo ya venía por
+  // la mitad.
+  const [reinicioRotacion, setReinicioRotacion] = useState(0);
   const ahora = useRelojEnVivo();
   const { activa: pantallaCompletaActiva, solicitar: solicitarPantallaCompleta } = useFullscreen();
 
   const filasPorClasificacionDelDia = useHorariosDeHoyPorClasificacion(isAuthenticated);
+
+  // El interruptor lo prende/apaga Sistemas desde Configuraciones -> Modo TV.
+  // Se relee cada 5 minutos para que apagarlo surta efecto en una TV que ya
+  // quedó encendida, sin tener que ir a recargarla a mano.
+  const { data: configAnuncios } = useQuery({
+    queryKey: ['horarios-entrega-config-anuncios'],
+    queryFn: horariosEntregaApi.obtenerConfigAnuncios,
+    enabled: isAuthenticated,
+    refetchInterval: 5 * 60_000,
+  });
+
+  // TODO el día, sin filtrar por franja: un proveedor de las 9:00 que arriba
+  // 10:15 ya no se ve en pantalla, pero su arribo igual se anuncia (pedido
+  // explícito del usuario).
+  const filasDelDia = filasPorClasificacionDelDia.flat();
+
+  const { audioBloqueado } = useAnunciosVoz(filasDelDia, configAnuncios?.voz_activa ?? false);
 
   // Franja de la hora actual: [9:00, 10:00), [10:00, 11:00), etc. Se
   // recalcula solo cuando cambia la hora (no en cada segundo del reloj),
@@ -265,7 +297,18 @@ export default function ModoTvHorariosPage() {
       }
     }, SEGUNDOS_POR_PASO * 1000);
     return () => clearInterval(intervalo);
-  }, []);
+  }, [reinicioRotacion]);
+
+  /**
+   * Salto manual a una clasificación (pedido explícito del usuario: poder
+   * ir directo a una categoría sin esperar a que la rotación vuelva a
+   * pasar por ella). No apaga la rotación automática, solo la reinicia.
+   */
+  function irAClasificacion(indice: number) {
+    setIndiceClasificacion(indice);
+    setPaginaActual(0);
+    setReinicioRotacion((n) => n + 1);
+  }
 
   useEffect(() => {
     function alPresionarEsc(e: KeyboardEvent) {
@@ -322,6 +365,25 @@ export default function ModoTvHorariosPage() {
         </button>
       )}
 
+      {/* Los navegadores no dejan reproducir audio hasta que alguien
+          interactúa con la página (autoplay policy). En una TV abierta por
+          URL eso no pasa nunca, así que el primer anuncio se pierde en
+          silencio y nadie entiende por qué no suena. Este aviso aparece
+          SOLO cuando el navegador ya rechazó un anuncio, y se va con
+          cualquier clic o tecla (ver useAnunciosVoz). */}
+      {audioBloqueado && (
+        <button
+          type="button"
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-brand-yellow text-brand-900 font-medium shadow-lg animate-pulse"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+          </svg>
+          Toca la pantalla para activar los anuncios por voz
+        </button>
+      )}
+
       <div className="flex items-center justify-between px-8 py-5 border-b border-white/10">
         <div>
           <p className="text-sm text-white/50 uppercase tracking-wide">Calendario de horarios de entrega</p>
@@ -343,16 +405,26 @@ export default function ModoTvHorariosPage() {
             </span>
           )}
           <div className="flex items-center gap-3">
-            {CLASIFICACIONES.map((c, i) => (
-              <span
-                key={c.valor}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  i === indiceClasificacion % CLASIFICACIONES.length ? 'bg-white text-brand-900' : 'bg-white/10 text-white/50'
-                }`}
-              >
-                {c.etiqueta}
-              </span>
-            ))}
+            {CLASIFICACIONES.map((c, i) => {
+              const esActual = i === indiceClasificacion % CLASIFICACIONES.length;
+
+              return (
+                <button
+                  key={c.valor}
+                  type="button"
+                  onClick={() => irAClasificacion(i)}
+                  aria-current={esActual ? 'true' : undefined}
+                  title={`Ver ${c.etiqueta} ahora`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
+                    esActual
+                      ? 'bg-white text-brand-900'
+                      : 'bg-white/10 text-white/50 hover:bg-white/25 hover:text-white'
+                  }`}
+                >
+                  {c.etiqueta}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
