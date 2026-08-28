@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../auth/hooks/useAuth';
 import * as horariosEntregaApi from '../api/horariosEntregaApi';
 import { CLASIFICACIONES, DIAS_SEMANA, type ClasificacionHorario, type HorarioEntrega } from '../types';
@@ -20,7 +21,9 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
       <div className="px-4 py-2.5 bg-brand-900/4 border-b border-brand-900/10">
         <h3 className="text-sm font-semibold text-brand-900">{dia}</h3>
       </div>
-      <div className="overflow-x-auto">
+
+      {/* Escritorio/tablet ancha (md+): tabla completa con las 7 columnas. */}
+      <div className="overflow-x-auto hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-brand-900/50 border-b border-brand-900/10">
@@ -48,16 +51,50 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
           </tbody>
         </table>
       </div>
+
+      {/* Mobile/tablet angosta (< md): tarjetas apiladas, sin scroll
+       *  horizontal -> pedido explícito del usuario (Calidad usa esto en
+       *  celular), mismo criterio que SeguimientoHoyPage. */}
+      <div className="md:hidden divide-y divide-brand-900/6">
+        {delDia.map((h) => (
+          <div key={h.id_horario_entrega_proveedor} className="p-4 space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold text-brand-900 leading-tight truncate">{h.nombre_proveedor}</p>
+                {h.codigo_proveedor && <p className="text-xs text-brand-900/50">{h.codigo_proveedor}</p>}
+              </div>
+              <span className="font-semibold text-brand-900 tabular-nums shrink-0">{h.hora_llegada}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <p className="text-[11px] uppercase text-brand-900/40">Andén/Puerta</p>
+                <p>{h.anden_puerta ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase text-brand-900/40">Preparación</p>
+                <p>{h.tiempo_preparacion_min ?? '—'} min</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase text-brand-900/40">Salida</p>
+                <p>{h.hora_salida ?? '—'}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }
 
 function CalendarioContenido() {
-  const { esSistemas, esAdmin } = useAuth();
+  // CRUD (crear/editar/borrar horario): Sistemas, Admin y Compras
+  // (pedido explícito del usuario, 27-ago-2026) -> coincide con
+  // HorarioEntregaService::verificarAccesoGestion en el backend.
+  const { esSistemas, esAdmin, esCompras } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ClasificacionHorario>('Perecibles');
   const [modalAbierto, setModalAbierto] = useState(false);
-  const puedeGestionar = esSistemas || esAdmin;
+  const puedeGestionar = esSistemas || esAdmin || esCompras;
 
   const { data: horarios, isLoading } = useQuery({
     queryKey: ['horarios-entrega', tab],
@@ -85,9 +122,19 @@ function CalendarioContenido() {
           <p className="text-brand-900/50 text-xs mt-0.5">Día, andén/puerta y horario de recepción por proveedor.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" className="text-xs px-3 py-1.5" onClick={() => navigate('/calendario/modo-tv')}>
-            Modo TV
-          </Button>
+          {/* Modo TV es una pantalla completa pensada para un monitor fijo
+              en la puerta de recepción, no para un celular -> pedido
+              explícito del usuario, probando el rol Calidad en la app
+              nativa. Capacitor.isNativePlatform() es true SOLO en la app
+              instalada (Android/iOS), no en el navegador de escritorio, así
+              que en la web (donde sí puede tener sentido, ej. abrir el
+              calendario en una pantalla grande) el botón se sigue viendo
+              igual que antes. */}
+          {!Capacitor.isNativePlatform() && (
+            <Button variant="secondary" className="text-xs px-3 py-1.5" onClick={() => navigate('/calendario/modo-tv')}>
+              Modo TV
+            </Button>
+          )}
           {puedeGestionar && (
             <Button className="text-xs px-3 py-1.5" onClick={() => setModalAbierto(true)}>
               Gestionar calendario
@@ -135,8 +182,9 @@ function CalendarioContenido() {
 
 /**
  * Ven el calendario Sistemas, Admin, Compras y Calidad (pedido explícito
- * del usuario); gestionar (crear/editar/borrar) queda solo para
- * Sistemas/Admin dentro del modal, verificado también en el backend.
+ * del usuario); gestionar (crear/editar/borrar) es Sistemas/Admin/Compras
+ * (pedido explícito del usuario, 27-ago-2026) -> Calidad se queda de solo
+ * lectura, verificado también en el backend.
  */
 export default function CalendarioHorariosPage() {
   const { esSistemas, esAdmin, esCompras, esCalidad } = useAuth();

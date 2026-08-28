@@ -5,10 +5,11 @@ import Card from '../../../shared/components/Card';
 import PanelProveedor from '../components/PanelProveedor';
 import PanelAspirante from '../components/PanelAspirante';
 import PanelSistemas from '../components/PanelSistemas';
+import PanelCalidad from '../components/PanelCalidad';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 
 export default function DashboardHomePage() {
-  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esGuardia } = useAuth();
+  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esCalidad, esGuardia } = useAuth();
 
   // El Guardia no tiene nada que hacer en el "inicio" genérico -> pedido
   // explícito del usuario: que entre directo a la pantalla donde marca
@@ -64,6 +65,8 @@ export default function DashboardHomePage() {
         esAspirante ? <PanelAspirante /> : <PanelProveedor />
       ) : esSistemas || esAdmin ? (
         <PanelSistemas />
+      ) : esCalidad ? (
+        <PanelCalidad />
       ) : (
         <Card>
           <p className="text-sm text-brand-900/70">

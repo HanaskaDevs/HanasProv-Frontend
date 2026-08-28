@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import PantallaCarga from '../shared/components/PantallaCarga';
+import { useAuth } from '../modules/auth/hooks/useAuth';
 
 /**
  * Cada página se carga en su propio chunk, bajo demanda (lazy), en vez de
@@ -60,12 +61,42 @@ const FormularioDerechosPage = lazy(() => import('../modules/legal/pages/Formula
 const CalendarioHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/CalendarioHorariosPage'));
 const ModoTvHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/ModoTvHorariosPage'));
 const SeguimientoHoyPage = lazy(() => import('../modules/horariosEntrega/pages/SeguimientoHoyPage'));
+const AprobacionesArriboPage = lazy(() => import('../modules/horariosEntrega/pages/AprobacionesArriboPage'));
+
+/**
+ * "/" es la landing pública (marketing, para un proveedor que todavía no
+ * tiene cuenta) -> pero si quien abre la app YA tiene sesión válida
+ * (token en localStorage y usuario cargado), no tiene sentido mostrarle
+ * la landing: se manda directo al panel. Sin esto, cada vez que se cierra
+ * y reabre la app nativa (Android carga "/" en cada arranque en frío) se
+ * veía la landing de nuevo aunque la sesión siguiera activa -> el usuario
+ * tenía que darse cuenta de que podía tocar el logo (que sí revisa la
+ * sesión) para "recuperarla", cuando en realidad nunca se había perdido.
+ *
+ * isLoading (mientras useAuth todavía está confirmando el token contra el
+ * backend) muestra PantallaCarga en vez de decidir en falso: si se
+ * mostrara la landing de entrada y un instante después se reemplazara por
+ * el panel, se vería un parpadeo.
+ */
+function RutaRaiz() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <PantallaCarga />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/panel" replace />;
+  }
+
+  return <LandingPage />;
+}
 
 export default function AppRoutes() {
   return (
     <Suspense fallback={<PantallaCarga />}>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<RutaRaiz />} />
         <Route path="/politica-de-proteccion-de-datos" element={<PoliticaProteccionDatosPage />} />
         <Route path="/formulario-atencion-de-derechos" element={<FormularioDerechosPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -101,6 +132,7 @@ export default function AppRoutes() {
           <Route path="/politicas" element={<PoliticasPage />} />
           <Route path="/calendario" element={<CalendarioHorariosPage />} />
           <Route path="/calendario/seguimiento" element={<SeguimientoHoyPage />} />
+          <Route path="/calendario/aprobaciones" element={<AprobacionesArriboPage />} />
           <Route path="/reportes" element={<Navigate to="/reportes/calificacion-proveedores" replace />} />
           <Route path="/reportes/calificacion-proveedores" element={<ReporteCalificacionProveedoresPage />} />
           <Route path="/reportes/cumplimiento-entregas" element={<ReporteCumplimientoEntregasPage />} />

@@ -25,18 +25,20 @@ const MS_REFRESCO_DATOS = 20_000;
 
 const ESTILOS_FILA: Record<EstadoHorario, string> = {
   Programado: 'border-white/10',
-  Atrasado: 'bg-brand-wine/15 border-brand-wine/50',
-  En_Arribo: 'bg-sky-400/10 border-sky-400/50',
-  En_Recepcion: 'bg-amber-400/10 border-amber-400/50',
-  Entregado: 'border-white/5 opacity-40',
+  Atrasado: 'bg-orange-400/15 border-orange-400/50',
+  Rechazado: 'bg-red-500/15 border-red-500/50',
+  Arribo: 'bg-sky-400/10 border-sky-400/50',
+  En_Recepcion: 'bg-emerald-700/15 border-emerald-700/50',
+  Recibido: 'border-white/5 opacity-40',
 };
 
 const ESTILOS_CHIP: Record<EstadoHorario, string> = {
   Programado: 'bg-white/10 text-white/60',
-  Atrasado: 'bg-red-400 text-brand-900',
-  En_Arribo: 'bg-sky-400 text-brand-900',
-  En_Recepcion: 'bg-amber-400 text-brand-900',
-  Entregado: 'bg-emerald-400 text-brand-900',
+  Atrasado: 'bg-orange-400 text-brand-900',
+  Rechazado: 'bg-red-500 text-white',
+  Arribo: 'bg-sky-400 text-brand-900',
+  En_Recepcion: 'bg-emerald-700 text-white',
+  Recibido: 'bg-emerald-400 text-brand-900',
 };
 
 /** Reloj en vivo, para poder comparar a ojo la hora actual contra la
@@ -172,7 +174,7 @@ function useHorariosDeHoyPorClasificacion(habilitado: boolean) {
  *
  * Tabla larga ordenada por hora de llegada (el próximo primero, como un
  * tablero de aeropuerto) -> pedido explícito, en vez de la agrupación por
- * andén que tenía antes. Los "Entregado" nunca aparecen (el backend ya
+ * andén que tenía antes. Los "Recibido" nunca aparecen (el backend ya
  * los filtra en /horarios-entrega/hoy).
  *
  * Además, solo se muestra lo que esté VIGENTE en la hora en curso (ver
@@ -302,7 +304,7 @@ export default function ModoTvHorariosPage() {
     );
   }
 
-  const enCursoAhora = filas.filter((h) => h.estado === 'En_Arribo' || h.estado === 'En_Recepcion').length;
+  const enCursoAhora = filas.filter((h) => h.estado === 'Arribo' || h.estado === 'En_Recepcion').length;
   const filasPagina = filas.slice(paginaActual * FILAS_POR_PAGINA, (paginaActual + 1) * FILAS_POR_PAGINA);
 
   return (

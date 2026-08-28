@@ -38,27 +38,59 @@ export interface HorarioEntrega {
 
 /**
  * Seguimiento en vivo de HOY (pedido explícito: "como funcionaría un
- * aeropuerto"). Programado/Atrasado/En_Recepcion se calculan solos en el
- * backend comparando la hora actual; En_Arribo y Entregado son los 2
- * eventos que se marcan a mano (Guardia y Compras respectivamente). Una
- * vez Entregado, la fila deja de aparecer en /horarios-entrega/hoy.
+ * aeropuerto", revisión 26-ago-2026 con aprobación de arribos tardíos).
+ *
+ * Programado/Atrasado/Rechazado se calculan solos en el backend
+ * comparando la hora actual (Rechazado: pasaron 30 min desde la hora
+ * programada sin que el Guardia marque arribo). Arribo se marca a mano
+ * (Guardia) o vía una Solicitud de Aprobación resuelta por Calidad si el
+ * horario ya cayó en Rechazado. En_Recepcion y Recibido YA NO se marcan a
+ * mano: los pone en automático el job que lee SIGH. Una vez Recibido, la
+ * fila deja de aparecer en /horarios-entrega/hoy.
  */
-export type EstadoHorario = 'Programado' | 'Atrasado' | 'En_Arribo' | 'En_Recepcion' | 'Entregado';
+export type EstadoHorario = 'Programado' | 'Atrasado' | 'Rechazado' | 'Arribo' | 'En_Recepcion' | 'Recibido';
 
 export const ESTADOS_HORARIO: Record<EstadoHorario, { etiqueta: string }> = {
   Programado: { etiqueta: 'Programado' },
   Atrasado: { etiqueta: 'Atrasado' },
-  En_Arribo: { etiqueta: 'En arribo' },
+  Rechazado: { etiqueta: 'Rechazado' },
+  Arribo: { etiqueta: 'Arribo' },
   En_Recepcion: { etiqueta: 'En recepción' },
-  Entregado: { etiqueta: 'Entregado' },
+  Recibido: { etiqueta: 'Recibido' },
 };
 
 export interface HorarioHoy extends HorarioEntrega {
   estado: EstadoHorario;
-  /** "HH:MM" real en que el Guardia marcó el arribo, null si aún no. */
+  /** "HH:MM" real en que se registró el arribo (Guardia o aprobación de Calidad), null si aún no. */
   hora_arribo_real: string | null;
-  /** "HH:MM" real en que Compras marcó la entrega, null si aún no. */
-  hora_entregado_real: string | null;
+  /** "HH:MM" real en que SIGH confirmó el ingreso a recepción, null si aún no. */
+  hora_recepcion_real: string | null;
+  /** Nro_Pedido de SIGH (NroDocumentoBC) con el que se hizo el match automático, null hasta En_Recepcion. */
+  nro_documento_bc: string | null;
+  /** "HH:MM" real en que SIGH confirmó EstadoPedido = 'N' (Recibido), null si aún no. */
+  hora_recibido_real: string | null;
+  /** true si ya hay una Solicitud_Aprobacion_Arribo Pendiente para hoy (Rechazado esperando a Calidad). */
+  tiene_solicitud_pendiente: boolean;
+}
+
+/** Bandeja de Calidad: solicitudes de arribo tardío pendientes de aprobar/rechazar. */
+export interface SolicitudAprobacionArribo {
+  id_solicitud_aprobacion_arribo: number;
+  id_horario_entrega_proveedor: number;
+  nombre_proveedor: string | null;
+  hora_llegada: string;
+  fecha: string;
+  solicitado_por: string | null;
+  fecha_solicitud: string;
+}
+
+/** Pedido que el proveedor debe entregar hoy (modal de seguimiento para Admin/Compras/Calidad). */
+export interface PedidoDelDia {
+  id_pedido_compra: number;
+  nro_pedido: string;
+  estado: string;
+  estado_pedido_bc: string | null;
+  fecha_recepcion_esperada: string | null;
 }
 
 export interface ProveedorParaHorario {

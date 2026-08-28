@@ -1,4 +1,5 @@
 import Button from '../../../shared/components/Button';
+import { useBackHandler } from '../../../shared/hooks/useBackHandler';
 
 export default function ModalConfirmarFinalizar({
     isLoading,
@@ -9,6 +10,10 @@ export default function ModalConfirmarFinalizar({
     onConfirmar: () => void;
     onCancelar: () => void;
 }) {
+    // Este modal arma su propio overlay a mano (no usa el componente Modal
+    // compartido, que ya trae esto solo) -> hay que registrarlo aparte.
+    useBackHandler(onCancelar);
+
     return (
         <div className="fixed inset-0 bg-brand-900/40 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">

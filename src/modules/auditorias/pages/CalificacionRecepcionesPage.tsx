@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../../auth/hooks/useAuth';
 import RoleRoute from '../../../routes/RoleRoute';
+import { useBackHandler } from '../../../shared/hooks/useBackHandler';
 import * as recepcionesApi from '../api/recepcionesApi';
 import type { CalificacionRecepcionDetalle, ProveedorParaRecepcion } from '../types';
 import Card from '../../../shared/components/Card';
@@ -308,6 +309,12 @@ function CalificacionRecepcionesContent() {
     const [detalle, setDetalle] = useState<CalificacionRecepcionDetalle | null>(null);
     const [guardandoId, setGuardandoId] = useState<number | null>(null);
     const [errorFinalizar, setErrorFinalizar] = useState<string | null>(null);
+
+    // Paso interno SIN ruta propia (lista de proveedores -> formulario de
+    // calificación), todo dentro de /auditorias/recepciones -> mismo
+    // motivo que en AuditoriasPage: sin esto, el botón físico "atrás" se
+    // saltaba este paso y mandaba directo a la página anterior de verdad.
+    useBackHandler(detalle ? () => setDetalle(null) : null);
 
     const { data: proveedores, isLoading } = useQuery({
         queryKey: ['recepciones-proveedores'],

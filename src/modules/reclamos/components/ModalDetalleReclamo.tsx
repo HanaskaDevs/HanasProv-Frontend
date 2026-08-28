@@ -4,6 +4,7 @@ import * as reclamosApi from '../api/reclamosApi';
 import { useAuth } from '../../auth/hooks/useAuth';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+import { useBackHandler } from '../../../shared/hooks/useBackHandler';
 
 function formatearFechaHora(fecha: string): string {
     const d = new Date(fecha);
@@ -25,6 +26,11 @@ export default function ModalDetalleReclamo({
     const [imagenes, setImagenes] = useState<File[]>([]);
     const [confirmandoCierre, setConfirmandoCierre] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Modal armado a mano (sin el componente Modal compartido). Si está
+    // abierta la confirmación inline de "¿marcar como resuelto?", atrás
+    // la cancela primero; si no, cierra el modal entero.
+    useBackHandler(confirmandoCierre ? () => setConfirmandoCierre(false) : onClose);
 
     const queryKeyDetalle = ['reclamo-detalle', idReclamo, esProveedor];
 

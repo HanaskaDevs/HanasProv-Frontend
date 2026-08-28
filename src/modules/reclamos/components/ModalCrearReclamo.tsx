@@ -4,6 +4,7 @@ import * as reclamosApi from '../api/reclamosApi';
 import type { ContactoProveedor, ImpactoProveedor, ProveedorBusqueda, TipoReclamo } from '../types';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+import { useBackHandler } from '../../../shared/hooks/useBackHandler';
 
 const OPCIONES_TIPO_RECLAMO: TipoReclamo[] = ['Calidad', 'Salubridad', 'Inocuidad'];
 const OPCIONES_IMPACTO_PROVEEDOR: ImpactoProveedor[] = ['Alto', 'Medio', 'Bajo'];
@@ -11,6 +12,11 @@ const OPCIONES_IMPACTO_PROVEEDOR: ImpactoProveedor[] = ['Alto', 'Medio', 'Bajo']
 export default function ModalCrearReclamo({ onClose }: { onClose: () => void }) {
     const queryClient = useQueryClient();
     const [paso, setPaso] = useState<1 | 2>(1);
+
+    // Modal armado a mano (sin el componente Modal compartido) y con un
+    // paso interno propio -> atrás vuelve del paso 2 al 1, y del 1 cierra
+    // el modal, en vez de saltar directo a la página de atrás.
+    useBackHandler(paso === 2 ? () => setPaso(1) : onClose);
     const [termino, setTermino] = useState('');
     const [resultados, setResultados] = useState<ProveedorBusqueda[]>([]);
     const [buscando, setBuscando] = useState(false);

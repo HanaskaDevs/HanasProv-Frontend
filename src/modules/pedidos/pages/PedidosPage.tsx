@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../auth/hooks/useAuth';
 import * as pedidosApi from '../api/pedidosApi';
 import Card from '../../../shared/components/Card';
@@ -12,6 +13,7 @@ import ProximamentePage from '../../../shared/pages/ProximamentePage';
 import FilaPedido from '../components/FilaPedido';
 import PanelEstadisticas from '../components/PanelEstadisticas';
 import PedidosInternosPage from '../../pedidosInternos/pages/PedidosInternosPage';
+import CalendarioEntregaProveedor from '../../horariosEntrega/components/CalendarioEntregaProveedor';
 
 const PEDIDOS_POR_PAGINA = 20;
 
@@ -147,6 +149,10 @@ function PedidosProveedor() {
                 </div>
             </div>
 
+            {/* Calendario de entrega del proveedor (pedido explícito del
+                usuario, 26-ago-2026): días, hora y andén asignados. */}
+            <CalendarioEntregaProveedor />
+
             {/* Estadísticas */}
             <PanelEstadisticas {...estadisticas} />
 
@@ -278,7 +284,10 @@ export default function PedidosPage() {
 
     return (
         <div className="space-y-2">
-            {veCalendario && <BotonModoTv />}
+            {/* Modo TV: pantalla pensada para un monitor fijo, no para
+                celular -> se oculta en la app nativa (mismo criterio que
+                CalendarioHorariosPage). */}
+            {veCalendario && !Capacitor.isNativePlatform() && <BotonModoTv />}
             {puedeGestionarRecepciones ? <PedidosInternosPage /> : <ProximamentePage titulo="Pedidos" />}
         </div>
     );
