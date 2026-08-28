@@ -28,8 +28,28 @@ export async function activarCuenta(payload: {
   nombre_completo?: string;
   cargo?: string;
   telefono?: string;
+  /** Solo para usuarios proveedor en su primera activación. */
+  ruc?: string;
+  razon_social?: string;
 }): Promise<{ message: string }> {
   const { data } = await apiClient.post('/auth/activar-cuenta', payload);
+  return data;
+}
+
+/**
+ * Paso 1 de la pantalla de activación: comprueba el código contra el
+ * servidor antes de hacerle llenar el resto, y responde si además hay que
+ * pedirle el RUC y la razón social (solo a un proveedor que activa por
+ * primera vez).
+ *
+ * Sin esta llamada, un código vencido recién se descubría al final, después
+ * de completar tres pantallas.
+ */
+export async function validarCodigoActivacion(
+  email: string,
+  codigo: string
+): Promise<{ requiere_datos_proveedor: boolean }> {
+  const { data } = await apiClient.post('/auth/validar-codigo', { email, codigo });
   return data;
 }
 

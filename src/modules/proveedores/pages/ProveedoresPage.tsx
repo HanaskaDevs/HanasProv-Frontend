@@ -15,6 +15,7 @@ import * as proveedoresApi from '../api/proveedoresApi';
 import * as calificacionGlobalApi from '../../../shared/api/calificacionGlobalApi';
 import { DesgloseCalificacion } from '../../../shared/components/CalificacionGlobal';
 import { colorTexto, formatearNota } from '../../../shared/utils/formatoCalificacion';
+import { nombreVisibleProveedor } from '../types';
 import type { ProveedorListado } from '../types';
 import ModalCalificarProveedor from '../components/ModalCalificarProveedor';
 import Modal from '../../../shared/components/Modal';
@@ -131,7 +132,7 @@ function ProveedoresContent() {
       const texto = busqueda.trim().toLowerCase();
       const coincideBusqueda =
         !texto ||
-        p.razon_social.toLowerCase().includes(texto) ||
+        p.razon_social?.toLowerCase().includes(texto) ||
         (p.nombre_comercial?.toLowerCase().includes(texto) ?? false) ||
         (p.ruc?.toLowerCase().includes(texto) ?? false);
 
@@ -245,9 +246,9 @@ function ProveedoresContent() {
                     >
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <Avatar nombre={p.razon_social} className="h-8 w-8" />
+                          <Avatar nombre={nombreVisibleProveedor(p)} className="h-8 w-8" />
                           <div className="min-w-0">
-                            <p className="text-brand-900 font-medium text-sm truncate">{p.razon_social}</p>
+                            <p className="text-brand-900 font-medium text-sm truncate">{nombreVisibleProveedor(p)}</p>
                             <p className="text-[12px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
                           </div>
                         </div>
@@ -336,7 +337,7 @@ function ProveedoresContent() {
       {proveedorCalificando && (
         <ModalCalificarProveedor
           idProveedor={proveedorCalificando.id}
-          razonSocial={proveedorCalificando.razon_social}
+          razonSocial={nombreVisibleProveedor(proveedorCalificando)}
           onClose={() => setProveedorCalificando(null)}
         />
       )}

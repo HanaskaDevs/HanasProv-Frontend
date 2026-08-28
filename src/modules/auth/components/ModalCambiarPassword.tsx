@@ -6,11 +6,13 @@ import axios from 'axios';
 import * as authApi from '../api/authApi';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
+import RequisitosPassword from '../../../shared/components/RequisitosPassword';
+import { passwordSegura } from '../../../shared/utils/reglasPassword';
 
 const schema = z
   .object({
     password_actual: z.string().min(1, 'Requerida'),
-    password_nueva: z.string().min(8, 'Mínimo 8 caracteres'),
+    password_nueva: passwordSegura,
     password_nueva_confirmation: z.string().min(1, 'Requerida'),
   })
   .refine((data) => data.password_nueva === data.password_nueva_confirmation, {
@@ -27,6 +29,7 @@ export default function ModalCambiarPassword({ onClose }: { onClose: () => void 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
@@ -64,12 +67,15 @@ export default function ModalCambiarPassword({ onClose }: { onClose: () => void 
               {...register('password_actual')}
               error={errors.password_actual?.message}
             />
-            <Input
-              label="Contraseña nueva"
-              type="password"
-              {...register('password_nueva')}
-              error={errors.password_nueva?.message}
-            />
+            <div>
+              <Input
+                label="Contraseña nueva"
+                type="password"
+                {...register('password_nueva')}
+                error={errors.password_nueva?.message}
+              />
+              <RequisitosPassword valor={watch('password_nueva') ?? ''} />
+            </div>
             <Input
               label="Confirmar contraseña nueva"
               type="password"

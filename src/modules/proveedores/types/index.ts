@@ -2,7 +2,16 @@
 export interface ProveedorListado {
   id: number;
   ruc: string | null;
-  razon_social: string;
+  /**
+   * NULL mientras el proveedor no complete su Ficha. Al activar la cuenta
+   * el backend crea un "cascarón" de Proveedor por cada empresa, sin datos
+   * todavía -> este campo llega vacío hasta que lo llena.
+   *
+   * Estaba declarado como `string` a secas, y por eso TypeScript no avisó
+   * de los `razon_social.toLowerCase()` sueltos que había en las pantallas
+   * de listado. Con el tipo correcto, el compilador los marca.
+   */
+  razon_social: string | null;
   nombre_comercial: string | null;
   email: string | null;
   estado: string | null;
@@ -68,4 +77,21 @@ export interface ProductosCalificacion {
   razon_social: string;
   calificacion_productos_registrada: boolean;
   productos: ProductoCalificable[];
+}
+/**
+ * Nombre que se le muestra a un proveedor en listados y encabezados.
+ *
+ * Un proveedor recién activado todavía no tiene Razón Social ni Nombre
+ * Comercial (ver ProveedorListado.razon_social), así que sin este respaldo
+ * la fila aparecía con la celda del nombre vacía y no se entendía qué era.
+ * Vive acá, junto al tipo, para que las tres pantallas que listan
+ * proveedores muestren exactamente lo mismo.
+ */
+export function nombreVisibleProveedor(proveedor: {
+  nombre_comercial?: string | null;
+  razon_social?: string | null;
+}): string {
+  return proveedor.nombre_comercial?.trim()
+    || proveedor.razon_social?.trim()
+    || 'Proveedor sin ficha completada';
 }

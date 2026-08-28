@@ -10,6 +10,7 @@ import Avatar from '../../../shared/components/Avatar';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import Paginador from '../../../shared/components/Paginador';
 import * as proveedoresApi from '../api/proveedoresApi';
+import { nombreVisibleProveedor } from '../types';
 import type { ProveedorListado } from '../types';
 import ModalDetalleProveedor from '../components/ModalDetalleProveedor';
 
@@ -37,7 +38,7 @@ function DetalleProveedoresContent() {
     if (!texto) return proveedores ?? [];
     return (proveedores ?? []).filter(
       (p) =>
-        p.razon_social.toLowerCase().includes(texto) ||
+        p.razon_social?.toLowerCase().includes(texto) ||
         p.nombre_comercial?.toLowerCase().includes(texto) ||
         p.ruc?.toLowerCase().includes(texto)
     );
@@ -99,10 +100,10 @@ function DetalleProveedoresContent() {
                     >
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <Avatar nombre={p.razon_social} className="h-8 w-8" />
+                          <Avatar nombre={nombreVisibleProveedor(p)} className="h-8 w-8" />
                           <div className="min-w-0">
                             <p className="text-brand-900 font-medium text-sm truncate">
-                              {p.nombre_comercial ?? p.razon_social}
+                              {nombreVisibleProveedor(p)}
                             </p>
                             <p className="text-[12px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
                           </div>
@@ -126,7 +127,7 @@ function DetalleProveedoresContent() {
       {proveedorSeleccionado && (
         <ModalDetalleProveedor
           idProveedor={proveedorSeleccionado.id}
-          razonSocial={proveedorSeleccionado.razon_social}
+          razonSocial={nombreVisibleProveedor(proveedorSeleccionado)}
           onClose={() => setProveedorSeleccionado(null)}
         />
       )}
