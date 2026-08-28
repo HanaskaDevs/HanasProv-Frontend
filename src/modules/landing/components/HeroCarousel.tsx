@@ -91,6 +91,7 @@ export default function HeroCarousel() {
   const slidesRef = useRef(slides);
   const activoRef = useRef(activo);
   const capasRef = useRef(capas);
+  const primerRealListoRef = useRef(primerRealListo);
 
   // La sincronización va en un efecto y no en el cuerpo del componente:
   // escribir una ref durante el render es justo lo que la regla
@@ -103,6 +104,7 @@ export default function HeroCarousel() {
     slidesRef.current = slides;
     activoRef.current = activo;
     capasRef.current = capas;
+    primerRealListoRef.current = primerRealListo;
   });
 
   // Si cada capa ya está "lista" para mostrarse (los slides de respaldo,
@@ -124,7 +126,15 @@ export default function HeroCarousel() {
   useEffect(() => {
     obtenerHomeSlides()
       .then((data) => {
-        if (data.length === 0 || !montadoRef.current) return;
+        if (!montadoRef.current) return;
+        if (data.length === 0) {
+          // No hay slides configurados: se queda con SLIDES_RESPALDO para
+          // siempre -> ningún slide real va a "quedar listo" para apagar
+          // el spinner, así que se apaga acá para no dejarlo girando de
+          // por vida sobre el degradado de respaldo.
+          setPrimerRealListo(true);
+          return;
+        }
         setSlides(data);
         const oculta = activoRef.current === 0 ? 1 : 0;
         capaListaRef.current[oculta] = false;
@@ -135,7 +145,9 @@ export default function HeroCarousel() {
         });
       })
       .catch(() => {
-        // Se queda con SLIDES_RESPALDO si falla.
+        // Se queda con SLIDES_RESPALDO si falla -> mismo motivo que arriba,
+        // el spinner tiene que apagarse igual.
+        if (montadoRef.current) setPrimerRealListo(true);
       });
   }, []);
 
@@ -194,7 +206,17 @@ export default function HeroCarousel() {
   function onCapaLista(capa: 0 | 1) {
     capaListaRef.current[capa] = true;
     const oculta = activoRef.current === 0 ? 1 : 0;
-    if (esperandoSwapRef.current && capa === oculta) {
+    if (capa !== oculta) return;
+
+    // El primer slide REAL (no el de respaldo) se revela apenas está
+    // listo, sin esperar el intervalo de 6s -> antes, aunque el poster ya
+    // estaba precargado en 200-300ms, el spinner igual se quedaba puesto
+    // hasta el primer tick de intentarAvanzar() (hasta 6s después), que es
+    // la demora que se sentía. Los cambios de slide SIGUIENTES sí esperan
+    // su turno normal (esa parte no cambia).
+    const primeraRevelacionInmediata = !primerRealListoRef.current && esSlideReal(capasRef.current[capa]);
+
+    if (esperandoSwapRef.current || primeraRevelacionInmediata) {
       revelarOculta();
     }
   }

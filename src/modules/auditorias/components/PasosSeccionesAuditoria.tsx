@@ -22,7 +22,7 @@ export default function PasosSeccionesAuditoria({
                 </span>
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+            <div className="flex items-center gap-1 overflow-x-auto py-1">
                 {nombresSecciones.map((nombre, indice) => {
                     const completada = completadas[indice];
                     const esActual = indice === indiceActual;
@@ -34,10 +34,14 @@ export default function PasosSeccionesAuditoria({
                             onClick={() => onIrASeccion(indice)}
                             aria-label={nombre}
                             title={nombre}
-                            className={`h-2 rounded-full shrink-0 transition-all duration-200 ${
-                                esActual ? 'w-7 bg-brand-700' : completada ? 'w-2 bg-emerald-600' : 'w-2 bg-brand-900/15'
-                            }`}
-                        />
+                            className="shrink-0 flex items-center justify-center h-8 w-8 sm:h-5 sm:w-3.5"
+                        >
+                            <span
+                                className={`h-2 rounded-full transition-all duration-200 ${
+                                    esActual ? 'w-7 bg-brand-700' : completada ? 'w-2 bg-emerald-600' : 'w-2 bg-brand-900/15'
+                                }`}
+                            />
+                        </button>
                     );
                 })}
             </div>

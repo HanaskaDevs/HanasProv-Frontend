@@ -55,7 +55,7 @@ export default function FilaPregunta({
                 <p className="text-sm text-brand-900 leading-snug flex-1 pt-0.5">{pregunta.descripcion}</p>
             </div>
 
-            <div className="flex items-center gap-2.5 mt-3 pl-9 flex-wrap">
+            <div className="flex items-stretch sm:items-center gap-2.5 mt-3 sm:pl-9 flex-wrap">
                 <div className="flex items-center gap-1.5">
                     <input
                         type="number"
@@ -67,7 +67,7 @@ export default function FilaPregunta({
                         onChange={(e) => setPuntaje(e.target.value)}
                         onBlur={guardarPuntaje}
                         placeholder="—"
-                        className="w-16 h-10 rounded-lg border-2 border-brand-900/12 text-center text-base font-medium text-brand-900 focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5 disabled:text-brand-900/25 disabled:border-transparent"
+                        className="w-16 min-h-11 rounded-lg border-2 border-brand-900/12 text-center text-base font-medium text-brand-900 focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5 disabled:text-brand-900/25 disabled:border-transparent"
                     />
                     <span className="text-xs text-brand-900/40">de {pregunta.puntaje_max}</span>
                 </div>
@@ -76,7 +76,7 @@ export default function FilaPregunta({
                     type="button"
                     onClick={alternarNoAplica}
                     disabled={soloLectura}
-                    className={`h-8 px-3 rounded-full text-[12px] font-medium transition-colors disabled:opacity-60 ${
+                    className={`min-h-11 px-4 rounded-full text-[13px] font-medium transition-colors disabled:opacity-60 ${
                         noAplica ? 'bg-brand-900 text-white' : 'bg-brand-900/6 text-brand-900/50 hover:bg-brand-900/10'
                     }`}
                 >
@@ -87,7 +87,7 @@ export default function FilaPregunta({
                     <button
                         type="button"
                         onClick={() => setMostrarObservacion(true)}
-                        className="text-xs text-brand-700 font-medium"
+                        className="text-xs text-brand-700 font-medium min-h-11 px-2"
                     >
                         + Observación
                     </button>
@@ -102,7 +102,7 @@ export default function FilaPregunta({
                     onBlur={guardarObservacion}
                     placeholder="Observaciones..."
                     rows={2}
-                    className="mt-2.5 ml-9 w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
+                    className="mt-2.5 sm:ml-9 w-full sm:w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
                 />
             )}
         </div>

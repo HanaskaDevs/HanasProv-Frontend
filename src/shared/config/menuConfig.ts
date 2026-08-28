@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { ROLES } from '../../modules/auth/types';
 import type { NombreIconoModulo } from '../components/IconoModulo';
 
@@ -23,15 +24,17 @@ export interface MenuItem {
  * horizontal: Sistemas mostraba 14 ítems de primer nivel y Admin 11, así que
  * la barra se saturaba y se partía en dos líneas.
  *
- * Ahora esos dos roles agrupan sus módulos en 5 ÁREAS (Proveedores,
- * Operación, Calidad, Administración y Reportes), cada una con un panel que
- * lista sus módulos con ícono y una línea de descripción. Sistemas pasa de
- * 14 a 6 ítems y Admin de 11 a 5, sin que se pierda ni se mueva ninguna
- * ruta: es puro reagrupamiento visual.
+ * Ahora esos roles agrupan sus módulos en ÁREAS (Proveedores, Operación,
+ * Calidad, Administración y Reportes), cada una con un panel que lista sus
+ * módulos con ícono y una línea de descripción, en vez de una barra
+ * horizontal saturada de ítems sueltos.
  *
- * Los roles con pocos módulos (Proveedor, Calidad, Compras) siguen PLANOS a
- * propósito: agruparlos escondería 3 o 4 ítems detrás de un clic sin ganar
- * nada. Un usuario de Calidad no necesita un menú llamado "Calidad".
+ * Compras y Calidad (27-ago-2026, pedido explícito del usuario: "organicemos
+ * similar como tiene organizado el de Sistemas") también quedaron
+ * agrupados, aunque con menos áreas -> el criterio es el mismo, solo cambia
+ * cuántas áreas les tocan según lo que pueden hacer. Guardia y Proveedor SÍ
+ * siguen PLANOS a propósito: Guardia tiene un solo ítem (agruparlo no
+ * ganaría nada) y Proveedor ve su propio flujo, no módulos administrativos.
  */
 
 // ---------------------------------------------------------------------------
@@ -90,6 +93,13 @@ const POLITICAS_ITEM: SubMenuItem = {
   descripcion: 'Políticas vigentes del portal',
 };
 
+const CALENDARIO_HORARIOS: SubMenuItem = {
+  to: '/calendario',
+  label: 'Calendario de horarios',
+  icono: 'calendario',
+  descripcion: 'Día, andén y hora de entrega por proveedor',
+};
+
 // ---------------------------------------------------------------------------
 // Menús planos (roles con pocos módulos)
 // ---------------------------------------------------------------------------
@@ -100,11 +110,6 @@ const RECLAMOS: MenuItem = {
   label: 'Reclamos',
   children: [RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
 };
-
-// Solo lo ven Admin/Calidad/Sistemas (mismos roles que puede
-// aprobar/rechazar en el backend, ver SolicitudCambioPrecioService::
-// verificarEsAdminOCalidad) -> Compras nunca aprueba precios.
-const CAMBIOS_PRECIO: MenuItem = { label: 'Cambios de Precio', to: '/cambios-precio' };
 
 const AUDITORIAS: MenuItem = {
   label: 'Auditorías',
@@ -145,6 +150,12 @@ const AREA_PROVEEDORES: MenuItem = {
   ],
 };
 
+// Seguimiento de hoy: solo Sistemas y Guardia (pedido explícito del
+// usuario, 27-ago-2026: "para lo del seguimiento de hoy solo Sistemas y
+// el guardia") -> Admin, Compras y Calidad ya NO lo ven, mismo criterio
+// que Auditorías/Aprobaciones con Admin (no tiene sentido un ítem que el
+// backend le va a rechazar con acceso denegado). Por eso NO va en
+// AREA_OPERACION (compartida con Admin), solo en la de Sistemas.
 const SEGUIMIENTO_HOY_ITEM: SubMenuItem = {
   to: '/calendario/seguimiento',
   label: 'Seguimiento de hoy',
@@ -152,14 +163,64 @@ const SEGUIMIENTO_HOY_ITEM: SubMenuItem = {
   descripcion: 'Arribo, recepción y entrega en vivo de hoy',
 };
 
-const AREA_OPERACION: MenuItem = {
-  label: 'Operación',
-  children: [PEDIDOS_ITEM, SEGUIMIENTO_HOY_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
+// Aprobaciones de arribo: solo Calidad/Sistemas resuelven (ver
+// HorarioEntregaService::verificarAccesoResolverAprobacion) -> NO va en
+// AREA_OPERACION (compartida con Admin), para no llevar a Admin a una
+// pantalla que el backend le va a rechazar con 403 (mismo criterio que ya
+// usaba este archivo con Auditorías/Compras, ver comentario más abajo).
+const APROBACIONES_ARRIBO_ITEM: SubMenuItem = {
+  to: '/calendario/aprobaciones',
+  label: 'Aprobaciones de arribo',
+  icono: 'recepcion',
+  descripcion: 'Solicitudes de arribo tardío pendientes',
 };
 
-const AREA_CALIDAD: MenuItem = {
+const AREA_OPERACION: MenuItem = {
+  label: 'Operación',
+  children: [PEDIDOS_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
+};
+
+// Sistemas SÍ ve Seguimiento de hoy y resuelve aprobaciones de arribo (ver
+// verificarAccesoOperativo/verificarAccesoResolverAprobacion) -> su
+// Operación lleva 2 ítems más que la de Admin.
+const AREA_OPERACION_SISTEMAS: MenuItem = {
+  label: 'Operación',
+  children: [PEDIDOS_ITEM, SEGUIMIENTO_HOY_ITEM, APROBACIONES_ARRIBO_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
+};
+
+// Auditorías (26-ago-2026): el backend ahora solo deja entrar a Sistemas y
+// Calidad (AuditoriaService::verificarAcceso, "Auditorías solo para los
+// roles CALIDAD y SISTEMAS") -> Admin YA NO va acá, mismo criterio que ya
+// se usaba con Compras (ver comentario en MENU_COMPRAS de abajo: no tiene
+// sentido enseñar un ítem que el backend va a rechazar con 403).
+// Calificación de Recepciones sigue igual (Sistemas/Admin/Calidad, ver
+// CalificacionRecepcionService::verificarAcceso), así que Admin conserva
+// esa sola.
+const AREA_CALIDAD_SISTEMAS: MenuItem = {
   label: 'Calidad',
   children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
+};
+
+const AREA_CALIDAD_ADMIN: MenuItem = {
+  label: 'Calidad',
+  children: [AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
+};
+
+// Compras: Pedidos + Calendario de horarios (lo ve pero no lo gestiona,
+// eso es Sistemas/Admin/Compras vía CRUD -> el ítem de menú es el mismo,
+// el backend decide qué botones mostrar) + Reclamos.
+const AREA_OPERACION_COMPRAS: MenuItem = {
+  label: 'Operación',
+  children: [PEDIDOS_ITEM, CALENDARIO_HORARIOS, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
+};
+
+// Calidad (27-ago-2026, pedido explícito del usuario): SIN Pedidos, SIN
+// Aprobaciones de arribo (esa la resuelve Valeria desde el link del correo
+// de notificación, no navegando el menú -> no hace falta que sea un ítem
+// visible para todo el rol Calidad) y SIN Cambios de Precio.
+const AREA_OPERACION_CALIDAD: MenuItem = {
+  label: 'Operación',
+  children: [CALENDARIO_HORARIOS, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
 };
 
 const AREA_ADMINISTRACION: MenuItem = {
@@ -190,13 +251,6 @@ const AREA_ADMINISTRACION: MenuItem = {
       descripcion: 'Contenido del sitio y reglas de documentos',
     },
   ],
-};
-
-const CALENDARIO_HORARIOS: SubMenuItem = {
-  to: '/calendario',
-  label: 'Calendario de horarios',
-  icono: 'calendario',
-  descripcion: 'Día, andén y hora de entrega por proveedor',
 };
 
 const AREA_REPORTES: MenuItem = {
@@ -258,8 +312,8 @@ const ETIQUETAS_OCULTAS_PARA_ASPIRANTE = ['Pedidos', 'Reclamos', 'Políticas'];
 const MENU_SISTEMAS: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
   AREA_PROVEEDORES,
-  AREA_OPERACION,
-  AREA_CALIDAD,
+  AREA_OPERACION_SISTEMAS,
+  AREA_CALIDAD_SISTEMAS,
   AREA_ADMINISTRACION,
   AREA_REPORTES,
 ];
@@ -268,7 +322,7 @@ const MENU_ADMIN: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
   AREA_PROVEEDORES,
   AREA_OPERACION,
-  AREA_CALIDAD,
+  AREA_CALIDAD_ADMIN,
   AREA_REPORTES,
 ];
 
@@ -277,21 +331,28 @@ const MENU_ADMIN: MenuItem[] = [
 // CalificacionRecepcionService::verificarAcceso), así que tenerlo en el menú
 // solo lo llevaba a una pantalla que responde 403. Si algún día se decide
 // que Compras también audite, hay que habilitarlo en esos dos services
-// además de volver a poner AUDITORIAS acá.
-// Calendario de horarios: Compras y Calidad también lo VEN (pedido
-// explícito del usuario), aunque no puedan gestionarlo (eso queda solo
-// para Sistemas/Admin, ver ModalGestionHorarios). Como son menús planos,
-// se agrega directo como ítem de primer nivel.
-const CALENDARIO_HORARIOS_PLANO: MenuItem = { label: 'Calendario de horarios', to: '/calendario' };
-
-// Seguimiento de hoy (Arribo/Atrasado/En recepción/Entregado): Compras
-// marca "entregado" ahí -> lo necesita en su menú. Calidad solo ve el
-// calendario semanal, no participa del seguimiento en vivo.
+// además de agregar AUDITORIAS a su área de Operación.
+//
+// Seguimiento de hoy: SOLO Sistemas y Guardia (pedido explícito del
+// usuario, 27-ago-2026) -> coincide con
+// HorarioEntregaService::verificarAccesoOperativo del lado del backend
+// para estas 2 pantallas puntuales (el endpoint técnicamente deja pasar a
+// más roles porque también lo usa Modo TV, pero la pantalla de
+// Seguimiento en sí ya no admite otros roles, ver SeguimientoHoyPage).
 const SEGUIMIENTO_HOY_PLANO: MenuItem = { label: 'Seguimiento de hoy', to: '/calendario/seguimiento' };
 
-const MENU_COMPRAS: MenuItem[] = [PEDIDOS, CALENDARIO_HORARIOS_PLANO, SEGUIMIENTO_HOY_PLANO, RECLAMOS];
+/**
+ * Compras y Calidad (27-ago-2026, pedido explícito del usuario): mismo
+ * estilo agrupado que Sistemas/Admin, con "Inicio" + sus áreas -> antes
+ * eran menús planos, con pocos ítems sueltos.
+ *
+ * Calidad se queda SIN Pedidos, SIN Aprobaciones de arribo (esa la
+ * resuelve Valeria desde el link del correo, no navegando el menú) y SIN
+ * Cambios de Precio -> pedido explícito, esos 3 ítems salen del rol.
+ */
+const MENU_COMPRAS: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_OPERACION_COMPRAS];
 
-const MENU_CALIDAD: MenuItem[] = [PEDIDOS, AUDITORIAS, CALENDARIO_HORARIOS_PLANO, RECLAMOS, CAMBIOS_PRECIO];
+const MENU_CALIDAD: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_OPERACION_CALIDAD, AUDITORIAS];
 
 // El Guardia es un rol de un solo propósito: marcar que un proveedor
 // arribó en el seguimiento de hoy -> no necesita nada más del portal.
@@ -318,7 +379,14 @@ export function obtenerMenu(
     case ROLES.ADMIN:
       return MENU_ADMIN;
     case ROLES.CALIDAD:
-      return MENU_CALIDAD;
+      // En la app nativa (celular), Calidad solo necesita Calificación de
+      // auditorías y Calificación de Recepciones -> pedido explícito del
+      // usuario probando la app instalada: Calendario y Reclamos (que sí
+      // se quedan en el menú web, ver MENU_CALIDAD) se ocultan en la app.
+      // Pedidos, Aprobaciones de arribo y Cambios de Precio ya ni siquiera
+      // están en MENU_CALIDAD (pedido explícito, 27-ago-2026), así que no
+      // hace falta filtrarlos acá aparte.
+      return Capacitor.isNativePlatform() ? [AUDITORIAS] : MENU_CALIDAD;
     case ROLES.COMPRAS:
       return MENU_COMPRAS;
     case ROLES.GUARDIA:

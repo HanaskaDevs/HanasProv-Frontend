@@ -110,7 +110,18 @@ export default function Footer() {
 
       <div className="max-w-6xl mx-auto px-6 md:px-10 py-7">
         <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
-          <Logo className="h-11 w-auto shrink-0" variant="light" />
+          {/* h-11 se veía "aplastado": el logo es un lockup apilado
+              (estrella + "Hanaska"), y a 44px de alto ambos quedaban
+              amontonados e ilegibles. A h-16 el ícono y la palabra
+              respiran, igual que en el resto de la app (header, login). */}
+          {/* self-start: en mobile el footer es flex-col, y por defecto
+              flexbox ESTIRA a los hijos en el eje cruzado (acá, el ancho)
+              para llenar el contenedor -> el <img> se veía "aplastado"
+              (ensanchado) porque w-auto no alcanza para evitar ese
+              estiramiento. self-start lo saca de ese estiramiento; en
+              desktop (lg:flex-row) el contenedor ya centra con
+              lg:items-center, así que ahí no hace falta anularlo. */}
+          <Logo className="h-16 w-auto shrink-0 self-start lg:self-auto" variant="light" />
 
           <div className="grid flex-1 grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-3">
             <Contacto etiqueta="Dirección">

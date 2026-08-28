@@ -131,3 +131,16 @@ export interface CalificacionRecepcionHistorial {
   puntaje_total_posible: number;
   porcentaje_obtenido: number;
 }
+
+/** Resumen para el panel de bienvenida de Calidad. */
+export interface ResumenAuditoriasDashboard {
+  auditorias_mes: number;
+  promedio_cumplimiento_mes: number | null;
+  auditorias_en_borrador: number;
+  ultimas: {
+    id_auditoria: number;
+    proveedor: string | null;
+    fecha_auditoria: string | null;
+    porcentaje_cumplimiento: number;
+  }[];
+}

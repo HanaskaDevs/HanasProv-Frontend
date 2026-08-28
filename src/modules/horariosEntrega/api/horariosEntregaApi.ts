@@ -1,5 +1,12 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { ClasificacionHorario, HorarioEntrega, HorarioHoy, ProveedorParaHorario } from '../types';
+import type {
+  ClasificacionHorario,
+  HorarioEntrega,
+  HorarioHoy,
+  PedidoDelDia,
+  ProveedorParaHorario,
+  SolicitudAprobacionArribo,
+} from '../types';
 
 export async function listar(clasificacion?: ClasificacionHorario): Promise<HorarioEntrega[]> {
   const { data } = await apiClient.get<HorarioEntrega[]>('/horarios-entrega', {
@@ -8,7 +15,13 @@ export async function listar(clasificacion?: ClasificacionHorario): Promise<Hora
   return data;
 }
 
-/** Seguimiento en vivo de hoy: ya viene con el estado calculado y sin los "Entregado". */
+/** Calendario propio del proveedor logueado (sección Pedidos). */
+export async function misHorarios(): Promise<HorarioEntrega[]> {
+  const { data } = await apiClient.get<HorarioEntrega[]>('/horarios-entrega/mios');
+  return data;
+}
+
+/** Seguimiento en vivo de hoy: ya viene con el estado calculado y sin los "Recibido". */
 export async function listarHoy(clasificacion?: ClasificacionHorario): Promise<HorarioHoy[]> {
   const { data } = await apiClient.get<HorarioHoy[]>('/horarios-entrega/hoy', {
     params: clasificacion ? { clasificacion } : undefined,
@@ -16,15 +29,39 @@ export async function listarHoy(clasificacion?: ClasificacionHorario): Promise<H
   return data;
 }
 
-/** El Guardia marca que el proveedor llegó. */
+/** Pedidos que ese proveedor debe entregar hoy (modal de seguimiento). */
+export async function pedidosDelDia(id: number): Promise<PedidoDelDia[]> {
+  const { data } = await apiClient.get<PedidoDelDia[]>(`/horarios-entrega/${id}/pedidos-del-dia`);
+  return data;
+}
+
+/** El Guardia (o Sistemas/Calidad) marca que el proveedor llegó. Falla si ya está Rechazado. */
 export async function marcarArribo(id: number): Promise<HorarioHoy> {
   const { data } = await apiClient.post<HorarioHoy>(`/horarios-entrega/${id}/marcar-arribo`);
   return data;
 }
 
-/** Compras marca la entrega como completada. */
-export async function marcarEntregado(id: number): Promise<HorarioHoy> {
-  const { data } = await apiClient.post<HorarioHoy>(`/horarios-entrega/${id}/marcar-entregado`);
+/** El Guardia pide aprobación de un arribo tardío (horario ya Rechazado). */
+export async function solicitarAprobacion(id: number): Promise<SolicitudAprobacionArribo> {
+  const { data } = await apiClient.post<SolicitudAprobacionArribo>(`/horarios-entrega/${id}/solicitar-aprobacion`);
+  return data;
+}
+
+/** Calidad: solicitudes de arribo pendientes de la empresa activa. */
+export async function listarSolicitudesAprobacion(): Promise<SolicitudAprobacionArribo[]> {
+  const { data } = await apiClient.get<SolicitudAprobacionArribo[]>('/horarios-entrega/aprobaciones');
+  return data;
+}
+
+export async function aprobarSolicitud(idSolicitud: number): Promise<SolicitudAprobacionArribo> {
+  const { data } = await apiClient.post<SolicitudAprobacionArribo>(`/horarios-entrega/aprobaciones/${idSolicitud}/aprobar`);
+  return data;
+}
+
+export async function rechazarSolicitud(idSolicitud: number, motivo?: string): Promise<SolicitudAprobacionArribo> {
+  const { data } = await apiClient.post<SolicitudAprobacionArribo>(`/horarios-entrega/aprobaciones/${idSolicitud}/rechazar`, {
+    motivo,
+  });
   return data;
 }
 

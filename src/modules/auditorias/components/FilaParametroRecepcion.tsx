@@ -56,12 +56,12 @@ export default function FilaParametroRecepcion({
                 <span className="shrink-0 text-xs text-brand-900/40 pt-0.5">{parametro.puntaje} pts</span>
             </div>
 
-            <div className="flex items-center gap-2 mt-3 pl-9 flex-wrap">
+            <div className="flex items-stretch sm:items-center gap-2 mt-3 sm:pl-9 flex-wrap">
                 <button
                     type="button"
                     onClick={() => onResponder(true)}
                     disabled={soloLectura || guardando}
-                    className={`h-8 px-3 rounded-full text-[12px] font-medium transition-colors disabled:opacity-60 ${clasesBoton(
+                    className={`min-h-11 px-4 rounded-full text-[13px] font-semibold transition-colors disabled:opacity-60 flex-1 sm:flex-none min-w-[88px] ${clasesBoton(
                         parametro.cumple === true,
                         true
                     )}`}
@@ -72,7 +72,7 @@ export default function FilaParametroRecepcion({
                     type="button"
                     onClick={() => onResponder(false)}
                     disabled={soloLectura || guardando}
-                    className={`h-8 px-3 rounded-full text-[12px] font-medium transition-colors disabled:opacity-60 ${clasesBoton(
+                    className={`min-h-11 px-4 rounded-full text-[13px] font-semibold transition-colors disabled:opacity-60 flex-1 sm:flex-none min-w-[88px] ${clasesBoton(
                         parametro.cumple === false,
                         false
                     )}`}
@@ -84,7 +84,7 @@ export default function FilaParametroRecepcion({
                     <button
                         type="button"
                         onClick={() => setMostrarObservacion(true)}
-                        className="text-xs text-brand-700 font-medium ml-1"
+                        className="text-xs text-brand-700 font-medium ml-1 min-h-11 px-2"
                     >
                         + Observación
                     </button>
@@ -99,7 +99,7 @@ export default function FilaParametroRecepcion({
                     onBlur={() => onGuardarObservacion(observacion || null)}
                     placeholder="Observaciones..."
                     rows={2}
-                    className="mt-2.5 ml-9 w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
+                    className="mt-2.5 sm:ml-9 w-full sm:w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
                 />
             )}
         </div>

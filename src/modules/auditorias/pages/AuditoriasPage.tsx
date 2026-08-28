@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { useBackHandler } from '../../../shared/hooks/useBackHandler';
 import * as auditoriasApi from '../api/auditoriasApi';
 import type { AuditoriaDetalle, SeccionAuditoria } from '../types';
 import Card from '../../../shared/components/Card';
@@ -20,8 +21,11 @@ function seccionCompleta(seccion: SeccionAuditoria): boolean {
 }
 
 export default function AuditoriasPage() {
-    const { esAdmin, esSistemas, esCalidad } = useAuth();
-    const tieneAcceso = esAdmin || esSistemas || esCalidad;
+    // 26-ago-2026, pedido explícito del usuario: "Auditorías solo para los
+    // roles CALIDAD y SISTEMAS" -> Admin queda fuera, coincide con
+    // AuditoriaService::verificarAcceso en el backend.
+    const { esSistemas, esCalidad } = useAuth();
+    const tieneAcceso = esSistemas || esCalidad;
 
     const [idTipoElegido, setIdTipoElegido] = useState<number | null>(null);
     const [busquedaProveedor, setBusquedaProveedor] = useState('');
@@ -82,6 +86,14 @@ export default function AuditoriasPage() {
             );
         });
     }, [proveedores, busquedaProveedor]);
+
+    // Wizard de 3 pasos SIN rutas propias (tipo -> proveedor -> auditoria),
+    // todo dentro de la misma URL /auditorias -> el botón físico "atrás"
+    // de Android, sin esto, se saltaba estos pasos y mandaba directo a la
+    // página anterior de verdad. cambiarProveedor/cambiarTipo están
+    // declaradas más abajo con `function`, así que quedan disponibles acá
+    // arriba por hoisting.
+    useBackHandler(auditoria ? cambiarProveedor : idTipoElegido ? cambiarTipo : null);
 
     if (!tieneAcceso) {
         return <ProximamentePage titulo="Auditorías" />;

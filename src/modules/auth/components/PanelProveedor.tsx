@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Card from '../../../shared/components/Card';
-import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 import * as documentacionApi from '../../documentacion/api/documentacionApi';
@@ -243,12 +242,6 @@ export default function PanelProveedor() {
     });
   }, [pedidosAbiertos.data]);
 
-  const pedidosProximos5 = useMemo(() => {
-    return [...(pedidosAbiertos.data ?? [])]
-      .sort((a, b) => (a.fecha_recepcion_esperada ?? '').localeCompare(b.fecha_recepcion_esperada ?? ''))
-      .slice(0, 5);
-  }, [pedidosAbiertos.data]);
-
   if (cargando) {
     return (
       <div className="flex justify-center py-16">
@@ -379,53 +372,16 @@ export default function PanelProveedor() {
         />
       </div>
 
-      {/* Pedidos próximos + accesos rápidos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 p-0 overflow-hidden">
-          <div className="flex items-center justify-between px-5 pt-4 pb-2">
-            <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
-              Próximas entregas
-            </h3>
-            <Link to="/pedidos" className="text-xs font-medium text-brand-700 hover:underline">
-              Ver todos
-            </Link>
-          </div>
-
-          {pedidosProximos5.length === 0 ? (
-            <p className="text-sm text-brand-900/50 px-5 pb-5 pt-2">No tienes pedidos abiertos por ahora.</p>
-          ) : (
-            <div className="divide-y divide-brand-900/6">
-              {pedidosProximos5.map((p) => {
-                const dias = p.fecha_recepcion_esperada ? diasHasta(p.fecha_recepcion_esperada) : null;
-                return (
-                  <Link
-                    key={p.id_pedido_compra}
-                    to="/pedidos"
-                    className="flex items-center justify-between gap-3 px-5 py-2.5 hover:bg-brand-900/[0.02]"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-brand-900 truncate">{p.nro_pedido}</p>
-                      <p className="text-[12px] text-brand-900/45">
-                        {p.fecha_recepcion_esperada ? `Recepción esperada ${p.fecha_recepcion_esperada}` : 'Sin fecha esperada'}
-                      </p>
-                    </div>
-                    {dias !== null && (
-                      <Badge tone={dias < 0 ? 'danger' : dias <= 1 ? 'warning' : 'neutral'}>
-                        {dias < 0 ? `Vencido hace ${Math.abs(dias)}d` : dias === 0 ? 'Hoy' : `En ${dias}d`}
-                      </Badge>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-
-        <Card>
+      {/* Accesos rápidos. La sección "Próximas entregas" se quitó del
+       *  Home a pedido explícito del usuario (26-ago-2026): el proveedor
+       *  ya ve su calendario y sus pedidos completos en /pedidos, no hace
+       *  falta duplicarlo acá. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="md:col-span-3">
           <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide mb-3">
             Accesos rápidos
           </h3>
-          <div className="space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
             {[
               { to: '/mi-ficha', icono: <IconoFicha />, texto: 'Mi Ficha de Proveedor' },
               { to: '/documentos', icono: <IconoCarpeta />, texto: 'Documentación' },

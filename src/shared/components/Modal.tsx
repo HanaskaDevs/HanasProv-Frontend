@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface ModalProps {
   onClose: () => void;
@@ -55,6 +56,11 @@ export default function Modal({ onClose, title, tituloExtra, children, maxWidth 
 
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  // Cualquier modal (confirmaciones, detalles, formularios) se cierra con
+  // el botón físico "atrás" de Android en vez de mandar a otra página ->
+  // ver src/shared/utils/pilaAtras.ts para el porqué.
+  useBackHandler(onClose);
 
   // Escape cierra. Es lo que espera cualquiera que abra un diálogo, y en
   // pantallas donde el modal tapa todo era la única salida que faltaba.
