@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../modules/auth/hooks/useAuth';
 import { obtenerMenu, type MenuItem } from '../config/menuConfig';
 import IconoModulo from '../components/IconoModulo';
@@ -620,7 +621,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
        *  su pantalla es solo marcar arribos, no tiene sentido el
        *  asistente ahí y además reduce distracciones en un celular en
        *  el andén. */}
-      {!esGuardia && <HanaBot />}
+      {/* Hana solo aparece en la web (navegador de escritorio/mobile
+          browser), no en la app nativa instalada -> pedido explícito del
+          usuario, 28-ago-2026, mismo criterio que ya usamos con Modo TV. */}
+      {!esGuardia && !Capacitor.isNativePlatform() && <HanaBot />}
     </div>
   );
 }
