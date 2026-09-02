@@ -30,8 +30,14 @@ export type PedidosPorBodega = Record<string, BodegaPedidos>;
 export const BODEGAS_PEDIDOS_INTERNOS = ['CD-0001', 'CD-0002', 'CD-0003'] as const;
 
 export interface FiltrosPedidosInternos {
-  fecha_desde?: string;
-  fecha_hasta?: string;
+  /**
+   * Fecha de ENTREGA esperada. La pantalla la fija siempre en hoy y no se
+   * puede cambiar (decisión del negocio, 1-sep-2026): esta vista es para
+   * saber qué se recibe HOY, no para revisar el histórico. Por eso se
+   * quitaron los filtros «Desde» y «Hasta», que filtraban además por la
+   * fecha de REGISTRO del pedido en BC, no por la de entrega.
+   */
+  fecha_recepcion_esperada?: string;
   proveedor?: string;
   producto?: string;
 }

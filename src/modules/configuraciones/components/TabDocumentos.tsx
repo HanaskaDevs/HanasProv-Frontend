@@ -9,6 +9,17 @@ import * as configuracionesApi from '../api/configuracionesApi';
  * vencida. Los AVISOS por correo no se pueden apagar desde acá a propósito:
  * avisar no rompe nada, suspender sí.
  */
+/** "2027-01-01" -> "1 de enero de 2027". Se parte el texto en vez de usar
+ *  new Date(): una fecha suelta se interpreta como UTC y retrocede un día. */
+function formatearFecha(fecha: string): string {
+  const MESES = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-');
+  return `${Number(dia)} de ${MESES[Number(mes) - 1]} de ${anio}`;
+}
+
 export default function TabDocumentos() {
   const queryClient = useQueryClient();
 
@@ -32,12 +43,34 @@ export default function TabDocumentos() {
 
   return (
     <div className="space-y-4">
+      {/* Va PRIMERO y no como una nota al pie: mientras el candado por fecha
+          está puesto, el interruptor de abajo no suspende a nadie aunque
+          figure "Activa". Sin esta explicación, Sistemas ve el interruptor
+          encendido y a cero proveedores suspendidos, y parece una falla. */}
+      {!data.ya_es_exigible && (
+        <Card className="border-l-4 border-l-brand-yellow">
+          <h2 className="font-display text-base font-semibold text-brand-900">
+            La suspensión está en pausa hasta el {formatearFecha(data.vigente_desde)}
+          </h2>
+          <p className="text-sm text-brand-900/60 mt-1 max-w-2xl">
+            Hasta esa fecha el portal <strong>avisa</strong> por correo de los documentos vencidos, con el mismo ciclo
+            de siempre, pero <strong>no suspende ni inactiva a ningún proveedor</strong>. Es a propósito: los
+            proveedores están terminando de cargar su documentación y bloquearlos ahora los dejaría afuera por algo
+            que todavía están resolviendo.
+          </p>
+          <p className="text-xs text-brand-900/45 mt-2">
+            El {formatearFecha(data.vigente_desde)} el ciclo completo se activa solo, sin que haya que tocar nada acá.
+          </p>
+        </Card>
+      )}
+
       <Card>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <h2 className="font-display text-base font-semibold text-brand-900 flex items-center gap-2">
               Suspensión automática por documentación vencida
               <Badge tone={data.activa ? 'success' : 'neutral'}>{data.activa ? 'Activa' : 'Apagada'}</Badge>
+              {!data.ya_es_exigible && <Badge tone="warning">En pausa hasta {formatearFecha(data.vigente_desde)}</Badge>}
             </h2>
             <p className="text-sm text-brand-900/60 mt-1 max-w-2xl">
               Cuando está activa, un proveedor con documentación vencida hace más de{' '}
@@ -92,10 +125,12 @@ export default function TabDocumentos() {
             },
             {
               titulo: `${data.dias_gracia} días después del vencimiento`,
-              texto: data.activa
-                ? 'El proveedor de esa empresa queda Suspendido y no puede ingresar hasta que el administrador lo reactive.'
-                : 'Con el interruptor apagado, no se suspende a nadie (solo quedan los avisos).',
-              tono: data.activa ? 'bg-brand-wine' : 'bg-brand-900/20',
+              texto: !data.ya_es_exigible
+                ? `En pausa hasta el ${formatearFecha(data.vigente_desde)}: por ahora no se suspende a nadie, solo se avisa.`
+                : data.activa
+                  ? 'El proveedor de esa empresa queda Suspendido y no puede ingresar hasta que el administrador lo reactive.'
+                  : 'Con el interruptor apagado, no se suspende a nadie (solo quedan los avisos).',
+              tono: data.ya_es_exigible && data.activa ? 'bg-brand-wine' : 'bg-brand-900/20',
             },
           ].map((paso) => (
             <div key={paso.titulo} className="flex items-start gap-3">

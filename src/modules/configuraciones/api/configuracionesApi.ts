@@ -173,6 +173,10 @@ export interface ConfigSuspensionDocumentos {
   dias_primer_aviso: number;
   dias_entre_avisos: number;
   dias_gracia: number;
+  /** Día desde el que la suspensión empieza a aplicarse (YYYY-MM-DD). */
+  vigente_desde: string;
+  /** false = todavía solo se avisa, no se suspende a nadie. */
+  ya_es_exigible: boolean;
 }
 
 export async function obtenerSuspensionDocumentos(): Promise<ConfigSuspensionDocumentos> {

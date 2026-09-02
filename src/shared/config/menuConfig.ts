@@ -201,9 +201,13 @@ const AREA_CALIDAD_SISTEMAS: MenuItem = {
   children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
 };
 
+// Admin ya NO califica recepciones (1-sep-2026), igual que hace tiempo dejó
+// de auditar -> su área de Calidad se queda solo con Políticas. Las
+// puntuaciones de ambas las sigue viendo en Reportes -> Calificación de
+// proveedores, donde son dos de los cinco componentes de la nota.
 const AREA_CALIDAD_ADMIN: MenuItem = {
   label: 'Calidad',
-  children: [AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
+  children: [POLITICAS_ITEM],
 };
 
 // Compras: Pedidos + Calendario de horarios (lo ve pero no lo gestiona,
@@ -253,6 +257,13 @@ const AREA_ADMINISTRACION: MenuItem = {
   ],
 };
 
+const REPORTE_CADUCIDAD: SubMenuItem = {
+  to: '/reportes/caducidad-documentos',
+  label: 'Caducidad de documentos',
+  icono: 'reporte',
+  descripcion: 'Qué vence y cuándo, por urgencia',
+};
+
 const AREA_REPORTES: MenuItem = {
   label: 'Reportes',
   children: [
@@ -268,6 +279,7 @@ const AREA_REPORTES: MenuItem = {
       icono: 'reporte',
       descripcion: 'Fill rate por proveedor',
     },
+    REPORTE_CADUCIDAD,
     CALENDARIO_HORARIOS,
   ],
 };
@@ -352,7 +364,21 @@ const SEGUIMIENTO_HOY_PLANO: MenuItem = { label: 'Seguimiento de hoy', to: '/cal
  */
 const MENU_COMPRAS: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_OPERACION_COMPRAS];
 
-const MENU_CALIDAD: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_OPERACION_CALIDAD, AUDITORIAS];
+// Calidad no tenía Reportes. Se le agrega un área propia con SOLO el de
+// caducidad de documentos: es el único al que el backend le da acceso (ver
+// ReporteCaducidadService::verificarAcceso), y es justamente su trabajo
+// perseguir la documentación vencida.
+const AREA_REPORTES_CALIDAD: MenuItem = {
+  label: 'Reportes',
+  children: [REPORTE_CADUCIDAD],
+};
+
+const MENU_CALIDAD: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
+  AREA_OPERACION_CALIDAD,
+  AUDITORIAS,
+  AREA_REPORTES_CALIDAD,
+];
 
 // El Guardia es un rol de un solo propósito: marcar que un proveedor
 // arribó en el seguimiento de hoy -> no necesita nada más del portal.

@@ -36,6 +36,12 @@ export interface CategoriaSeleccionada {
 }
 
 export interface FichaProveedor {
+  /**
+   * Lo calcula el BACKEND (FichaProveedorService::seccion1EstaCompleta), no
+   * la pantalla: son 22 campos obligatorios y tenerlos listados en los dos
+   * lados terminó en que la ficha aparecía completa estando vacía.
+   */
+  seccion_1_completa: boolean;
   id_proveedor: number;
   seccion_actual: number | string;
   porcentaje_completado: number | string;
