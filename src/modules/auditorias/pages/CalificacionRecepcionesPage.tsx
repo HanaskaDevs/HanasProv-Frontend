@@ -434,10 +434,10 @@ function CalificacionRecepcionesContent() {
 }
 
 export default function CalificacionRecepcionesPage() {
-    const { esSistemas, esAdmin, esCalidad } = useAuth();
+    const { esSistemas, esCalidad } = useAuth();
 
     return (
-        <RoleRoute allow={esSistemas || esAdmin || esCalidad}>
+        <RoleRoute allow={esSistemas || esCalidad}>
             <CalificacionRecepcionesContent />
         </RoleRoute>
     );

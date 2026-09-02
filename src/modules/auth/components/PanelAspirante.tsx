@@ -34,8 +34,15 @@ function IconoFlecha({ className = '' }: { className?: string }) {
   );
 }
 
+/**
+ * Lo decide el BACKEND (FichaProveedorService::seccion1EstaCompleta): son
+ * los 22 campos que exige el formulario de Datos Generales, no solo el RUC
+ * y la razón social. Esa comprobación corta daba la sección por completa
+ * desde que la activación de la cuenta empezó a pedir esos dos datos por
+ * adelantado (2-sep-2026), y el panel mostraba avance donde no había.
+ */
 function esDatosGeneralesCompleta(ficha: FichaProveedor): boolean {
-  return !!ficha.seccion_1.ruc && !!ficha.seccion_1.razon_social;
+  return ficha.seccion_1_completa;
 }
 
 function calcularPorcentajeFicha(ficha: FichaProveedor): number {

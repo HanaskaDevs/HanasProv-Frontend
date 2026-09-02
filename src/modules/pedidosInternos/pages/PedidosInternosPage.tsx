@@ -92,7 +92,9 @@ export default function PedidosInternosPage() {
         setFiltrosAplicados({});
     }
 
-    const hayFiltrosActivos = Object.values(filtrosAplicados).some((v) => !!v);
+    // La fecha no cuenta como filtro: está siempre puesta, así que si contara,
+    // el botón de «Limpiar» aparecería desde el arranque sin nada que limpiar.
+    const hayFiltrosActivos = !!filtrosAplicados.proveedor || !!filtrosAplicados.producto;
 
     return (
         <div className="space-y-4 max-w-6xl mx-auto">
@@ -105,26 +107,14 @@ export default function PedidosInternosPage() {
                     </svg>
                     Pedidos por bodega
                 </h1>
-                <p className="text-brand-900/50 text-xs mt-0.5">Pedidos de todos los proveedores, por bodega.</p>
+                <p className="text-brand-900/50 text-xs mt-0.5">
+                    Entregas previstas para <strong>hoy</strong>, de todos los proveedores, agrupadas por bodega.
+                </p>
             </div>
 
             {/* Filtros */}
             <Card className="p-3.5">
                 <div className="flex items-end gap-3 flex-wrap">
-                    <Input
-                        label="Desde"
-                        type="date"
-                        className="py-1.5"
-                        value={formFiltros.fecha_desde ?? ''}
-                        onChange={(e) => setFormFiltros((f) => ({ ...f, fecha_desde: e.target.value }))}
-                    />
-                    <Input
-                        label="Hasta"
-                        type="date"
-                        className="py-1.5"
-                        value={formFiltros.fecha_hasta ?? ''}
-                        onChange={(e) => setFormFiltros((f) => ({ ...f, fecha_hasta: e.target.value }))}
-                    />
                     <Input
                         label="Proveedor"
                         type="text"

@@ -40,8 +40,18 @@ function IconoFlecha({ className = '' }: { className?: string }) {
   );
 }
 
+/**
+ * Se lo pregunta al backend en vez de decidirlo acá.
+ *
+ * Antes esta función miraba solo el RUC y la razón social, igual que su
+ * gemela del backend. Cuando la activación de la cuenta empezó a pedir esos
+ * dos datos por adelantado, la sección quedó "completa" desde el primer día:
+ * la ficha aparecía al 100%, con la insignia «Ficha en revisión» y bloqueada
+ * para editar, aunque no tuviera dirección, teléfonos, contactos ni
+ * ubicación en el mapa. Reportado el 2-sep-2026.
+ */
 function esDatosGeneralesCompleta(ficha: FichaProveedor): boolean {
-  return !!ficha.seccion_1.ruc && !!ficha.seccion_1.razon_social;
+  return ficha.seccion_1_completa;
 }
 
 function calcularPorcentaje(ficha: FichaProveedor): number {

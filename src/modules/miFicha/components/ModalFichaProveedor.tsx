@@ -31,8 +31,18 @@ function IconoContraer() {
   );
 }
 
+/**
+ * Lo decide el BACKEND (FichaProveedorService::seccion1EstaCompleta): son
+ * los 22 campos que exige el formulario de Datos Generales.
+ *
+ * Antes esta función miraba solo el RUC y la razón social. Desde que la
+ * activación de la cuenta pide esos dos datos por adelantado, daba la
+ * sección por completa desde el primer día: los pasos 1 y 2 salían con ✓,
+ * el progreso marcaba 50% y, con la clase y la categoría elegidas, el modal
+ * entraba directo en modo solo lectura. Reportado el 2-sep-2026.
+ */
 function esDatosGeneralesCompleta(ficha: FichaProveedor): boolean {
-  return !!ficha.seccion_1.ruc && !!ficha.seccion_1.razon_social;
+  return ficha.seccion_1_completa;
 }
 
 function esFichaCompleta(ficha: FichaProveedor): boolean {
@@ -86,9 +96,17 @@ export default function ModalFichaProveedor({
   // antes del rechazo, así que "completo" es cierto desde el vamos).
   const [yaGuardoAlgo, setYaGuardoAlgo] = useState(false);
 
-  const datosCompletos = esDatosGeneralesCompleta(ficha);
-  const claseCompleta = ficha.seccion_2.clases.length > 0;
-  const [pasoVisible, setPasoVisible] = useState<number>(!datosCompletos ? 1 : !claseCompleta ? 3 : 4);
+  /**
+   * El wizard abre SIEMPRE en el paso 1 (pedido explícito del usuario,
+   * 2-sep-2026). Antes saltaba al primer paso que creía incompleto, y con
+   * eso el proveedor entraba directo al paso 3 sin haber visto nunca sus
+   * Datos Generales.
+   *
+   * No le cuesta nada a quien ya avanzó: los pasos completados quedan
+   * clickeables en la barra de progreso (ver ProgressSteps), así que puede
+   * saltar al que necesite con un clic.
+   */
+  const [pasoVisible, setPasoVisible] = useState<number>(1);
 
   const datosGeneralesCompleta = esDatosGeneralesCompleta(ficha);
   const clase = ficha.seccion_2.clases.length > 0;

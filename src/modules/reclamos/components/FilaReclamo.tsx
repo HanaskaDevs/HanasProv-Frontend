@@ -26,24 +26,34 @@ export default function FilaReclamo({ reclamo, onAbrir }: { reclamo: Reclamo; on
             </div>
 
             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap mb-1">
-                    <span className="text-sm font-semibold text-brand-900">{reclamo.asunto}</span>
+                {/* JERARQUÍA INVERTIDA respecto de antes (1-sep-2026): lo que
+                    manda ahora es el TIPO y el IMPACTO, no el título.
+                    Motivo: al revisar la lista, lo primero que hay que poder
+                    distinguir de un vistazo es de qué clase de problema se
+                    trata y qué tan grave es; el título es texto libre y varía
+                    con quien lo escribió, así que sirve para identificar el
+                    caso puntual, no para clasificarlo. Por eso las dos
+                    etiquetas van arriba y grandes, y el asunto pasa a una
+                    segunda línea, más chico. */}
+                <div className="flex items-center gap-2 flex-wrap mb-1.5">
                     {reclamo.tipo_reclamo && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-900/8 text-brand-900/70">
+                        <span className="text-sm font-bold px-3 py-1 rounded-lg bg-brand-900/10 text-brand-900">
                             {reclamo.tipo_reclamo}
                         </span>
                     )}
                     {reclamo.impacto_proveedor && (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${COLOR_IMPACTO[reclamo.impacto_proveedor]}`}>
+                        <span className={`text-sm font-bold px-3 py-1 rounded-lg ${COLOR_IMPACTO[reclamo.impacto_proveedor]}`}>
                             Impacto {reclamo.impacto_proveedor}
                         </span>
                     )}
                     {reclamo.estado === 'Cerrado' && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 self-center">
                             Cerrado
                         </span>
                     )}
                 </div>
+
+                <p className="text-[13px] text-brand-900/75 truncate mb-1">{reclamo.asunto}</p>
                 <div className="flex items-center gap-4 text-xs text-brand-900/60 flex-wrap">
                     <span className="flex items-center gap-1">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -15,9 +15,27 @@ const schema = z
   .object({
     email: z.string().email('Correo inválido'),
     codigo: z.string().min(1, 'El código es requerido'),
-    nombre_completo: z.string().min(1, 'El nombre completo es requerido'),
-    cargo: z.string().min(1, 'El cargo es requerido'),
-    telefono: z.string().min(1, 'El teléfono es requerido'),
+    nombre_completo: z
+      .string()
+      .min(3, 'El nombre completo es requerido')
+      .max(200, 'Máximo 200 caracteres')
+      // Solo letras, espacios, tildes, apóstrofos y guiones. Sin números ni
+      // signos: acá va el nombre de una persona, y un número casi siempre
+      // significa que se equivocó de campo.
+      .regex(/^[\p{L}\s'-]+$/u, 'El nombre solo puede tener letras'),
+    cargo: z
+      .string()
+      .min(2, 'El cargo es requerido')
+      .max(100, 'Máximo 100 caracteres')
+      .regex(/^[\p{L}\s'-]+$/u, 'El cargo solo puede tener letras'),
+    telefono: z
+      .string()
+      .min(1, 'El teléfono es requerido')
+      // Solo dígitos: el campo ya filtra lo que no lo sea mientras se
+      // escribe, esto es la red de seguridad por si pegan texto.
+      .regex(/^[0-9]+$/, 'El teléfono solo puede tener números')
+      .min(7, 'El teléfono debe tener entre 7 y 15 dígitos')
+      .max(15, 'El teléfono debe tener entre 7 y 15 dígitos'),
     // Solo se le piden a un proveedor en su primera activación (el servidor
     // lo dice en el paso 1), así que acá van opcionales: si se marcaran como
     // requeridos, un usuario interno no podría pasar del paso 2 por unos
@@ -25,6 +43,9 @@ const schema = z
     // cuando corresponde, y el backend la vuelve a validar igual.
     ruc: z.string().optional(),
     razon_social: z.string().optional(),
+    // ^ La exigencia real de estos dos (y su formato) se comprueba en
+    //   irSiguiente(), porque solo aplican si el servidor dijo que es un
+    //   proveedor en su primera activación.
     password_nueva: passwordSegura,
     password_nueva_confirmation: z.string().min(1, 'Requerido'),
   })
@@ -51,6 +72,17 @@ function CampoOscuro({ label, className = '', ...props }: { label: string } & Pa
   );
 }
 
+/**
+ * Impide TIPEAR lo que no corresponde, en vez de solo avisar después.
+ *
+ * Se usa junto al register de react-hook-form: filtra el valor en cada
+ * pulsación y deja el campo con lo permitido. La validación del esquema
+ * sigue existiendo como red de seguridad (alguien puede pegar texto o
+ * autocompletar), pero el objetivo acá es que el error no llegue a ocurrir.
+ */
+const SOLO_NUMEROS = (v: string) => v.replace(/[^0-9]/g, '');
+const SOLO_LETRAS = (v: string) => v.replace(/[^\p{L}\s'-]/gu, '');
+
 const TOTAL_PASOS = 3;
 
 export default function ActivarCuentaPage() {
@@ -60,6 +92,17 @@ export default function ActivarCuentaPage() {
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
   const [exito, setExito] = useState(false);
   const [validandoCodigo, setValidandoCodigo] = useState(false);
+
+  /**
+   * ¿Llegó desde el botón del correo? Si el enlace trajo correo y código,
+   * los dos campos se muestran BLOQUEADOS: son los datos que identifican la
+   * invitación y cambiarlos solo puede romper la activación.
+   *
+   * Si entró escribiendo la dirección a mano (sin esos parámetros), se
+   * dejan editables: si no, no tendría forma de activarse. Bloquear campos
+   * vacíos dejaría a la persona encerrada en el paso 1.
+   */
+  const vinoDesdeElCorreo = Boolean(searchParams.get('email') && searchParams.get('codigo'));
   /** Lo responde el servidor en el paso 1. */
   const [pideDatosProveedor, setPideDatosProveedor] = useState(false);
 
@@ -207,8 +250,26 @@ export default function ActivarCuentaPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {paso === 1 && (
           <>
-            <CampoOscuro label="Correo" type="email" {...register('email')} error={errors.email?.message} />
-            <CampoOscuro label="Código de activación" {...register('codigo')} error={errors.codigo?.message} />
+            <CampoOscuro
+              label="Correo"
+              type="email"
+              readOnly={vinoDesdeElCorreo}
+              className={vinoDesdeElCorreo ? 'opacity-70 cursor-not-allowed' : ''}
+              {...register('email')}
+              error={errors.email?.message}
+            />
+            <CampoOscuro
+              label="Código de activación"
+              readOnly={vinoDesdeElCorreo}
+              className={vinoDesdeElCorreo ? 'opacity-70 cursor-not-allowed' : ''}
+              {...register('codigo')}
+              error={errors.codigo?.message}
+            />
+            {vinoDesdeElCorreo && (
+              <p className="text-xs text-white/60" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+                Estos datos vienen del enlace que recibiste y no se pueden modificar.
+              </p>
+            )}
           </>
         )}
 
@@ -216,11 +277,35 @@ export default function ActivarCuentaPage() {
           <>
             <CampoOscuro
               label="Nombre completo"
+              placeholder="Ej. María Fernanda Pérez"
+              maxLength={200}
               {...register('nombre_completo')}
+              onInput={(e) => {
+                e.currentTarget.value = SOLO_LETRAS(e.currentTarget.value);
+              }}
               error={errors.nombre_completo?.message}
             />
-            <CampoOscuro label="Cargo" {...register('cargo')} error={errors.cargo?.message} />
-            <CampoOscuro label="Teléfono" {...register('telefono')} error={errors.telefono?.message} />
+            <CampoOscuro
+              label="Cargo"
+              placeholder="Ej. Gerente de Ventas"
+              maxLength={100}
+              {...register('cargo')}
+              onInput={(e) => {
+                e.currentTarget.value = SOLO_LETRAS(e.currentTarget.value);
+              }}
+              error={errors.cargo?.message}
+            />
+            <CampoOscuro
+              label="Teléfono"
+              inputMode="numeric"
+              placeholder="Ej. 0999123456"
+              maxLength={15}
+              {...register('telefono')}
+              onInput={(e) => {
+                e.currentTarget.value = SOLO_NUMEROS(e.currentTarget.value);
+              }}
+              error={errors.telefono?.message}
+            />
 
             {/* Solo a un proveedor en su primera activación. Antes la ficha
                 se creaba vacía y quedaba en los listados sin nombre ni RUC,
@@ -242,12 +327,16 @@ export default function ActivarCuentaPage() {
                   label="RUC"
                   inputMode="numeric"
                   maxLength={13}
-                  placeholder="13 dígitos"
+                  placeholder="13 dígitos, sin guiones"
                   {...register('ruc')}
+                  onInput={(e) => {
+                    e.currentTarget.value = SOLO_NUMEROS(e.currentTarget.value);
+                  }}
                   error={errors.ruc?.message}
                 />
                 <CampoOscuro
                   label="Razón social"
+                  maxLength={200}
                   placeholder="Nombre legal de tu empresa"
                   {...register('razon_social')}
                   error={errors.razon_social?.message}
