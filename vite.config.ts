@@ -13,6 +13,6 @@ export default defineConfig({
     // los correos de activación no funcionara para nadie más.
     host: true,
     port: 5173,
-    allowedHosts: ['proveedores.local'],
+    allowedHosts: ['proveedores.local', 'portal-proveedores.hanaska.com'],
   },
 })
