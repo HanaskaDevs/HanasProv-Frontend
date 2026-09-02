@@ -173,12 +173,26 @@ export default function ActivarCuentaPage() {
       const razonSocial = getValues('razon_social')?.trim() ?? '';
       let hayError = false;
 
-      if (ruc.length !== 13) {
-        setError('ruc', { message: 'El RUC debe tener 13 dígitos' });
+      // Se comprueba el formato, no solo el largo: el campo filtra lo que no
+      // sea número mientras se escribe, pero eso no cubre un pegado ni el
+      // autocompletado del navegador, y un RUC de 13 letras llegaba a
+      // guardarse en la ficha.
+      if (!/^\d{13}$/.test(ruc)) {
+        setError('ruc', { message: 'El RUC debe tener 13 dígitos, solo números' });
         hayError = true;
       }
       if (!razonSocial) {
         setError('razon_social', { message: 'La razón social es requerida' });
+        hayError = true;
+      } else if (razonSocial.length < 3) {
+        setError('razon_social', { message: 'La razón social debe tener al menos 3 caracteres' });
+        hayError = true;
+      } else if (!/^[\p{L}\p{N}\s.,&/()'-]+$/u.test(razonSocial)) {
+        // Admite números y signos legales ("Comercial 2000 S.A.") pero no
+        // '<' ni '>', que es por donde entraba un <script> hasta ahora.
+        setError('razon_social', {
+          message: 'La razón social solo puede tener letras, números y los signos . , & / ( ) - \'',
+        });
         hayError = true;
       }
       if (hayError) return;
