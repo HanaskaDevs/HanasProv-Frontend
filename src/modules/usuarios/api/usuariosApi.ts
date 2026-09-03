@@ -67,6 +67,58 @@ export async function crearExterno(email: string, idEmpresas: number[]): Promise
   return data;
 }
 
+/** Tope de filas por carga: tiene que coincidir con CrearUsuariosProveedorLoteRequest::MAX_FILAS. */
+export const MAX_FILAS_CARGA_MASIVA = 500;
+
+/**
+ * Una fila del Excel de carga masiva, tal como viaja al backend.
+ *
+ * `empresas` va como texto (lo que la persona escribió en la celda), no
+ * como Id_Empresa: el backend es el que resuelve los nombres contra la
+ * tabla Empresa. Así el archivo no puede pedir acceso a una empresa donde
+ * quien carga no es Sistemas, ni siquiera llamando la API a mano.
+ */
+export interface FilaCargaMasiva {
+  /** Fila real de la hoja de cálculo, para que el reporte diga cuál corregir. */
+  numero_fila: number;
+  codigo_proveedor: string | null;
+  email: string;
+  empresas: string[];
+}
+
+export type EstadoFilaCarga = 'creado' | 'acceso_agregado' | 'omitido' | 'error';
+
+export interface ResultadoFilaCarga {
+  numero_fila: number;
+  codigo_proveedor: string | null;
+  email: string;
+  /** Nombres de las empresas que el backend logró resolver. */
+  empresas: string[];
+  estado: EstadoFilaCarga;
+  mensaje: string;
+}
+
+export interface ReporteCargaMasiva {
+  resumen: {
+    total: number;
+    creados: number;
+    acceso_agregado: number;
+    omitidos: number;
+    con_error: number;
+  };
+  filas: ResultadoFilaCarga[];
+}
+
+/**
+ * Sube las filas del Excel. Responde 200 con el reporte incluso cuando hay
+ * filas con error: el éxito parcial es lo normal en una carga masiva, así
+ * que el resultado SIEMPRE se lee del cuerpo y no del código HTTP.
+ */
+export async function crearExternosLote(filas: FilaCargaMasiva[]): Promise<ReporteCargaMasiva> {
+  const { data } = await apiClient.post<ReporteCargaMasiva>('/usuarios/externos/lote', { filas });
+  return data;
+}
+
 export async function inactivarUsuario(id: number): Promise<{ message: string }> {
   const { data } = await apiClient.patch(`/usuarios/${id}/inactivar`);
   return data;

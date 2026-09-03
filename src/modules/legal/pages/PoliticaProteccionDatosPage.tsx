@@ -418,8 +418,14 @@ export default function PoliticaProteccionDatosPage() {
             seguridad y auditoría de la plataforma.
           </li>
           <li>
-            <strong>Códigos de activación y recuperación:</strong> 20 minutos de vigencia; quedan
-            invalidados al usarse o al expirar.
+            {/* Los dos plazos son distintos a propósito: el de activación se
+                le manda a alguien que no espera el correo (puede tardar días
+                en verlo) y el de recuperación se lo pidió la persona hace un
+                momento. Ver config/portal.php del backend; si cambian ahí,
+                hay que cambiarlos acá: esto es una declaración legal. */}
+            <strong>Código de activación de cuenta:</strong> 3 días de vigencia.{' '}
+            <strong>Código de recuperación de contraseña:</strong> 20 minutos de vigencia. Ambos
+            quedan invalidados al usarse o al expirar.
           </li>
         </ListaLegal>
         <p>

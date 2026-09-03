@@ -9,14 +9,22 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import EstadoBadge from '../components/EstadoBadge';
 import ModalCrearUsuarioExterno from '../components/ModalCrearUsuarioExterno';
+import ModalCargaMasivaExternos from '../components/ModalCargaMasivaExternos';
 import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
 import ModalEditarUsuario from '../components/ModalEditarUsuario';
 import { listarExternos, inactivarUsuario, reactivarUsuario, reenviarActivacion, type UsuarioExterno } from '../api/usuariosApi';
 
 function UsuariosExternosContent() {
+  // La pantalla la ven Sistemas y Admin, pero la carga masiva es solo de
+  // Sistemas -> se necesita el rol acá dentro, no solo en el RoleRoute de
+  // abajo. Ocultar el botón es comodidad: el backend igual rechaza a quien
+  // no sea Sistemas (ver UsuarioService::crearUsuariosProveedorEnLote).
+  const { esSistemas } = useAuth();
+
   const [usuarios, setUsuarios] = useState<UsuarioExterno[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalCargaAbierto, setModalCargaAbierto] = useState(false);
   const [usuarioParaEmpresa, setUsuarioParaEmpresa] = useState<number | null>(null);
   const [usuarioEditando, setUsuarioEditando] = useState<number | null>(null);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
@@ -107,7 +115,14 @@ function UsuariosExternosContent() {
           <h1 className="font-display text-2xl font-semibold text-brand-900">Usuarios externos</h1>
           <p className="text-sm text-brand-900/60 mt-1">Proveedores con acceso al portal.</p>
         </div>
-        <Button onClick={() => setModalAbierto(true)}>Nuevo usuario</Button>
+        <div className="flex items-center gap-2">
+          {esSistemas && (
+            <Button variant="secondary" onClick={() => setModalCargaAbierto(true)}>
+              Carga masiva (Excel)
+            </Button>
+          )}
+          <Button onClick={() => setModalAbierto(true)}>Nuevo usuario</Button>
+        </div>
       </div>
 
       {mensajeReenvio && (
@@ -243,6 +258,10 @@ function UsuariosExternosContent() {
 
       {modalAbierto && (
         <ModalCrearUsuarioExterno onClose={() => setModalAbierto(false)} onCreado={cargar} />
+      )}
+
+      {modalCargaAbierto && (
+        <ModalCargaMasivaExternos onClose={() => setModalCargaAbierto(false)} onCargado={cargar} />
       )}
 
       {usuarioParaEmpresa !== null && (
