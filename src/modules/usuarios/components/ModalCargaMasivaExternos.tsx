@@ -1,5 +1,5 @@
 // src/modules/usuarios/components/ModalCargaMasivaExternos.tsx
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import Modal from '../../../shared/components/Modal';
 import Button from '../../../shared/components/Button';
@@ -9,6 +9,8 @@ import { ROLES } from '../../auth/types';
 import {
   crearExternosLote,
   MAX_FILAS_CARGA_MASIVA,
+  obtenerEstadoColaCorreo,
+  type EstadoColaCorreo,
   type FilaCargaMasiva,
   type ReporteCargaMasiva,
   type ResultadoFilaCarga,
@@ -97,6 +99,30 @@ export default function ModalCargaMasivaExternos({ onClose, onCargado }: Props) 
   const [reporte, setReporte] = useState<ReporteCargaMasiva | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [descargando, setDescargando] = useState(false);
+  const [estadoCorreo, setEstadoCorreo] = useState<EstadoColaCorreo | null>(null);
+
+  /**
+   * Al abrir el modal se pregunta cómo viene el servidor de correo.
+   *
+   * Si falla la consulta se ignora en silencio a propósito: es un aviso, no
+   * un requisito. Que no se pueda leer el estado de la cola no es motivo
+   * para impedir una carga.
+   */
+  useEffect(() => {
+    let vigente = true;
+
+    obtenerEstadoColaCorreo()
+      .then((e) => {
+        if (vigente) setEstadoCorreo(e);
+      })
+      .catch(() => {
+        /* sin aviso, la carga sigue estando disponible */
+      });
+
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   /**
    * Empresas donde esta persona es Sistemas. Es la misma lista que arma el
@@ -272,6 +298,23 @@ export default function ModalCargaMasivaExternos({ onClose, onCargado }: Props) 
           </div>
         )}
 
+        {/* Aviso del estado del correo. Se muestra en TODOS los pasos, también
+            junto al resultado: es cuando más importa saber que un "creado" no
+            garantiza que el correo haya salido. */}
+        {estadoCorreo && estadoCorreo.fallidos_recientes > 0 && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-900 leading-relaxed">
+            <strong className="font-semibold">
+              El servidor de correo rechazó {estadoCorreo.fallidos_recientes} envío
+              {estadoCorreo.fallidos_recientes === 1 ? '' : 's'} en los últimos {estadoCorreo.dias} días.
+            </strong>{' '}
+            Suele pasar cuando salen muchos correos seguidos. El alta de los proveedores se hace igual,
+            pero puede que a algunos no les llegue el código.
+            <br />
+            Conviene cargar en tandas de 15 o 20 filas, y usar “Reenviar activación” en la lista con
+            quien no lo reciba. El código dura 3 días, así que hay margen.
+          </div>
+        )}
+
         {/* ---------------- 1. Elegir archivo ---------------- */}
         {(paso === 'seleccion' || paso === 'leyendo') && (
           <>
@@ -293,8 +336,9 @@ export default function ModalCargaMasivaExternos({ onClose, onCargado }: Props) 
                 no se guarda en el portal.
               </p>
               <p className="text-brand-900/60">
-                A cada correo nuevo le llega el correo de activación automáticamente. Un correo que ya
-                exista en el portal no recibe nada: solo se le agregan las empresas que le falten.
+                A cada correo nuevo se le encola automáticamente el correo de activación, que sale por
+                la cola y puede tardar unos minutos. Un correo que ya exista en el portal no recibe
+                nada: solo se le agregan las empresas que le falten.
               </p>
             </div>
 
@@ -446,10 +490,13 @@ export default function ModalCargaMasivaExternos({ onClose, onCargado }: Props) 
             </div>
 
             {reporte.resumen.creados > 0 && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
-                Se enviaron {reporte.resumen.creados} correo
-                {reporte.resumen.creados === 1 ? '' : 's'} de activación. Salen por la cola de correo, así
-                que pueden tardar unos minutos en llegar.
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 leading-relaxed">
+                Se crearon {reporte.resumen.creados} usuario{reporte.resumen.creados === 1 ? '' : 's'} y
+                se <strong className="font-semibold">encolaron</strong> sus correos de activación.
+                <br />
+                Encolado no es entregado: los manda la cola de correo, pueden tardar unos minutos y el
+                servidor de correo puede rechazar alguno. Si un proveedor dice que no le llegó, usa
+                “Reenviar activación” en la lista.
               </div>
             )}
 

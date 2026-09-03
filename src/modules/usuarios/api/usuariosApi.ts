@@ -119,6 +119,25 @@ export async function crearExternosLote(filas: FilaCargaMasiva[]): Promise<Repor
   return data;
 }
 
+export interface EstadoColaCorreo {
+  fallidos_recientes: number;
+  dias: number;
+  ultimo_fallo: string | null;
+}
+
+/**
+ * Cuántos correos falló el servidor de correo últimamente.
+ *
+ * El modal lo consulta al abrirse: si el servidor viene rechazando envíos
+ * ("450 too much mail"), una carga de 80 filas va a crear los 80 usuarios
+ * pero varios proveedores no van a recibir su código. Vale más avisarlo
+ * antes que descubrirlo cuando alguien llame preguntando.
+ */
+export async function obtenerEstadoColaCorreo(): Promise<EstadoColaCorreo> {
+  const { data } = await apiClient.get<EstadoColaCorreo>('/usuarios/externos/estado-cola-correo');
+  return data;
+}
+
 export async function inactivarUsuario(id: number): Promise<{ message: string }> {
   const { data } = await apiClient.patch(`/usuarios/${id}/inactivar`);
   return data;
