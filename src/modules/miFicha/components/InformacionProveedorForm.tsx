@@ -2,11 +2,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import CampoFicha from './CampoFicha';
 import CampoFichaSelect from './CampoFichaSelect';
 import Button from '../../../shared/components/Button';
 import LocationPicker from './LocationPicker';
 import { guardarSeccion1 } from '../api/fichaApi';
+import { listarGruposImpuesto } from '../api/catalogosApi';
 import { CIUDADES_ECUADOR } from '../constants/ciudadesEcuador';
 import type { FichaProveedor, Seccion1Data } from '../types';
 
@@ -85,6 +87,20 @@ export default function InformacionProveedorForm({
 }) {
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
 
+  // Clase de contribuyente: catálogo de BC, no texto libre. Si la
+  // consulta falla se deja el selector vacío en vez de tumbar el
+  // formulario -> el proveedor puede seguir llenando el resto y volver.
+  const { data: gruposImpuesto } = useQuery({
+    queryKey: ['catalogo-grupos-impuesto'],
+    queryFn: listarGruposImpuesto,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const opcionesGrupoImpuesto = (gruposImpuesto ?? []).map((g) => ({
+    valor: g.codigo,
+    etiqueta: g.descripcion,
+  }));
+
   const {
     register,
     handleSubmit,
@@ -145,8 +161,9 @@ export default function InformacionProveedorForm({
         <>
           <div className="grid grid-cols-2 gap-x-10 gap-y-3">
             <CampoFicha label="RUC" {...register('ruc')} error={errors.ruc?.message} />
-            <CampoFicha
+            <CampoFichaSelect
               label="Clase de contribuyente"
+              opciones={opcionesGrupoImpuesto}
               {...register('clase_contribuyente')}
               error={errors.clase_contribuyente?.message}
             />

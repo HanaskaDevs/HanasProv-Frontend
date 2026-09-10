@@ -10,7 +10,7 @@ import Button from '../../../shared/components/Button';
 import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
 import { guardarSeccion1, guardarSeccion2, guardarSeccion3 } from '../api/fichaApi';
-import { listarClasesProveedor, listarCategoriasProducto, type ClaseProveedorCatalogo, type CategoriaProductoCatalogo } from '../api/catalogosApi';
+import { listarClasesProveedor, listarCategoriasProducto, listarGruposImpuesto, type ClaseProveedorCatalogo, type CategoriaProductoCatalogo, type GrupoImpuestoCatalogo } from '../api/catalogosApi';
 import { CIUDADES_ECUADOR } from '../constants/ciudadesEcuador';
 import { CAMPO_CATEGORIA, CAMPO_CLASE } from '../../../shared/constants/camposFichaProveedor';
 import type { FichaProveedor } from '../types';
@@ -104,6 +104,7 @@ export default function FormularioCorreccionFicha({
 
   const [claseCatalogo, setClaseCatalogo] = useState<ClaseProveedorCatalogo[]>([]);
   const [categoriaCatalogo, setCategoriaCatalogo] = useState<CategoriaProductoCatalogo[]>([]);
+  const [gruposImpuesto, setGruposImpuesto] = useState<GrupoImpuestoCatalogo[]>([]);
   const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
   const [clasesSeleccionadas, setClasesSeleccionadas] = useState<number[]>(
     ficha.seccion_2.clases.map((c) => c.id_clase_proveedor)
@@ -126,21 +127,39 @@ export default function FormularioCorreccionFicha({
   // Los catálogos de Clase/Categoría solo hacen falta cargarlos si el
   // proveedor puede editar esa sección -> si están bloqueadas, alcanza
   // con mostrar lo que ya tiene seleccionado (ficha.seccion_2/3).
+  //
+  // El de Grupos de impuesto, en cambio, se carga SIEMPRE: aunque el
+  // campo esté bloqueado, el <select> necesita la opción para poder
+  // MOSTRAR el código que ya tiene guardado. Sin esto, un campo
+  // deshabilitado se veía vacío y parecía que se había perdido el dato.
   useEffect(() => {
-    if (claseEditable || categoriaEditable) {
-      setCargandoCatalogos(true);
-      Promise.all([
-        claseEditable ? listarClasesProveedor() : Promise.resolve([]),
-        categoriaEditable ? listarCategoriasProducto() : Promise.resolve([]),
-      ])
-        .then(([clases, categorias]) => {
-          setClaseCatalogo(clases);
-          setCategoriaCatalogo(categorias);
-        })
-        .finally(() => setCargandoCatalogos(false));
-    }
+    setCargandoCatalogos(true);
+    Promise.all([
+      claseEditable ? listarClasesProveedor() : Promise.resolve([]),
+      categoriaEditable ? listarCategoriasProducto() : Promise.resolve([]),
+      listarGruposImpuesto(),
+    ])
+      .then(([clases, categorias, grupos]) => {
+        setClaseCatalogo(clases);
+        setCategoriaCatalogo(categorias);
+        setGruposImpuesto(grupos);
+      })
+      .finally(() => setCargandoCatalogos(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Si el código guardado ya no está en el catálogo (ej. en BC dieron de
+   * baja ese grupo de impuesto), se agrega como opción igual -> se ve el
+   * valor real que tiene la ficha en vez de un selector en blanco.
+   */
+  const codigoActual = aTexto(ficha.seccion_1.clase_contribuyente);
+  const opcionesGrupoImpuesto = [
+    ...gruposImpuesto.map((g) => ({ valor: g.codigo, etiqueta: g.descripcion })),
+    ...(codigoActual && !gruposImpuesto.some((g) => g.codigo === codigoActual)
+      ? [{ valor: codigoActual, etiqueta: codigoActual }]
+      : []),
+  ];
 
   function toggleClase(id: number) {
     setClasesSeleccionadas((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -202,7 +221,19 @@ export default function FormularioCorreccionFicha({
         <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">Datos generales</h3>
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           <Campo campo="ruc" label="RUC" />
-          <Campo campo="clase_contribuyente" label="Clase de contribuyente" />
+          <CampoFichaSelect
+            label="Clase de contribuyente"
+            opciones={opcionesGrupoImpuesto}
+            disabled={!esEditable('clase_contribuyente')}
+            resaltado={esEditable('clase_contribuyente')}
+            accesorio={
+              esEditable('clase_contribuyente')
+                ? <TooltipObservacion texto={observacionDe('clase_contribuyente')} />
+                : undefined
+            }
+            {...register('clase_contribuyente')}
+            error={errors.clase_contribuyente?.message}
+          />
           <Campo campo="razon_social" label="Razón social" />
           <Campo campo="nombre_comercial" label="Nombre comercial" />
           <Campo campo="email" label="Correo" tipo="email" />

@@ -55,3 +55,24 @@ export interface FichaProveedor {
   seccion_2: { clases: ClaseSeleccionada[] };
   seccion_3: { categorias: CategoriaSeleccionada[] };
 }
+/** AHO = ahorros, CTE = corriente. Mismos códigos que usa Business Central. */
+export type TipoCuentaBancaria = 'AHO' | 'CTE';
+
+/**
+ * Cuenta donde se le paga al proveedor. El código de sucursal que
+ * necesita BC NO viaja al front a propósito: es interno de la
+ * integración, el proveedor solo ve/elige el nombre del banco.
+ */
+export interface CuentaBancaria {
+  id_banco: number;
+  nombre_banco: string | null;
+  tipo_cuenta: TipoCuentaBancaria;
+  nro_cuenta: string;
+  fecha_modificacion: string | null;
+}
+
+export interface GuardarCuentaBancariaPayload {
+  id_banco: number;
+  tipo_cuenta: TipoCuentaBancaria;
+  nro_cuenta: string;
+}

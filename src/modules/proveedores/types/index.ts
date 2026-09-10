@@ -35,11 +35,27 @@ export interface DocumentoCalificable {
   fecha_calificacion: string | null;
 }
 
+/**
+ * Datos que el proveedor declaró junto al PDF del certificado bancario.
+ * Son los que se postean a la Ficha de Bancos de Business Central, así
+ * que Admin/Calidad los contrasta con el PDF antes de aprobarlo.
+ */
+export interface DatosBancariosDeclarados {
+  nombre_banco: string | null;
+  /** Código de sucursal que se manda a BC. Solo lo ve Admin/Calidad. */
+  codigo_bc_banco: string | null;
+  tipo_cuenta: 'AHO' | 'CTE';
+  nro_cuenta: string;
+  fecha_registro: string | null;
+}
+
 export interface TipoDocumentoCalificable {
   id_tipo_documento: number;
   categoria: string;
   nombre_documento: string;
   obligatorio: boolean;
+  /** Solo viene en el Certificado bancario; null si aún no los registró. */
+  datos_bancarios: DatosBancariosDeclarados | null;
   documentos: DocumentoCalificable[];
 }
 

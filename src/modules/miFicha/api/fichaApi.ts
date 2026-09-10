@@ -1,5 +1,5 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { FichaProveedor, Seccion1Data } from '../types';
+import type { CuentaBancaria, FichaProveedor, GuardarCuentaBancariaPayload, Seccion1Data } from '../types';
 
 export async function obtenerMiFicha(): Promise<FichaProveedor> {
   const { data } = await apiClient.get<FichaProveedor>('/mi-ficha');
@@ -40,5 +40,17 @@ export interface ContactosData {
  *  (Datos Generales, Clase, Categoría) no se puede editar desde acá. */
 export async function guardarContactos(payload: ContactosData): Promise<FichaProveedor> {
   const { data } = await apiClient.put<FichaProveedor>('/mi-ficha/contactos', payload);
+  return data;
+}
+/** null si el proveedor todavía no registró su cuenta bancaria. */
+export async function obtenerMiCuentaBancaria(): Promise<CuentaBancaria | null> {
+  const { data } = await apiClient.get<CuentaBancaria | null>('/mi-ficha/cuenta-bancaria');
+  return data;
+}
+
+export async function guardarMiCuentaBancaria(
+  payload: GuardarCuentaBancariaPayload
+): Promise<CuentaBancaria> {
+  const { data } = await apiClient.put<CuentaBancaria>('/mi-ficha/cuenta-bancaria', payload);
   return data;
 }

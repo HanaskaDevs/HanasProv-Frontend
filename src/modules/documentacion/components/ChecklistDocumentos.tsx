@@ -11,6 +11,8 @@ import Badge from '../../../shared/components/Badge';
 import Modal from '../../../shared/components/Modal';
 import ModalVisorPdf from '../../../shared/components/ModalVisorPdf';
 import ModalDocumentacionRegistrada from './ModalDocumentacionRegistrada';
+import ModalDatosBancarios from './ModalDatosBancarios';
+import * as fichaApi from '../../miFicha/api/fichaApi';
 
 const TAMANO_MAXIMO_MB = 4;
 
@@ -81,6 +83,19 @@ function IconoDescargaPlantilla({ className = '' }: { className?: string }) {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function IconoBanco({ className = '' }: { className?: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="3" y1="22" x2="21" y2="22" />
+      <line x1="6" y1="18" x2="6" y2="11" />
+      <line x1="10" y1="18" x2="10" y2="11" />
+      <line x1="14" y1="18" x2="14" y2="11" />
+      <line x1="18" y1="18" x2="18" y2="11" />
+      <polygon points="12 2 20 7 4 7" />
     </svg>
   );
 }
@@ -364,6 +379,15 @@ function FilaDocumento({
   // archivo rechazado, otro para agregar uno adicional).
   const [reemplazandoId, setReemplazandoId] = useState<number | null>(null);
   const [descargandoPlantilla, setDescargandoPlantilla] = useState(false);
+  const [modalBancarioAbierto, setModalBancarioAbierto] = useState(false);
+
+  // Solo se consulta en el Certificado bancario -> en los demás tipos
+  // de documento no hace falta y sería una llamada al aire.
+  const { data: cuentaBancaria } = useQuery({
+    queryKey: ['mi-cuenta-bancaria'],
+    queryFn: fichaApi.obtenerMiCuentaBancaria,
+    enabled: tipo.requiere_datos_bancarios,
+  });
 
   async function handleDescargarPlantilla() {
     setDescargandoPlantilla(true);
@@ -469,7 +493,35 @@ function FilaDocumento({
             Descargar plantilla
           </button>
         )}
+
+        {/* Certificado bancario: además del PDF hay que declarar los
+            datos de la cuenta. Se muestra el resumen si ya los registró
+            (así se ve de un vistazo que ese paso está hecho) y el botón
+            queda para corregirlos. */}
+        {tipo.requiere_datos_bancarios && (
+          <>
+            {cuentaBancaria ? (
+              <Badge tone="success">
+                {cuentaBancaria.nombre_banco} · {cuentaBancaria.tipo_cuenta} · {cuentaBancaria.nro_cuenta}
+              </Badge>
+            ) : (
+              <Badge tone="danger">Datos bancarios pendientes</Badge>
+            )}
+            {!soloLectura && (
+              <button
+                type="button"
+                onClick={() => setModalBancarioAbierto(true)}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700/70 hover:text-brand-700"
+              >
+                <IconoBanco />
+                {cuentaBancaria ? 'Editar sus datos' : 'Registre sus datos'}
+              </button>
+            )}
+          </>
+        )}
       </div>
+
+      {modalBancarioAbierto && <ModalDatosBancarios onClose={() => setModalBancarioAbierto(false)} />}
 
       {tipo.documentos.map((doc) => (
         <ArchivoSubido
