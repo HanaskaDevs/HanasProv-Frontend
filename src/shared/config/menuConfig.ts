@@ -93,6 +93,23 @@ const POLITICAS_ITEM: SubMenuItem = {
   descripcion: 'Políticas vigentes del portal',
 };
 
+/**
+ * Productos por proveedor: la ficha de productos de CUALQUIER proveedor,
+ * manejada por personal interno. Aparece para Compras (el "comprador", que
+ * es quien pidió la pantalla), Admin y Sistemas -> los mismos tres roles
+ * que deja pasar ProductoService::verificarAccesoInterno en el backend.
+ *
+ * No reemplaza a "Catálogo de productos": ese muestra TODOS los productos
+ * de la empresa juntos y de solo lectura, para asignar el código de BC.
+ * Este entra a UN proveedor a cargarle y corregirle la ficha.
+ */
+const PRODUCTOS_POR_PROVEEDOR: SubMenuItem = {
+  to: '/productos-proveedor',
+  label: 'Productos por proveedor',
+  icono: 'caja',
+  descripcion: 'Cargar y editar la ficha de productos de un proveedor',
+};
+
 const CALENDARIO_HORARIOS: SubMenuItem = {
   to: '/calendario',
   label: 'Calendario de horarios',
@@ -147,6 +164,7 @@ const AREA_PROVEEDORES: MenuItem = {
       icono: 'caja',
       descripcion: 'Todos los productos con su código BC',
     },
+    PRODUCTOS_POR_PROVEEDOR,
   ],
 };
 
@@ -362,7 +380,23 @@ const SEGUIMIENTO_HOY_PLANO: MenuItem = { label: 'Seguimiento de hoy', to: '/cal
  * resuelve Valeria desde el link del correo, no navegando el menú) y SIN
  * Cambios de Precio -> pedido explícito, esos 3 ítems salen del rol.
  */
-const MENU_COMPRAS: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_OPERACION_COMPRAS];
+/**
+ * Compras estrena un área propia de Proveedores (10-sep-2026): hasta ahora
+ * solo veía Operación. Va aparte y no dentro de Operación porque no es
+ * seguimiento del día a día -es trabajo sobre la ficha del proveedor-, y
+ * porque es el área donde van a caer las pantallas que se le sigan
+ * habilitando al rol.
+ */
+const AREA_PROVEEDORES_COMPRAS: MenuItem = {
+  label: 'Proveedores',
+  children: [PRODUCTOS_POR_PROVEEDOR],
+};
+
+const MENU_COMPRAS: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
+  AREA_PROVEEDORES_COMPRAS,
+  AREA_OPERACION_COMPRAS,
+];
 
 // Calidad no tenía Reportes. Se le agrega un área propia con SOLO el de
 // caducidad de documentos: es el único al que el backend le da acceso (ver

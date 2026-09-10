@@ -1,7 +1,9 @@
 import apiClient from '../../../shared/api/apiClient';
 import type {
+  GrupoProducto,
   NuevoProducto,
   Producto,
+  ProveedorConProductos,
   ResumenRegistro,
   SolicitudCambioPrecio,
   TipoDocumentoProducto,
@@ -19,6 +21,26 @@ export interface RespuestaPaginada<T> {
 }
 
 /**
+ * DE QUIÉN son los productos con los que se está trabajando.
+ *
+ * - undefined/null -> los del propio usuario proveedor (/mis-productos).
+ * - un id          -> los de ESE proveedor, manejados por personal interno
+ *                     (Compras, Admin, Sistemas) en /productos-proveedor.
+ *
+ * Las dos familias de endpoints hacen exactamente lo mismo y con las mismas
+ * reglas (el backend resuelve el proveedor en un solo lugar, ver
+ * ProductoService::proveedorDeTrabajo). Por eso cada función de este archivo
+ * recibe el id como último parámetro opcional en vez de existir dos veces:
+ * así ListaProductos sirve tal cual para las dos pantallas y no hay dos
+ * copias de la misma pantalla que se separen con el tiempo.
+ */
+export type IdProveedorObjetivo = number | null | undefined;
+
+function base(idProveedor: IdProveedorObjetivo): string {
+  return idProveedor ? `/productos-proveedor/${idProveedor}` : '/mis-productos';
+}
+
+/**
  * Paginado y búsqueda del lado del servidor -> con catálogos de 1000+
  * productos, traer todo de una vez y filtrar/paginar en el navegador
  * sería impracticable (payload gigante + el browser renderizando miles
@@ -29,9 +51,10 @@ export type EstadoFiltroProducto = 'aprobado' | 'rechazado' | 'en_revision' | 'p
 export async function listarProductos(
   pagina: number,
   busqueda: string,
-  estados: EstadoFiltroProducto[] = []
+  estados: EstadoFiltroProducto[] = [],
+  idProveedor?: IdProveedorObjetivo
 ): Promise<RespuestaPaginada<Producto>> {
-  const { data } = await apiClient.get<RespuestaPaginada<Producto>>('/mis-productos', {
+  const { data } = await apiClient.get<RespuestaPaginada<Producto>>(base(idProveedor), {
     params: {
       page: pagina,
       per_page: 20,
@@ -44,8 +67,23 @@ export async function listarProductos(
   return data;
 }
 
-export async function crearProducto(payload: NuevoProducto): Promise<Producto> {
-  const { data } = await apiClient.post<Producto>('/mis-productos', payload);
+export async function crearProducto(payload: NuevoProducto, idProveedor?: IdProveedorObjetivo): Promise<Producto> {
+  const { data } = await apiClient.post<Producto>(base(idProveedor), payload);
+  return data;
+}
+
+/**
+ * Edita un producto que todavía se puede tocar (no está en revisión ni
+ * aprobado). El precio de un producto ya aprobado NO pasa por acá: sigue
+ * yendo por solicitarCambioPrecio, que lo aprueba Admin/Calidad.
+ */
+export async function actualizarProducto(
+  idProducto: number,
+  payload: NuevoProducto,
+  idProveedor?: IdProveedorObjetivo
+): Promise<Producto> {
+  const url = idProveedor ? `/productos-proveedor/${idProveedor}/${idProducto}` : `/mis-productos/${idProducto}`;
+  const { data } = await apiClient.put<Producto>(url, payload);
   return data;
 }
 
@@ -54,20 +92,35 @@ export async function subirDocumentoProducto(
   idTipoDocumento: number,
   archivo: File,
   fechaCaducidad?: string,
-  nombreDocumento?: string
+  nombreDocumento?: string,
+  idProveedor?: IdProveedorObjetivo
 ): Promise<void> {
   const formData = new FormData();
   formData.append('archivo', archivo);
   if (fechaCaducidad) formData.append('fecha_caducidad', fechaCaducidad);
   if (nombreDocumento) formData.append('nombre_documento', nombreDocumento);
 
-  await apiClient.post(`/mis-productos/${idProducto}/documentos/${idTipoDocumento}`, formData, {
+  const url = idProveedor
+    ? `/productos-proveedor/${idProveedor}/${idProducto}/documentos/${idTipoDocumento}`
+    : `/mis-productos/${idProducto}/documentos/${idTipoDocumento}`;
+
+  await apiClient.post(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 }
 
+/**
+ * Catálogos que NO dependen de quién esté trabajando: son los mismos para
+ * el proveedor y para el comprador, así que viven fuera de base().
+ */
 export async function listarUnidadesPresentacion(): Promise<UnidadPresentacion[]> {
   const { data } = await apiClient.get<UnidadPresentacion[]>('/mis-productos/unidades-presentacion');
+  return data;
+}
+
+/** Grupos de producto activos (EK, CD, PH, IM...) para el multi-select. */
+export async function listarGruposProducto(): Promise<GrupoProducto[]> {
+  const { data } = await apiClient.get<GrupoProducto[]>('/catalogos/grupos-producto');
   return data;
 }
 
@@ -81,47 +134,83 @@ export async function listarTiposDocumentoProducto(): Promise<TipoDocumentoProdu
   return data;
 }
 
-export async function obtenerUrlVisorDocumentoProducto(idDocumentoProducto: number): Promise<string> {
-  const { data } = await apiClient.get(`/mis-productos/documentos/${idDocumentoProducto}/ver`, {
-    responseType: 'blob',
-  });
+/** Proveedores de la empresa activa, para el selector del comprador. */
+export async function listarProveedoresConProductos(): Promise<ProveedorConProductos[]> {
+  const { data } = await apiClient.get<ProveedorConProductos[]>('/productos-proveedor/proveedores');
+  return data;
+}
+
+export async function obtenerUrlVisorDocumentoProducto(
+  idDocumentoProducto: number,
+  idProveedor?: IdProveedorObjetivo
+): Promise<string> {
+  const url = idProveedor
+    ? `/productos-proveedor/${idProveedor}/documentos/${idDocumentoProducto}/ver`
+    : `/mis-productos/documentos/${idDocumentoProducto}/ver`;
+
+  const { data } = await apiClient.get(url, { responseType: 'blob' });
   return window.URL.createObjectURL(data);
 }
 
-export async function obtenerResumenRegistro(idsProductos?: number[]): Promise<ResumenRegistro> {
-  const { data } = await apiClient.get<ResumenRegistro>('/mis-productos/resumen-registro', {
+export async function obtenerResumenRegistro(
+  idsProductos?: number[],
+  idProveedor?: IdProveedorObjetivo
+): Promise<ResumenRegistro> {
+  const { data } = await apiClient.get<ResumenRegistro>(`${base(idProveedor)}/resumen-registro`, {
     params: idsProductos && idsProductos.length > 0 ? { ids: idsProductos.join(',') } : undefined,
   });
   return data;
 }
 
-export async function registrarProductos(idsProductos: number[]): Promise<{ message: string; total: number }> {
-  const { data } = await apiClient.post('/mis-productos/registrar', { ids: idsProductos });
-  return data;
-}
-export async function eliminarProducto(idProducto: number): Promise<{ message: string }> {
-  const { data } = await apiClient.delete(`/mis-productos/${idProducto}`);
-  return data;
-}
-
-export async function eliminarProductosMasivo(ids: number[]): Promise<{ message: string; total: number }> {
-  const { data } = await apiClient.delete('/mis-productos/masivo', { data: { ids } });
+export async function registrarProductos(
+  idsProductos: number[],
+  idProveedor?: IdProveedorObjetivo
+): Promise<{ message: string; total: number }> {
+  const { data } = await apiClient.post(`${base(idProveedor)}/registrar`, { ids: idsProductos });
   return data;
 }
 
-export async function eliminarDocumentoProducto(idDocumentoProducto: number): Promise<{ message: string }> {
-  const { data } = await apiClient.delete(`/mis-productos/documentos/${idDocumentoProducto}`);
+export async function eliminarProducto(idProducto: number, idProveedor?: IdProveedorObjetivo): Promise<{ message: string }> {
+  const url = idProveedor ? `/productos-proveedor/${idProveedor}/${idProducto}` : `/mis-productos/${idProducto}`;
+  const { data } = await apiClient.delete(url);
   return data;
 }
 
-export async function confirmarCorreccionProducto(idProducto: number): Promise<void> {
-  await apiClient.post(`/mis-productos/${idProducto}/confirmar-correccion`);
+export async function eliminarProductosMasivo(
+  ids: number[],
+  idProveedor?: IdProveedorObjetivo
+): Promise<{ message: string; total: number }> {
+  const { data } = await apiClient.delete(`${base(idProveedor)}/masivo`, { data: { ids } });
+  return data;
+}
+
+export async function eliminarDocumentoProducto(
+  idDocumentoProducto: number,
+  idProveedor?: IdProveedorObjetivo
+): Promise<{ message: string }> {
+  const url = idProveedor
+    ? `/productos-proveedor/${idProveedor}/documentos/${idDocumentoProducto}`
+    : `/mis-productos/documentos/${idDocumentoProducto}`;
+  const { data } = await apiClient.delete(url);
+  return data;
+}
+
+export async function confirmarCorreccionProducto(idProducto: number, idProveedor?: IdProveedorObjetivo): Promise<void> {
+  const url = idProveedor
+    ? `/productos-proveedor/${idProveedor}/${idProducto}/confirmar-correccion`
+    : `/mis-productos/${idProducto}/confirmar-correccion`;
+  await apiClient.post(url);
 }
 
 /**
  * Pide cambiar el precio de un producto ya creado (solo si el proveedor
  * está Aprobado -> lo valida el backend). Bloquea el precio hasta que
  * Admin/Calidad de la empresa lo apruebe o lo rechace.
+ *
+ * SIN idProveedor a propósito: la solicitud de cambio de precio la firma
+ * el proveedor, es su declaración de precio. El comprador que necesite
+ * corregir un precio lo hace mientras el producto todavía es editable
+ * (ver actualizarProducto).
  */
 export async function solicitarCambioPrecio(idProducto: number, precioNuevo: number): Promise<SolicitudCambioPrecio> {
   const { data } = await apiClient.patch<SolicitudCambioPrecio>(`/mis-productos/${idProducto}/precio`, {

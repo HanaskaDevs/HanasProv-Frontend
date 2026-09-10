@@ -1,6 +1,7 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as productosApi from '../api/productosApi';
+import type { IdProveedorObjetivo } from '../api/productosApi';
 import type { DocumentoProducto, Producto, TipoDocumentoProducto } from '../types';
 import Modal from '../../../shared/components/Modal';
 import Button from '../../../shared/components/Button';
@@ -94,18 +95,34 @@ function UnDocumentoSubido({
   puedeEditar,
   onReemplazar,
   reemplazando,
+  idProveedor,
 }: {
   doc: DocumentoProducto;
   tipo: TipoDocumentoProducto;
   puedeEditar: boolean;
   onReemplazar: () => void;
   reemplazando: boolean;
+  idProveedor?: IdProveedorObjetivo;
 }) {
   const queryClient = useQueryClient();
   const [mostrarVisor, setMostrarVisor] = useState(false);
 
+  /*
+   * useCallback OBLIGATORIO acá, no es una optimización.
+   *
+   * ModalVisorPdf lleva `obtenerUrl` en las dependencias de su useEffect.
+   * Una flecha declarada en el render sería una función nueva en cada
+   * pasada -> el efecto se volvería a disparar, pediría el PDF otra vez,
+   * el setUrl provocaría otro render, y así en un bucle infinito de
+   * descargas. Con la referencia estable, se pide una sola vez.
+   */
+  const obtenerUrlDelVisor = useCallback(
+    (id: number) => productosApi.obtenerUrlVisorDocumentoProducto(id, idProveedor),
+    [idProveedor]
+  );
+
   const eliminarDoc = useMutation({
-    mutationFn: (idDocumentoProducto: number) => productosApi.eliminarDocumentoProducto(idDocumentoProducto),
+    mutationFn: (idDocumentoProducto: number) => productosApi.eliminarDocumentoProducto(idDocumentoProducto, idProveedor),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
@@ -156,7 +173,10 @@ function UnDocumentoSubido({
         <ModalVisorPdf
           idDocumento={doc.id_documento_producto}
           nombre={doc.nombre_original}
-          obtenerUrl={productosApi.obtenerUrlVisorDocumentoProducto}
+          // Envuelto (y memorizado) en vez de pasar la función pelada: el
+          // visor solo manda el id, y el endpoint del comprador necesita
+          // además saber de qué proveedor es el documento.
+          obtenerUrl={obtenerUrlDelVisor}
           onClose={() => setMostrarVisor(false)}
         />
       )}
@@ -168,10 +188,12 @@ function CasillaDocumento({
   producto,
   tipo,
   correccionesPendientes,
+  idProveedor,
 }: {
   producto: Producto;
   tipo: TipoDocumentoProducto;
   correccionesPendientes: boolean;
+  idProveedor?: IdProveedorObjetivo;
 }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -191,7 +213,8 @@ function CasillaDocumento({
         tipo.id_tipo_documento_producto,
         archivo,
         tipo.requiere_fecha_caducidad ? fechaCaducidad : undefined,
-        tipo.permite_multiples ? nombreDocumento : undefined
+        tipo.permite_multiples ? nombreDocumento : undefined,
+        idProveedor
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
@@ -281,6 +304,7 @@ function CasillaDocumento({
                 puedeEditar={puedeEditar}
                 reemplazando={subir.isPending}
                 onReemplazar={() => inputRef.current?.click()}
+                idProveedor={idProveedor}
               />
             </div>
           ))}
@@ -292,6 +316,7 @@ function CasillaDocumento({
             puedeEditar={puedeEditar}
             reemplazando={subir.isPending}
             onReemplazar={() => inputRef.current?.click()}
+            idProveedor={idProveedor}
           />
         ) : bloqueado && !puedeEditar ? (
           <div className="w-full rounded-md border-2 border-dashed border-brand-900/10 px-2.5 py-1.5 bg-brand-900/[0.02]">
@@ -395,6 +420,7 @@ export default function ModalDocumentosProducto({
   onRegistrarUno,
   onConfirmarCorreccion,
   confirmandoCorreccion,
+  idProveedor,
 }: {
   producto: Producto;
   correccionesPendientes: boolean;
@@ -402,6 +428,8 @@ export default function ModalDocumentosProducto({
   onRegistrarUno: () => void;
   onConfirmarCorreccion: () => void;
   confirmandoCorreccion: boolean;
+  /** Sin id = el propio proveedor. Con id = el comprador sobre ese proveedor. */
+  idProveedor?: IdProveedorObjetivo;
 }) {
   const { data: tipos = [], isLoading } = useTiposDocumentoProducto();
   const tiposObligatorios = tipos.filter((t) => t.obligatorio);
@@ -451,6 +479,7 @@ export default function ModalDocumentosProducto({
                   producto={producto}
                   tipo={tipo}
                   correccionesPendientes={correccionesPendientes}
+                  idProveedor={idProveedor}
                 />
               ))}
             </div>
@@ -465,6 +494,7 @@ export default function ModalDocumentosProducto({
                   producto={producto}
                   tipo={tipo}
                   correccionesPendientes={correccionesPendientes}
+                  idProveedor={idProveedor}
                 />
               ))}
             </div>

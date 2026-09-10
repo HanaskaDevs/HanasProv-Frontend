@@ -25,11 +25,25 @@ export interface TipoDocumentoProducto {
   requiere_fecha_caducidad: boolean;
 }
 
+/**
+ * Grupo de producto (EK, CD, PH, IM...). Es un catálogo administrable
+ * desde Catálogos, así que la lista NO se escribe acá: llega del backend
+ * (GET /catalogos/grupos-producto).
+ */
+export interface GrupoProducto {
+  id_grupo_producto: number;
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+}
+
 export interface Producto {
   id_producto: number;
   nombre_producto: string;
   codigo_barras: string | null;
   unidad_presentacion: string;
+  /** El id, además del nombre: es lo que necesita el <select> al editar. */
+  id_unidad_presentacion: number;
   precio: string | null;
   peso: string | null;
   volumen: string | null;
@@ -42,6 +56,8 @@ export interface Producto {
   bloqueado: boolean;
   estado_calificacion: 'Pendiente' | 'Aprobado' | 'Rechazado' | null;
   comentario_calificacion: string | null;
+  /** Opcional y múltiple: puede venir vacío. */
+  grupos: GrupoProducto[];
   documentos: DocumentoProducto[];
 }
 
@@ -53,6 +69,28 @@ export interface NuevoProducto {
   peso?: number;
   volumen?: number;
   unidad_por_caja?: number;
+  /**
+   * Ids de los grupos elegidos. Al EDITAR, mandar [] es la forma de
+   * quitarle todos los grupos al producto, y no mandar la clave deja los
+   * que ya tenía -> son dos cosas distintas, no las unifiques.
+   */
+  grupos?: number[];
+}
+
+/**
+ * Proveedor tal como lo ve el comprador en el selector de "Productos por
+ * proveedor", con el estado de su catálogo para saber a quién entrar.
+ */
+export interface ProveedorConProductos {
+  id_proveedor: number;
+  razon_social: string | null;
+  nombre_comercial: string | null;
+  ruc: string | null;
+  estado: string | null;
+  total_productos: number;
+  productos_pendientes: number;
+  productos_aprobados: number;
+  productos_rechazados: number;
 }
 
 export interface SolicitudCambioPrecio {
