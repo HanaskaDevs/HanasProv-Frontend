@@ -3,7 +3,7 @@ import { useEffect, useState, type KeyboardEvent } from 'react';
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import axios from 'axios';
 import * as productosApi from '../api/productosApi';
-import type { EstadoFiltroProducto } from '../api/productosApi';
+import type { EstadoFiltroProducto, IdProveedorObjetivo } from '../api/productosApi';
 import type { Producto } from '../types';
 import useDebounce from '../../../shared/hooks/useDebounce';
 import Card from '../../../shared/components/Card';
@@ -12,7 +12,7 @@ import Spinner from '../../../shared/components/Spinner';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import FiltroMultiple from '../../../shared/components/FiltroMultiple';
 import Paginador from '../../../shared/components/Paginador';
-import ModalCrearProducto from './ModalCrearProducto';
+import ModalProducto, { sePuedeEditar } from './ModalProducto';
 import ModalEditarPrecio from './ModalEditarPrecio';
 import ModalConfirmarRegistro from './ModalConfirmarRegistro';
 import ModalDocumentosProducto, {
@@ -29,7 +29,16 @@ import Modal from '../../../shared/components/Modal';
 // absorbe el espacio sobrante -> así ese sobrante queda siempre del
 // lado del nombre (que es donde se ve natural, como cualquier lista),
 // en vez de generar un hueco raro entre columnas.
-const PLANTILLA_COLUMNAS_LISTA = '24px 1fr 150px 130px 110px 28px';
+// La columna de Acciones tiene que entrar "Ver registro" + "Editar" SIN que
+// el botón se parta en dos líneas: con 110px, las filas que mostraban los dos
+// dejaban el botón más alto y angosto que el de las filas de al lado, y la
+// lista quedaba desparejo. El botón además lleva ancho fijo (ver
+// ANCHO_BOTON_REGISTRO), así se ve idéntico en todas las filas, tengan o no
+// el "Editar" al lado.
+const PLANTILLA_COLUMNAS_LISTA = '24px 1fr 150px 130px 152px 28px';
+
+/** Mismo ancho en todas las filas, haya o no botón de editar al lado. */
+const ANCHO_BOTON_REGISTRO = '!w-[92px] !whitespace-nowrap';
 
 function EncabezadoListaProductos() {
   return (
@@ -57,6 +66,9 @@ function FilaProducto({
   eliminando,
   onAbrirDocumentos,
   onEditarPrecio,
+  onEditarProducto,
+  puedeEditar,
+  esComprador,
   indice,
 }: {
   producto: Producto;
@@ -66,6 +78,9 @@ function FilaProducto({
   eliminando: boolean;
   onAbrirDocumentos: () => void;
   onEditarPrecio: () => void;
+  onEditarProducto: () => void;
+  puedeEditar: boolean;
+  esComprador: boolean;
   indice: number;
 }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
@@ -108,7 +123,22 @@ function FilaProducto({
       )}
 
       <div className="min-w-0">
-        <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
+          {/* Grupos (EK, CD, PH, IM...) al lado del nombre: es una etiqueta
+              de clasificación, se lee mejor pegada al producto que en una
+              columna propia, y no ocupa lugar cuando el producto no tiene
+              ninguno (que es el caso por defecto, el campo es opcional). */}
+          {producto.grupos?.map((grupo) => (
+            <span
+              key={grupo.id_grupo_producto}
+              className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide bg-brand-200 text-brand-700"
+              title={grupo.nombre !== grupo.codigo ? grupo.nombre : `Grupo ${grupo.codigo}`}
+            >
+              {grupo.codigo}
+            </span>
+          ))}
+        </div>
         <p className="text-[12px] text-brand-900/50 truncate flex items-center gap-1">
           <span>
             {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
@@ -122,18 +152,25 @@ function FilaProducto({
               🔒 Precio en revisión
             </span>
           ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditarPrecio();
-              }}
-              className="shrink-0 text-brand-900/30 hover:text-brand-700 transition-colors"
-              title="Solicitar cambio de precio"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              </svg>
-            </button>
+            // La SOLICITUD de cambio de precio la firma el proveedor: es su
+            // declaración de precio, y el backend solo se la acepta a él.
+            // El comprador que necesite corregir un precio lo hace desde
+            // "Editar", mientras el producto todavía es editable -> ofrecerle
+            // este lápiz sería mandarlo a un 403.
+            !esComprador && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditarPrecio();
+                }}
+                className="shrink-0 text-brand-900/30 hover:text-brand-700 transition-colors"
+                title="Solicitar cambio de precio"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                </svg>
+              </button>
+            )
           )}
         </p>
       </div>
@@ -172,9 +209,27 @@ function FilaProducto({
             </button>
           </div>
         ) : (
-          <Button className="!text-[12px] !px-2.5 !py-1" onClick={onAbrirDocumentos}>
-            Ver registro
-          </Button>
+          <>
+            <Button
+              className={`!text-[12px] !px-2 !py-1 ${ANCHO_BOTON_REGISTRO}`}
+              onClick={onAbrirDocumentos}
+            >
+              Ver registro
+            </Button>
+            {puedeEditar && (
+              <button
+                onClick={onEditarProducto}
+                className="text-[12px] font-medium text-brand-700 hover:text-brand-900 transition-colors whitespace-nowrap"
+                title={
+                  producto.estado_calificacion === 'Aprobado'
+                    ? 'Editar los datos del producto (volverá a calificación)'
+                    : 'Editar los datos del producto'
+                }
+              >
+                Editar
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -195,9 +250,36 @@ function FilaProducto({
   );
 }
 
-export default function ListaProductos() {
+/**
+ * Lista de productos, COMPARTIDA por las dos pantallas que la necesitan:
+ *
+ *  - Ficha Productos, donde el proveedor ve lo suyo (sin idProveedor).
+ *  - Productos por proveedor, donde el comprador trabaja el catálogo de un
+ *    proveedor que eligió (con idProveedor).
+ *
+ * Es el MISMO componente y no dos copias porque es la misma pantalla: la
+ * única diferencia real es a qué endpoint le pega, y de eso ya se encarga
+ * productosApi (ver el comentario de IdProveedorObjetivo). Duplicarla
+ * habría significado mantener dos veces la selección múltiple, el
+ * paginado, los filtros y los cuatro modales.
+ */
+/*
+ * OJO AL MONTARLA CON idProveedor: quien la use tiene que darle también un
+ * `key` con ese mismo id (ver ProductosProveedorPage). Sin el key, React
+ * reusa la instancia al cambiar de proveedor y se arrastra TODO el estado
+ * local: la página, el texto buscado y -lo grave- los ids tildados, con lo
+ * que "Registrar 3 productos" mandaría a calificación productos de otro
+ * catálogo. Con el key, cambiar de proveedor monta una lista nueva y limpia.
+ *
+ * Se resuelve así y no con un useEffect que limpie el estado porque el
+ * efecto correría DESPUÉS del primer render con el proveedor nuevo: por un
+ * frame se vería el catálogo nuevo con la selección vieja todavía marcada.
+ */
+export default function ListaProductos({ idProveedor }: { idProveedor?: IdProveedorObjetivo } = {}) {
   const queryClient = useQueryClient();
+  const esComprador = !!idProveedor;
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [idProductoEditando, setIdProductoEditando] = useState<number | null>(null);
   // null = modal cerrado. Cuando tiene contenido, son los ids que se van
   // a registrar -> así el mismo modal de confirmación sirve tanto para
   // el registro masivo (selección) como para el botón individual de
@@ -217,8 +299,13 @@ export default function ListaProductos() {
   const busquedaConDemora = useDebounce(busqueda, 400);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['mis-productos', pagina, busquedaConDemora, filtroEstado],
-    queryFn: () => productosApi.listarProductos(pagina, busquedaConDemora, filtroEstado),
+    // idProveedor va en la clave: el comprador puede saltar de un proveedor
+    // a otro sin recargar, y sin esto la caché le mostraría el catálogo del
+    // anterior. Se conserva 'mis-productos' como primer elemento a
+    // propósito -> todas las invalidaciones que ya existían son por prefijo
+    // y siguen alcanzando a estas entradas sin tocarlas una por una.
+    queryKey: ['mis-productos', idProveedor ?? null, pagina, busquedaConDemora, filtroEstado],
+    queryFn: () => productosApi.listarProductos(pagina, busquedaConDemora, filtroEstado, idProveedor),
     // Sin esto, cada tecla (con su debounce) arma una queryKey nueva sin
     // caché -> React Query vuelve a poner isLoading=true por un
     // instante, y como el return de abajo reemplaza TODA la pantalla
@@ -230,24 +317,26 @@ export default function ListaProductos() {
   });
 
   const { data: resumen, isLoading: cargandoResumen } = useQuery({
-    queryKey: ['resumen-registro'],
-    queryFn: () => productosApi.obtenerResumenRegistro(),
+    queryKey: ['resumen-registro', idProveedor ?? null],
+    queryFn: () => productosApi.obtenerResumenRegistro(undefined, idProveedor),
   });
 
   const eliminarUno = useMutation({
-    mutationFn: (idProducto: number) => productosApi.eliminarProducto(idProducto),
+    mutationFn: (idProducto: number) => productosApi.eliminarProducto(idProducto, idProveedor),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+      queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
     },
   });
 
   const eliminarSeleccionados = useMutation({
-    mutationFn: () => productosApi.eliminarProductosMasivo(Array.from(seleccionados)),
+    mutationFn: () => productosApi.eliminarProductosMasivo(Array.from(seleccionados), idProveedor),
     onSuccess: () => {
       setSeleccionados(new Set());
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+      queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
     },
   });
 
@@ -258,10 +347,11 @@ export default function ListaProductos() {
   // cruzada; el único posible error es sobre ESTE mismo producto, que
   // ya se está viendo en el modal abierto.
   const confirmarCorreccion = useMutation({
-    mutationFn: (idProducto: number) => productosApi.confirmarCorreccionProducto(idProducto),
+    mutationFn: (idProducto: number) => productosApi.confirmarCorreccionProducto(idProducto, idProveedor),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+      queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
     },
     onError: (error) => {
       const mensaje =
@@ -292,6 +382,8 @@ export default function ListaProductos() {
   // invalidación de 'mis-productos' ya refresca este arreglo solo.
   const productoAbierto = productos.find((p) => p.id_producto === idProductoAbierto) ?? null;
   const productoEditandoPrecio = productos.find((p) => p.id_producto === idProductoEditandoPrecio) ?? null;
+  const productoEditando = productos.find((p) => p.id_producto === idProductoEditando) ?? null;
+  const correccionesPendientes = resumen?.correcciones_pendientes ?? false;
   // Solo los que se pueden seleccionar (los bloqueados ni siquiera
   // muestran el checkbox) -> "seleccionar todo" tiene que ignorarlos,
   // si no quedaría marcando productos que no se pueden tocar.
@@ -396,7 +488,9 @@ export default function ListaProductos() {
         <Card>
           <p className="text-sm text-brand-900/60 text-center py-10">
             {!busquedaConDemora && filtroEstado.length === 0
-              ? 'Todavía no has agregado ningún producto.'
+              ? esComprador
+                ? 'Este proveedor todavía no tiene productos cargados. Puedes agregar el primero con "+ Agregar producto".'
+                : 'Todavía no has agregado ningún producto.'
               : 'Sin resultados para tu búsqueda/filtro.'}
           </p>
         </Card>
@@ -415,6 +509,9 @@ export default function ListaProductos() {
                 eliminando={eliminarUno.isPending}
                 onAbrirDocumentos={() => setIdProductoAbierto(producto.id_producto)}
                 onEditarPrecio={() => setIdProductoEditandoPrecio(producto.id_producto)}
+                onEditarProducto={() => setIdProductoEditando(producto.id_producto)}
+                puedeEditar={sePuedeEditar(producto, correccionesPendientes)}
+                esComprador={esComprador}
               />
             ))}
           </div>
@@ -429,7 +526,15 @@ export default function ListaProductos() {
         </>
       )}
 
-      {modalAbierto && <ModalCrearProducto onClose={() => setModalAbierto(false)} />}
+      {modalAbierto && <ModalProducto onClose={() => setModalAbierto(false)} idProveedor={idProveedor} />}
+
+      {productoEditando && (
+        <ModalProducto
+          producto={productoEditando}
+          idProveedor={idProveedor}
+          onClose={() => setIdProductoEditando(null)}
+        />
+      )}
 
       {productoEditandoPrecio && (
         <ModalEditarPrecio producto={productoEditandoPrecio} onClose={() => setIdProductoEditandoPrecio(null)} />
@@ -438,7 +543,8 @@ export default function ListaProductos() {
       {productoAbierto && (
         <ModalDocumentosProducto
           producto={productoAbierto}
-          correccionesPendientes={resumen?.correcciones_pendientes ?? false}
+          correccionesPendientes={correccionesPendientes}
+          idProveedor={idProveedor}
           onClose={() => setIdProductoAbierto(null)}
           onRegistrarUno={() => {
             setIdsParaRegistrar([productoAbierto.id_producto]);
@@ -461,6 +567,7 @@ export default function ListaProductos() {
       {idsParaRegistrar && (
         <ModalConfirmarRegistro
           idsSeleccionados={idsParaRegistrar}
+          idProveedor={idProveedor}
           onClose={() => setIdsParaRegistrar(null)}
           onRegistrado={() => setSeleccionados(new Set())}
         />

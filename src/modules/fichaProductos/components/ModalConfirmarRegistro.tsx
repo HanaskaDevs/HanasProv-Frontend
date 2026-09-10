@@ -1,6 +1,7 @@
 // src/modules/fichaProductos/components/ModalConfirmarRegistro.tsx
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as productosApi from '../api/productosApi';
+import type { IdProveedorObjetivo } from '../api/productosApi';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 
@@ -15,23 +16,29 @@ export default function ModalConfirmarRegistro({
   idsSeleccionados,
   onClose,
   onRegistrado,
+  idProveedor,
 }: {
   idsSeleccionados: number[];
   onClose: () => void;
   onRegistrado: () => void;
+  /** Sin id = el propio proveedor. Con id = el comprador sobre ese proveedor. */
+  idProveedor?: IdProveedorObjetivo;
 }) {
   const queryClient = useQueryClient();
 
   const { data: resumen, isLoading } = useQuery({
-    queryKey: ['resumen-registro-seleccion', idsSeleccionados],
-    queryFn: () => productosApi.obtenerResumenRegistro(idsSeleccionados),
+    // idProveedor entra en la clave: dos proveedores distintos pueden
+    // tener seleccionados los mismos ids y no son el mismo resumen.
+    queryKey: ['resumen-registro-seleccion', idProveedor ?? null, idsSeleccionados],
+    queryFn: () => productosApi.obtenerResumenRegistro(idsSeleccionados, idProveedor),
   });
 
   const registrar = useMutation({
-    mutationFn: () => productosApi.registrarProductos(idsSeleccionados),
+    mutationFn: () => productosApi.registrarProductos(idsSeleccionados, idProveedor),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+      queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
       window.dispatchEvent(new Event('hana:celebrar'));
       onRegistrado();
       onClose();
@@ -79,9 +86,22 @@ export default function ModalConfirmarRegistro({
             ) : (
               <div className="p-6 pt-0">
                 <p className="text-sm text-brand-900/70 mb-4">
-                  Estás a punto de enviar <strong>{resumen.total_productos}</strong> producto(s) seleccionado(s) a
-                  calificación. Una vez registrados, no podrás editarlos hasta que un administrador los califique.
-                  El resto de tu catálogo (lo que no seleccionaste) sigue disponible para seguir editándolo.
+                  {/* El texto cambia de persona según quién esté cargando: al
+                      comprador no le sirve un "tu catálogo" que no es suyo. */}
+                  {idProveedor ? (
+                    <>
+                      Estás a punto de enviar <strong>{resumen.total_productos}</strong> producto(s) de este
+                      proveedor a calificación. Una vez registrados, no se podrán editar hasta que un
+                      administrador los califique. El resto del catálogo sigue disponible para seguir editándolo.
+                    </>
+                  ) : (
+                    <>
+                      Estás a punto de enviar <strong>{resumen.total_productos}</strong> producto(s)
+                      seleccionado(s) a calificación. Una vez registrados, no podrás editarlos hasta que un
+                      administrador los califique. El resto de tu catálogo (lo que no seleccionaste) sigue
+                      disponible para seguir editándolo.
+                    </>
+                  )}
                 </p>
 
                 {registrar.isError && (

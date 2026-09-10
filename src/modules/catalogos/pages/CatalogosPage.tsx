@@ -9,11 +9,13 @@ import {
   tipoDocumentoApi,
   tipoDocumentoProductoApi,
   unidadPresentacionApi,
+  grupoProductoApi,
   type ClaseProveedor,
   type CategoriaProducto,
   type TipoDocumento,
   type TipoDocumentoProducto,
   type UnidadPresentacion,
+  type GrupoProducto,
 } from '../api/catalogosApi';
 
 const PESTANAS = [
@@ -22,6 +24,7 @@ const PESTANAS = [
   { id: 'tipos-documento', etiqueta: 'Tipo de Documento' },
   { id: 'tipos-documento-producto', etiqueta: 'Tipo de Documento de Producto' },
   { id: 'unidades', etiqueta: 'Unidad de Presentación' },
+  { id: 'grupos-producto', etiqueta: 'Grupo de Producto' },
 ] as const;
 
 type IdPestana = (typeof PESTANAS)[number]['id'];
@@ -34,7 +37,8 @@ function CatalogosPageContenido() {
       <div>
         <h1 className="font-display text-lg font-semibold text-brand-900">Catálogos</h1>
         <p className="text-brand-900/55 text-xs mt-0.5">
-          Datos base que usa el resto del sistema: clases, categorías, tipos de documento y unidades.
+          Datos base que usa el resto del sistema: clases, categorías, tipos de documento, unidades y grupos
+          de producto.
         </p>
       </div>
 
@@ -167,6 +171,43 @@ function CatalogosPageContenido() {
               placeholder: 'ej: FT',
             },
             { clave: 'obligatorio', etiqueta: 'Obligatorio', tipo: 'checkbox', placeholder: 'Es obligatorio cargarlo' },
+          ]}
+        />
+      )}
+
+      {pestana === 'grupos-producto' && (
+        <CrudCatalogoGenerico<GrupoProducto>
+          queryKey="catalogo-grupos-producto"
+          api={grupoProductoApi}
+          obtenerId={(g) => g.Id_Grupo_Producto}
+          obtenerNombre={(g) => g.Codigo}
+          nombreSingular="Grupo de producto"
+          columnasExtra={[
+            { etiqueta: 'Nombre', obtenerValor: (g) => g.Nombre },
+            { etiqueta: 'Orden', obtenerValor: (g) => String(g.Orden) },
+          ]}
+          campos={[
+            {
+              clave: 'codigo',
+              etiqueta: 'Código (la sigla que se ve en la lista de productos)',
+              tipo: 'texto',
+              placeholder: 'ej: EK',
+              requerido: true,
+            },
+            {
+              clave: 'nombre',
+              etiqueta: 'Nombre (qué significa la sigla)',
+              tipo: 'texto',
+              placeholder: 'ej: EK',
+              requerido: true,
+            },
+            { clave: 'descripcion', etiqueta: 'Descripción (opcional)', tipo: 'textarea' },
+            {
+              clave: 'orden',
+              etiqueta: 'Orden en que aparece (0 = primero)',
+              tipo: 'texto',
+              placeholder: '0',
+            },
           ]}
         />
       )}

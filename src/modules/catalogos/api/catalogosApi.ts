@@ -37,6 +37,19 @@ export interface TipoDocumentoProducto {
   Activo: boolean;
 }
 
+/**
+ * Grupo de producto (EK, CD, PH, IM...). Codigo es la sigla corta que se ve
+ * en la lista de productos; Nombre es el texto largo que la explica.
+ */
+export interface GrupoProducto {
+  Id_Grupo_Producto: number;
+  Codigo: string;
+  Nombre: string;
+  Descripcion: string | null;
+  Orden: number;
+  Activo: boolean;
+}
+
 export interface UnidadPresentacion {
   Id_Unidad_Presentacion: number;
   Nombre_Unidad: string;
@@ -107,4 +120,16 @@ export const unidadPresentacionApi = {
     (await apiClient.delete(`/catalogos-admin/unidades-presentacion/${id}`)).data,
   activar: async (id: number): Promise<UnidadPresentacion> =>
     (await apiClient.patch(`/catalogos-admin/unidades-presentacion/${id}/activar`)).data,
+};
+// ---------- Grupo de Producto ----------
+export const grupoProductoApi = {
+  listar: async (): Promise<GrupoProducto[]> => (await apiClient.get('/catalogos-admin/grupos-producto')).data,
+  crear: async (payload: Record<string, unknown>): Promise<GrupoProducto> =>
+    (await apiClient.post('/catalogos-admin/grupos-producto', payload)).data,
+  actualizar: async (id: number, payload: Record<string, unknown>): Promise<GrupoProducto> =>
+    (await apiClient.put(`/catalogos-admin/grupos-producto/${id}`, payload)).data,
+  desactivar: async (id: number): Promise<{ message: string }> =>
+    (await apiClient.delete(`/catalogos-admin/grupos-producto/${id}`)).data,
+  activar: async (id: number): Promise<GrupoProducto> =>
+    (await apiClient.patch(`/catalogos-admin/grupos-producto/${id}/activar`)).data,
 };
