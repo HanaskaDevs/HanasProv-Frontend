@@ -1,21 +1,36 @@
 // src/modules/miFicha/components/CampoFichaSelect.tsx
 import { type SelectHTMLAttributes, forwardRef } from 'react';
 
+/**
+ * Una opción puede ser:
+ * - un string: se muestra y se envía el mismo texto (caso "Ciudad").
+ * - un objeto {valor, etiqueta}: se MUESTRA la etiqueta y se ENVÍA el
+ *   valor. Hace falta para los catálogos que tienen que coincidir con
+ *   Business Central: en "Clase de contribuyente" el proveedor lee
+ *   "Persona Natural" pero lo que viaja es el código "PERSONA NATURAL".
+ */
+export type OpcionCampoFichaSelect = string | { valor: string; etiqueta: string };
+
 interface CampoFichaSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   error?: string;
   placeholder?: string;
-  opciones: readonly string[];
+  opciones: readonly OpcionCampoFichaSelect[];
   /** Borde/fondo persistente -> "este campo lo rechazó el admin, corrígelo". */
   resaltado?: boolean;
   /** Se renderiza pegado al select (ej. el ícono de observación). */
   accesorio?: React.ReactNode;
 }
 
+function normalizar(opcion: OpcionCampoFichaSelect): { valor: string; etiqueta: string } {
+  return typeof opcion === 'string' ? { valor: opcion, etiqueta: opcion } : opcion;
+}
+
 /**
  * Misma cara que CampoFicha (label + puntitos + caja con ancho fijo, para
  * que todo quede alineado en la misma columna), pero para un <select> en
- * vez de un <input> de texto libre -> se usa para "Ciudad".
+ * vez de un <input> de texto libre -> se usa para "Ciudad" y para
+ * "Clase de contribuyente".
  */
 const CampoFichaSelect = forwardRef<HTMLSelectElement, CampoFichaSelectProps>(
   ({ label, error, resaltado = false, accesorio, placeholder = 'Selecciona...', opciones, className = '', ...props }, ref) => {
@@ -47,11 +62,14 @@ const CampoFichaSelect = forwardRef<HTMLSelectElement, CampoFichaSelectProps>(
             {...props}
           >
             <option value="">{placeholder}</option>
-            {opciones.map((opcion) => (
-              <option key={opcion} value={opcion}>
-                {opcion}
-              </option>
-            ))}
+            {opciones.map((opcion) => {
+              const { valor, etiqueta } = normalizar(opcion);
+              return (
+                <option key={valor} value={valor}>
+                  {etiqueta}
+                </option>
+              );
+            })}
           </select>
           {accesorio}
         </div>

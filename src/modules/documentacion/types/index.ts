@@ -24,6 +24,11 @@ export interface TipoDocumentoChecklist {
    *  (ver documentacionApi.descargarPlantilla) -> ej. "Check list
    *  autoevaluación de proveedores" y "Carta de Garantia". */
   tiene_plantilla: boolean;
+  /** true solo en el Certificado bancario: además del PDF, el proveedor
+   *  declara banco / tipo de cuenta / nro de cuenta (esos datos son los
+   *  que se postean a la Ficha de Bancos de Business Central; del PDF no
+   *  se pueden extraer). */
+  requiere_datos_bancarios: boolean;
   documentos: DocumentoSubido[];
 }
 

@@ -149,6 +149,37 @@ function FilaDocumento({
         <IconoOjo /> Ver documento
       </button>
 
+      {/* Certificado bancario: los datos que el proveedor declaró son los
+          que se postean a Business Central, así que hay que poder
+          contrastarlos con lo que dice el PDF ANTES de aprobarlo. */}
+      {tipo.datos_bancarios && (
+        <div className="rounded-md border border-brand-900/10 bg-brand-200/25 px-2.5 py-2">
+          <p className="text-[10.5px] uppercase tracking-wide text-brand-900/50 mb-1">
+            Datos declarados por el proveedor
+          </p>
+          <div className="space-y-0.5 text-[12px] text-brand-900">
+            <p>
+              <span className="text-brand-900/50">Banco: </span>
+              {tipo.datos_bancarios.nombre_banco ?? '—'}
+              {tipo.datos_bancarios.codigo_bc_banco && (
+                <span className="text-brand-900/40"> ({tipo.datos_bancarios.codigo_bc_banco})</span>
+              )}
+            </p>
+            <p>
+              <span className="text-brand-900/50">Tipo de cuenta: </span>
+              {tipo.datos_bancarios.tipo_cuenta === 'AHO' ? 'Ahorros' : 'Corriente'}
+            </p>
+            <p>
+              <span className="text-brand-900/50">Nro. de cuenta: </span>
+              <span className="font-mono">{tipo.datos_bancarios.nro_cuenta}</span>
+            </p>
+          </div>
+          <p className="text-[10.5px] text-brand-900/45 mt-1.5">
+            Verifica que coincidan con el certificado antes de aprobar.
+          </p>
+        </div>
+      )}
+
       <div className="pt-1 border-t border-brand-900/6">
         <ControlesCalificacion
           estado={doc.estado_calificacion}
