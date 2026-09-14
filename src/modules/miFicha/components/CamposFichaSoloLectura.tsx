@@ -1,5 +1,6 @@
 import Badge from '../../../shared/components/Badge';
 import CampoFicha from './CampoFicha';
+import { formatearTelefono } from '../utils/telefono';
 import type { FichaProveedor } from '../types';
 
 function aTexto(valor: string | number | null | undefined): string {
@@ -37,7 +38,7 @@ export default function CamposFichaSoloLectura({ ficha }: { ficha: FichaProveedo
         <CampoFicha label="Razón social" value={aTexto(s1.razon_social)} disabled />
         <CampoFicha label="Nombre comercial" value={aTexto(s1.nombre_comercial)} disabled />
         <CampoFicha label="Correo" value={aTexto(s1.email)} disabled />
-        <CampoFicha label="Teléfono" value={aTexto(s1.telefono)} disabled />
+        <CampoFicha label="Teléfono" value={formatearTelefono(aTexto(s1.telefono))} disabled />
         <CampoFicha label="Dirección" value={aTexto(s1.direccion)} disabled />
         <CampoFicha label="Ciudad" value={aTexto(s1.ciudad)} disabled />
         <CampoFicha label="Página web (opcional)" value={aTexto(s1.pagina_web)} disabled />
@@ -46,25 +47,25 @@ export default function CamposFichaSoloLectura({ ficha }: { ficha: FichaProveedo
 
       <Seccion titulo="Representante legal">
         <CampoFicha label="Nombre" value={aTexto(s1.representante_legal)} disabled />
-        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_representante)} disabled />
+        <CampoFicha label="Teléfono" value={formatearTelefono(aTexto(s1.telefono_representante))} disabled />
         <CampoFicha label="Correo" value={aTexto(s1.correo_representante)} disabled />
       </Seccion>
 
       <Seccion titulo="Contacto de ventas">
         <CampoFicha label="Nombre" value={aTexto(s1.contacto_venta)} disabled />
-        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_contacto_venta)} disabled />
+        <CampoFicha label="Teléfono" value={formatearTelefono(aTexto(s1.telefono_contacto_venta))} disabled />
         <CampoFicha label="Correo" value={aTexto(s1.correo_venta)} disabled />
       </Seccion>
 
       <Seccion titulo="Contacto de calidad">
         <CampoFicha label="Nombre" value={aTexto(s1.contacto_calidad)} disabled />
-        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_contacto_calidad)} disabled />
+        <CampoFicha label="Teléfono" value={formatearTelefono(aTexto(s1.telefono_contacto_calidad))} disabled />
         <CampoFicha label="Correo" value={aTexto(s1.correo_calidad)} disabled />
       </Seccion>
 
       <Seccion titulo="Contacto de contabilidad">
         <CampoFicha label="Nombre" value={aTexto(s1.contacto_contabilidad)} disabled />
-        <CampoFicha label="Teléfono" value={aTexto(s1.telefono_contabilidad)} disabled />
+        <CampoFicha label="Teléfono" value={formatearTelefono(aTexto(s1.telefono_contabilidad))} disabled />
         <CampoFicha label="Correo" value={aTexto(s1.correo_contabilidad)} disabled />
       </Seccion>
 
@@ -87,7 +88,7 @@ export default function CamposFichaSoloLectura({ ficha }: { ficha: FichaProveedo
 
       <section className="space-y-2">
         <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
-          Categoría de productos
+          Categoría de producto/servicio
         </h3>
         <div className="flex flex-wrap gap-2">
           {ficha.seccion_3.categorias.length === 0 ? (

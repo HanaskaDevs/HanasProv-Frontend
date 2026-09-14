@@ -177,3 +177,39 @@ h1, h2, h3, h4, .font-display {
 .animar-entrada-pagina-completa {
   animation: entrada-pagina-completa 0.22s ease-out;
 }
+/* Campo obligatorio sin llenar, después de intentar avanzar.
+
+   POR QUÉ HACE FALTA: el botón de continuar está al pie de la ficha y
+   los campos que faltan pueden estar mucho más arriba, fuera de la
+   pantalla. Al hacer clic no pasaba NADA visible: el botón no avanzaba y
+   el usuario no tenía forma de saber por qué. Ahora la página sube hasta
+   el primer campo que falta (ver enfocarPrimerCampoConError) y ese campo
+   se sacude un momento para que el ojo lo encuentre entre los demás.
+
+   La sacudida es corta y de pocos píxeles a propósito: lo suficiente
+   para llamar la atención, sin parecer un error del navegador. El color
+   rojo del borde ya lo pone el propio campo. */
+@keyframes sacudir-campo {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-4px);
+  }
+  40%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+.animar-campo-faltante {
+  animation: sacudir-campo 0.4s ease-in-out;
+}
+
+/* prefers-reduced-motion: a quien pidió menos movimiento en su sistema no
+   se le sacude la pantalla. El scroll y el foco igual lo llevan al campo,
+   que es lo que de verdad resuelve el problema. */
+@media (prefers-reduced-motion: reduce) {
+  .animar-campo-faltante {
+    animation: none;
+  }
+}

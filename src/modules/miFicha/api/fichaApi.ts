@@ -43,14 +43,25 @@ export async function guardarContactos(payload: ContactosData): Promise<FichaPro
   return data;
 }
 /** null si el proveedor todavía no registró su cuenta bancaria. */
+/**
+ * El backend responde {"cuenta": ...} en vez de la cuenta pelada.
+ *
+ * NO ES CAPRICHO: `response()->json(null)` de Laravel manda `{}`, no
+ * `null` (Symfony convierte el null en un objeto vacío). Como `{}` es
+ * truthy, la pantalla daba por registrada una cuenta que no existía y
+ * mostraba los campos en blanco. Con el envoltorio, "no tiene" llega como
+ * null de verdad y se desenvuelve acá, así los componentes siguen
+ * recibiendo `CuentaBancaria | null` sin enterarse.
+ */
 export async function obtenerMiCuentaBancaria(): Promise<CuentaBancaria | null> {
-  const { data } = await apiClient.get<CuentaBancaria | null>('/mi-ficha/cuenta-bancaria');
-  return data;
+  const { data } = await apiClient.get<{ cuenta: CuentaBancaria | null }>('/mi-ficha/cuenta-bancaria');
+  return data?.cuenta ?? null;
 }
 
+/** Misma envoltura que el GET, ver el comentario de arriba. */
 export async function guardarMiCuentaBancaria(
   payload: GuardarCuentaBancariaPayload
 ): Promise<CuentaBancaria> {
-  const { data } = await apiClient.put<CuentaBancaria>('/mi-ficha/cuenta-bancaria', payload);
-  return data;
+  const { data } = await apiClient.put<{ cuenta: CuentaBancaria }>('/mi-ficha/cuenta-bancaria', payload);
+  return data.cuenta;
 }

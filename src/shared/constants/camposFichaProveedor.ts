@@ -52,7 +52,7 @@ export const ETIQUETAS_CAMPOS_FICHA: Record<CampoFichaCalificable, string> = {
   correo_contabilidad: 'Contacto de contabilidad · Correo',
   telefono_contabilidad: 'Contacto de contabilidad · Teléfono',
   clase_proveedor: 'Clase de Proveedor',
-  categoria_productos: 'Categoría de Productos',
+  categoria_productos: 'Categoría de producto/servicio',
 };
 
 /** Para el formulario de corrección del proveedor: a qué sección/paso pertenece cada campo. */

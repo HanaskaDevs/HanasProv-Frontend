@@ -1,10 +1,11 @@
 // src/modules/miFicha/components/FormularioCorreccionFicha.tsx
-import { useForm } from 'react-hook-form';
+import { Controller, useForm, type Control, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import CampoFicha from './CampoFicha';
-import CampoFichaSelect from './CampoFichaSelect';
+import CampoFichaCombo from './CampoFichaCombo';
+import CampoFichaTelefono from './CampoFichaTelefono';
 import TooltipObservacion from './TooltipObservacion';
 import Button from '../../../shared/components/Button';
 import Badge from '../../../shared/components/Badge';
@@ -13,6 +14,8 @@ import { guardarSeccion1, guardarSeccion2, guardarSeccion3 } from '../api/fichaA
 import { listarClasesProveedor, listarCategoriasProducto, listarGruposImpuesto, type ClaseProveedorCatalogo, type CategoriaProductoCatalogo, type GrupoImpuestoCatalogo } from '../api/catalogosApi';
 import { CIUDADES_ECUADOR } from '../constants/ciudadesEcuador';
 import { CAMPO_CATEGORIA, CAMPO_CLASE } from '../../../shared/constants/camposFichaProveedor';
+import { enfocarPrimerCampoConError } from '../utils/enfocarCampo';
+import { soloDigitos } from '../utils/telefono';
 import type { FichaProveedor } from '../types';
 
 const requerido = (mensaje = 'Requerido') => z.string().min(1, mensaje);
@@ -51,8 +54,87 @@ function aTexto(valor: string | number | null | undefined): string {
   return valor === null || valor === undefined ? '' : String(valor);
 }
 
+/** Ver el comentario en InformacionProveedorForm: al campo solo entran dígitos. */
+function aTelefono(valor: string | number | null | undefined): string {
+  return soloDigitos(aTexto(valor));
+}
+
+/**
+ * Orden EN QUE SE VEN los campos, para llevar al usuario al primero que
+ * le falta bajando la página (el objeto de errores no garantiza orden).
+ */
+const ORDEN_DE_LOS_CAMPOS: (keyof FormValues)[] = [
+  'ruc',
+  'clase_contribuyente',
+  'razon_social',
+  'nombre_comercial',
+  'email',
+  'telefono',
+  'direccion',
+  'ciudad',
+  'pagina_web',
+  'representante_legal',
+  'telefono_representante',
+  'correo_representante',
+  'contacto_venta',
+  'telefono_contacto_venta',
+  'correo_venta',
+  'contacto_calidad',
+  'telefono_contacto_calidad',
+  'correo_calidad',
+  'contacto_contabilidad',
+  'telefono_contabilidad',
+  'correo_contabilidad',
+];
+
 function Divisor() {
   return <hr className="border-t border-brand-900/10" />;
+}
+
+/**
+ * Teléfono con el número agrupado (ver utils/telefono.ts).
+ *
+ * DEFINIDO ACÁ AFUERA, no dentro del componente como el helper Campo de
+ * más abajo: un componente declarado dentro del render es una función
+ * NUEVA en cada pasada, así que React desmonta y vuelve a montar el input
+ * en vez de actualizarlo -> el campo pierde el foco a media palabra. Con
+ * Campo nunca se notó porque va sin controlar (register no re-renderiza
+ * al tipear); este SÍ está controlado y el problema aparecería al primer
+ * error de validación que se limpie mientras se escribe.
+ */
+function CampoTelefonoCorreccion({
+  campo,
+  label,
+  control,
+  errors,
+  editable,
+  observacion,
+}: {
+  campo: keyof FormValues;
+  label: string;
+  control: Control<FormValues>;
+  errors: FieldErrors<FormValues>;
+  editable: boolean;
+  observacion: string | null;
+}) {
+  return (
+    <Controller
+      name={campo}
+      control={control}
+      render={({ field }) => (
+        <CampoFichaTelefono
+          id={field.name}
+          label={label}
+          value={field.value ?? ''}
+          onChange={field.onChange}
+          disabled={!editable}
+          resaltado={editable}
+          accesorio={editable ? <TooltipObservacion texto={observacion} /> : undefined}
+          error={errors[campo]?.message}
+        />
+      )}
+    />
+  );
 }
 
 interface CampoProps {
@@ -73,6 +155,7 @@ export default function FormularioCorreccionFicha({
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>({
@@ -83,22 +166,22 @@ export default function FormularioCorreccionFicha({
       razon_social: aTexto(ficha.seccion_1.razon_social),
       nombre_comercial: aTexto(ficha.seccion_1.nombre_comercial),
       email: aTexto(ficha.seccion_1.email),
-      telefono: aTexto(ficha.seccion_1.telefono),
+      telefono: aTelefono(ficha.seccion_1.telefono),
       direccion: aTexto(ficha.seccion_1.direccion),
       ciudad: aTexto(ficha.seccion_1.ciudad),
       pagina_web: aTexto(ficha.seccion_1.pagina_web),
       representante_legal: aTexto(ficha.seccion_1.representante_legal),
       correo_representante: aTexto(ficha.seccion_1.correo_representante),
-      telefono_representante: aTexto(ficha.seccion_1.telefono_representante),
+      telefono_representante: aTelefono(ficha.seccion_1.telefono_representante),
       contacto_venta: aTexto(ficha.seccion_1.contacto_venta),
       correo_venta: aTexto(ficha.seccion_1.correo_venta),
-      telefono_contacto_venta: aTexto(ficha.seccion_1.telefono_contacto_venta),
+      telefono_contacto_venta: aTelefono(ficha.seccion_1.telefono_contacto_venta),
       contacto_calidad: aTexto(ficha.seccion_1.contacto_calidad),
       correo_calidad: aTexto(ficha.seccion_1.correo_calidad),
-      telefono_contacto_calidad: aTexto(ficha.seccion_1.telefono_contacto_calidad),
+      telefono_contacto_calidad: aTelefono(ficha.seccion_1.telefono_contacto_calidad),
       contacto_contabilidad: aTexto(ficha.seccion_1.contacto_contabilidad),
       correo_contabilidad: aTexto(ficha.seccion_1.correo_contabilidad),
-      telefono_contabilidad: aTexto(ficha.seccion_1.telefono_contabilidad),
+      telefono_contabilidad: aTelefono(ficha.seccion_1.telefono_contabilidad),
     },
   });
 
@@ -216,37 +299,69 @@ export default function FormularioCorreccionFicha({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form
+      // El segundo argumento de handleSubmit es el onInvalid: si la
+      // validación falla, se lleva al usuario hasta el primer campo que
+      // falta en vez de dejarlo mirando un botón que no hace nada -esta
+      // pantalla es larga y el botón está al pie-.
+      onSubmit={handleSubmit(onSubmit, () =>
+        enfocarPrimerCampoConError(errors, ORDEN_DE_LOS_CAMPOS as readonly string[])
+      )}
+      className="space-y-4"
+    >
       <section className="space-y-1.5">
         <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">Datos generales</h3>
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           <Campo campo="ruc" label="RUC" />
-          <CampoFichaSelect
-            label="Clase de contribuyente"
-            opciones={opcionesGrupoImpuesto}
-            disabled={!esEditable('clase_contribuyente')}
-            resaltado={esEditable('clase_contribuyente')}
-            accesorio={
-              esEditable('clase_contribuyente')
-                ? <TooltipObservacion texto={observacionDe('clase_contribuyente')} />
-                : undefined
-            }
-            {...register('clase_contribuyente')}
-            error={errors.clase_contribuyente?.message}
+          <Controller
+            name="clase_contribuyente"
+            control={control}
+            render={({ field }) => (
+              <CampoFichaCombo
+                id={field.name}
+                label="Clase de contribuyente"
+                opciones={opcionesGrupoImpuesto}
+                value={field.value}
+                onChange={field.onChange}
+                disabled={!esEditable('clase_contribuyente')}
+                resaltado={esEditable('clase_contribuyente')}
+                accesorio={
+                  esEditable('clase_contribuyente')
+                    ? <TooltipObservacion texto={observacionDe('clase_contribuyente')} />
+                    : undefined
+                }
+                error={errors.clase_contribuyente?.message}
+              />
+            )}
           />
           <Campo campo="razon_social" label="Razón social" />
           <Campo campo="nombre_comercial" label="Nombre comercial" />
           <Campo campo="email" label="Correo" tipo="email" />
-          <Campo campo="telefono" label="Teléfono" />
+          <CampoTelefonoCorreccion
+            campo="telefono"
+            label="Teléfono"
+            control={control}
+            errors={errors}
+            editable={esEditable('telefono')}
+            observacion={observacionDe('telefono')}
+          />
           <Campo campo="direccion" label="Dirección" />
-          <CampoFichaSelect
-            label="Ciudad"
-            opciones={CIUDADES_ECUADOR}
-            disabled={!esEditable('ciudad')}
-            resaltado={esEditable('ciudad')}
-            accesorio={esEditable('ciudad') ? <TooltipObservacion texto={observacionDe('ciudad')} /> : undefined}
-            {...register('ciudad')}
-            error={errors.ciudad?.message}
+          <Controller
+            name="ciudad"
+            control={control}
+            render={({ field }) => (
+              <CampoFichaCombo
+                id={field.name}
+                label="Ciudad"
+                opciones={CIUDADES_ECUADOR}
+                value={field.value}
+                onChange={field.onChange}
+                disabled={!esEditable('ciudad')}
+                resaltado={esEditable('ciudad')}
+                accesorio={esEditable('ciudad') ? <TooltipObservacion texto={observacionDe('ciudad')} /> : undefined}
+                error={errors.ciudad?.message}
+              />
+            )}
           />
           <CampoFicha
             label="Página web (opcional)"
@@ -264,7 +379,14 @@ export default function FormularioCorreccionFicha({
         <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">Representante legal</h3>
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           <Campo campo="representante_legal" label="Nombre" />
-          <Campo campo="telefono_representante" label="Teléfono" />
+          <CampoTelefonoCorreccion
+            campo="telefono_representante"
+            label="Teléfono"
+            control={control}
+            errors={errors}
+            editable={esEditable('telefono_representante')}
+            observacion={observacionDe('telefono_representante')}
+          />
           <Campo campo="correo_representante" label="Correo" tipo="email" />
         </div>
       </section>
@@ -275,7 +397,14 @@ export default function FormularioCorreccionFicha({
         <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">Contacto de ventas</h3>
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           <Campo campo="contacto_venta" label="Nombre" />
-          <Campo campo="telefono_contacto_venta" label="Teléfono" />
+          <CampoTelefonoCorreccion
+            campo="telefono_contacto_venta"
+            label="Teléfono"
+            control={control}
+            errors={errors}
+            editable={esEditable('telefono_contacto_venta')}
+            observacion={observacionDe('telefono_contacto_venta')}
+          />
           <Campo campo="correo_venta" label="Correo" tipo="email" />
         </div>
       </section>
@@ -286,7 +415,14 @@ export default function FormularioCorreccionFicha({
         <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">Contacto de calidad</h3>
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           <Campo campo="contacto_calidad" label="Nombre" />
-          <Campo campo="telefono_contacto_calidad" label="Teléfono" />
+          <CampoTelefonoCorreccion
+            campo="telefono_contacto_calidad"
+            label="Teléfono"
+            control={control}
+            errors={errors}
+            editable={esEditable('telefono_contacto_calidad')}
+            observacion={observacionDe('telefono_contacto_calidad')}
+          />
           <Campo campo="correo_calidad" label="Correo" tipo="email" />
         </div>
       </section>
@@ -299,7 +435,14 @@ export default function FormularioCorreccionFicha({
         </h3>
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           <Campo campo="contacto_contabilidad" label="Nombre" />
-          <Campo campo="telefono_contabilidad" label="Teléfono" />
+          <CampoTelefonoCorreccion
+            campo="telefono_contabilidad"
+            label="Teléfono"
+            control={control}
+            errors={errors}
+            editable={esEditable('telefono_contabilidad')}
+            observacion={observacionDe('telefono_contabilidad')}
+          />
           <Campo campo="correo_contabilidad" label="Correo" tipo="email" />
         </div>
       </section>
@@ -351,7 +494,7 @@ export default function FormularioCorreccionFicha({
       <section className="space-y-1.5">
         <div className="flex items-center gap-2">
           <h3 className="font-display text-xs font-bold text-brand-900 uppercase tracking-wide">
-            Categoría de Productos
+            Categoría de producto/servicio
           </h3>
           {categoriaEditable && <Badge tone="danger">Corregir</Badge>}
           {categoriaEditable && <TooltipObservacion texto={observacionDe(CAMPO_CATEGORIA)} />}

@@ -1,15 +1,18 @@
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import CampoFicha from './CampoFicha';
-import CampoFichaSelect from './CampoFichaSelect';
+import CampoFichaCombo from './CampoFichaCombo';
+import CampoFichaTelefono from './CampoFichaTelefono';
 import Button from '../../../shared/components/Button';
 import LocationPicker from './LocationPicker';
 import { guardarSeccion1 } from '../api/fichaApi';
 import { listarGruposImpuesto } from '../api/catalogosApi';
 import { CIUDADES_ECUADOR } from '../constants/ciudadesEcuador';
+import { enfocarPrimerCampoConError } from '../utils/enfocarCampo';
+import { soloDigitos } from '../utils/telefono';
 import type { FichaProveedor, Seccion1Data } from '../types';
 
 const requerido = (mensaje = 'Requerido') => z.string().min(1, mensaje);
@@ -47,6 +50,16 @@ function aTexto(valor: string | number | null | undefined): string {
   return valor === null || valor === undefined ? '' : String(valor);
 }
 
+/**
+ * Los teléfonos entran al formulario ya limpios. Lo guardado hoy son solo
+ * dígitos, pero una ficha vieja podría traer espacios o guiones: si se
+ * cargaran tal cual, el campo los mostraría y el backend rechazaría el
+ * guardado por el max:10 de las columnas de contacto.
+ */
+function aTelefono(valor: string | number | null | undefined): string {
+  return soloDigitos(aTexto(valor));
+}
+
 const CAMPOS_DATOS_GENERALES: (keyof FormValues)[] = [
   'ruc',
   'clase_contribuyente',
@@ -60,9 +73,37 @@ const CAMPOS_DATOS_GENERALES: (keyof FormValues)[] = [
   'longitud',
 ];
 
+/**
+ * Orden EN QUE SE VEN los campos de Contactos. Hace falta para llevar al
+ * usuario al primero que le falta bajando la página, y no a uno del medio
+ * (el objeto de errores no garantiza ningún orden).
+ */
+const CAMPOS_CONTACTOS: (keyof FormValues)[] = [
+  'representante_legal',
+  'telefono_representante',
+  'correo_representante',
+  'contacto_venta',
+  'telefono_contacto_venta',
+  'correo_venta',
+  'contacto_calidad',
+  'telefono_contacto_calidad',
+  'correo_calidad',
+  'contacto_contabilidad',
+  'telefono_contabilidad',
+  'correo_contabilidad',
+];
+
 function Divisor() {
   return <hr className="border-t border-brand-900/10" />;
 }
+
+/**
+ * Los 5 teléfonos de la ficha van CONTROLADOS (Controller y no register):
+ * el campo muestra el número agrupado (095 899 1687) reescribiendo lo que
+ * se teclea, y eso un input no controlado no lo permite. En el estado del
+ * formulario siguen viviendo solo los dígitos, que es lo que se guarda
+ * -ver utils/telefono.ts para el porqué.
+ */
 
 /**
  * Cubre los pasos 1 (Datos Generales) y 2 (Contactos) del wizard -> el
@@ -103,6 +144,7 @@ export default function InformacionProveedorForm({
 
   const {
     register,
+    control,
     handleSubmit,
     trigger,
     setValue,
@@ -115,7 +157,7 @@ export default function InformacionProveedorForm({
       razon_social: aTexto(datosIniciales.razon_social),
       nombre_comercial: aTexto(datosIniciales.nombre_comercial),
       email: aTexto(datosIniciales.email),
-      telefono: aTexto(datosIniciales.telefono),
+      telefono: aTelefono(datosIniciales.telefono),
       direccion: aTexto(datosIniciales.direccion),
       ciudad: aTexto(datosIniciales.ciudad),
       pagina_web: aTexto(datosIniciales.pagina_web),
@@ -123,22 +165,62 @@ export default function InformacionProveedorForm({
       longitud: aTexto(datosIniciales.longitud),
       representante_legal: aTexto(datosIniciales.representante_legal),
       correo_representante: aTexto(datosIniciales.correo_representante),
-      telefono_representante: aTexto(datosIniciales.telefono_representante),
+      telefono_representante: aTelefono(datosIniciales.telefono_representante),
       contacto_venta: aTexto(datosIniciales.contacto_venta),
       correo_venta: aTexto(datosIniciales.correo_venta),
-      telefono_contacto_venta: aTexto(datosIniciales.telefono_contacto_venta),
+      telefono_contacto_venta: aTelefono(datosIniciales.telefono_contacto_venta),
       contacto_calidad: aTexto(datosIniciales.contacto_calidad),
       correo_calidad: aTexto(datosIniciales.correo_calidad),
-      telefono_contacto_calidad: aTexto(datosIniciales.telefono_contacto_calidad),
+      telefono_contacto_calidad: aTelefono(datosIniciales.telefono_contacto_calidad),
       contacto_contabilidad: aTexto(datosIniciales.contacto_contabilidad),
       correo_contabilidad: aTexto(datosIniciales.correo_contabilidad),
-      telefono_contabilidad: aTexto(datosIniciales.telefono_contabilidad),
+      telefono_contabilidad: aTelefono(datosIniciales.telefono_contabilidad),
     },
   });
 
   async function irASiguiente() {
     const valido = await trigger(CAMPOS_DATOS_GENERALES);
-    if (valido) onIrAPaso(2);
+
+    if (valido) {
+      onIrAPaso(2);
+      return;
+    }
+
+    // No avanza -> hay que decirle DÓNDE está el problema. El botón está
+    // al pie y los campos que faltan suelen quedar fuera de la pantalla:
+    // sin esto, al hacer clic no pasaba nada visible.
+    enfocarPrimerCampoConError(errors, CAMPOS_DATOS_GENERALES as readonly string[]);
+  }
+
+  /**
+   * Mismo tratamiento en el paso de Contactos. Va como onInvalid de
+   * handleSubmit: react-hook-form llama a ese callback cuando la
+   * validación falla, y ahí los errores ya están calculados.
+   *
+   * Su shouldFocusError no alcanza acá -ver el comentario de
+   * enfocarPrimerCampoConError-: los teléfonos son campos controlados y
+   * RHF no tiene ref para enfocarlos, así que tampoco desplazaría la
+   * página hasta ellos.
+   */
+  function alFallarValidacion() {
+    // Primero en el paso que se está viendo.
+    if (enfocarPrimerCampoConError(errors, CAMPOS_CONTACTOS as readonly string[])) {
+      return;
+    }
+
+    // Si lo que falta quedó en Datos Generales (se puede volver atrás y
+    // borrar algo), no alcanza con desplazar: ese campo ni siquiera está
+    // dibujado. Hay que volver a ese paso y recién ahí buscarlo.
+    const faltaEnDatosGenerales = CAMPOS_DATOS_GENERALES.some((campo) => errors[campo]);
+
+    if (faltaEnDatosGenerales) {
+      onIrAPaso(1);
+      // En el próximo cuadro: el campo existe en el DOM recién después de
+      // que React dibuje el paso 1.
+      requestAnimationFrame(() =>
+        enfocarPrimerCampoConError(errors, CAMPOS_DATOS_GENERALES as readonly string[])
+      );
+    }
   }
 
   async function onSubmit(values: FormValues) {
@@ -161,11 +243,19 @@ export default function InformacionProveedorForm({
         <>
           <div className="grid grid-cols-2 gap-x-10 gap-y-3">
             <CampoFicha label="RUC" {...register('ruc')} error={errors.ruc?.message} />
-            <CampoFichaSelect
-              label="Clase de contribuyente"
-              opciones={opcionesGrupoImpuesto}
-              {...register('clase_contribuyente')}
-              error={errors.clase_contribuyente?.message}
+            <Controller
+              name="clase_contribuyente"
+              control={control}
+              render={({ field }) => (
+                <CampoFichaCombo
+                  id={field.name}
+                  label="Clase de contribuyente"
+                  opciones={opcionesGrupoImpuesto}
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.clase_contribuyente?.message}
+                />
+              )}
             />
             <CampoFicha label="Razón social" {...register('razon_social')} error={errors.razon_social?.message} />
             <CampoFicha
@@ -174,30 +264,58 @@ export default function InformacionProveedorForm({
               error={errors.nombre_comercial?.message}
             />
             <CampoFicha label="Correo" type="email" {...register('email')} error={errors.email?.message} />
-            <CampoFicha label="Teléfono" {...register('telefono')} error={errors.telefono?.message} />
+            <Controller
+              name="telefono"
+              control={control}
+              render={({ field }) => (
+                <CampoFichaTelefono
+                  id={field.name}
+                  label="Teléfono"
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.telefono?.message}
+                />
+              )}
+            />
             <CampoFicha label="Dirección" {...register('direccion')} error={errors.direccion?.message} />
-            <CampoFichaSelect
-              label="Ciudad"
-              opciones={CIUDADES_ECUADOR}
-              {...register('ciudad')}
-              error={errors.ciudad?.message}
+            <Controller
+              name="ciudad"
+              control={control}
+              render={({ field }) => (
+                <CampoFichaCombo
+                  id={field.name}
+                  label="Ciudad"
+                  opciones={CIUDADES_ECUADOR}
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.ciudad?.message}
+                />
+              )}
             />
             <CampoFicha label="Página web (opcional)" {...register('pagina_web')} />
           </div>
 
           <Divisor />
 
-          <LocationPicker
-            latitudInicial={datosIniciales.latitud ? Number(datosIniciales.latitud) : null}
-            longitudInicial={datosIniciales.longitud ? Number(datosIniciales.longitud) : null}
-            onSeleccionar={(lat, lng) => {
-              setValue('latitud', String(lat));
-              setValue('longitud', String(lng));
-            }}
-          />
-          {(errors.latitud || errors.longitud) && (
-            <p className="text-xs text-brand-wine">{errors.latitud?.message ?? errors.longitud?.message}</p>
-          )}
+          {/* id="latitud": la ubicación se elige en el mapa, no en un input,
+              así que no hay ningún elemento con ese id al que desplazarse
+              cuando es lo único que falta. Con este envoltorio,
+              enfocarPrimerCampoConError lo encuentra igual y sube hasta el
+              mapa. (focus() sobre un div no hace nada, pero el
+              desplazamiento y la sacudida sí, que es lo que se necesita.) */}
+          <div id="latitud">
+            <LocationPicker
+              latitudInicial={datosIniciales.latitud ? Number(datosIniciales.latitud) : null}
+              longitudInicial={datosIniciales.longitud ? Number(datosIniciales.longitud) : null}
+              onSeleccionar={(lat, lng) => {
+                setValue('latitud', String(lat));
+                setValue('longitud', String(lng));
+              }}
+            />
+            {(errors.latitud || errors.longitud) && (
+              <p className="text-xs text-brand-wine">{errors.latitud?.message ?? errors.longitud?.message}</p>
+            )}
+          </div>
         </>
       )}
 
@@ -213,10 +331,18 @@ export default function InformacionProveedorForm({
                 {...register('representante_legal')}
                 error={errors.representante_legal?.message}
               />
-              <CampoFicha
-                label="Teléfono"
-                {...register('telefono_representante')}
-                error={errors.telefono_representante?.message}
+              <Controller
+                name="telefono_representante"
+                control={control}
+                render={({ field }) => (
+                  <CampoFichaTelefono
+                    id={field.name}
+                    label="Teléfono"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.telefono_representante?.message}
+                  />
+                )}
               />
               <CampoFicha
                 label="Correo"
@@ -235,10 +361,18 @@ export default function InformacionProveedorForm({
             </h3>
             <div className="grid grid-cols-2 gap-x-10 gap-y-3">
               <CampoFicha label="Nombre" {...register('contacto_venta')} error={errors.contacto_venta?.message} />
-              <CampoFicha
-                label="Teléfono"
-                {...register('telefono_contacto_venta')}
-                error={errors.telefono_contacto_venta?.message}
+              <Controller
+                name="telefono_contacto_venta"
+                control={control}
+                render={({ field }) => (
+                  <CampoFichaTelefono
+                    id={field.name}
+                    label="Teléfono"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.telefono_contacto_venta?.message}
+                  />
+                )}
               />
               <CampoFicha
                 label="Correo"
@@ -261,10 +395,18 @@ export default function InformacionProveedorForm({
                 {...register('contacto_calidad')}
                 error={errors.contacto_calidad?.message}
               />
-              <CampoFicha
-                label="Teléfono"
-                {...register('telefono_contacto_calidad')}
-                error={errors.telefono_contacto_calidad?.message}
+              <Controller
+                name="telefono_contacto_calidad"
+                control={control}
+                render={({ field }) => (
+                  <CampoFichaTelefono
+                    id={field.name}
+                    label="Teléfono"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.telefono_contacto_calidad?.message}
+                  />
+                )}
               />
               <CampoFicha
                 label="Correo"
@@ -287,10 +429,18 @@ export default function InformacionProveedorForm({
                 {...register('contacto_contabilidad')}
                 error={errors.contacto_contabilidad?.message}
               />
-              <CampoFicha
-                label="Teléfono"
-                {...register('telefono_contabilidad')}
-                error={errors.telefono_contabilidad?.message}
+              <Controller
+                name="telefono_contabilidad"
+                control={control}
+                render={({ field }) => (
+                  <CampoFichaTelefono
+                    id={field.name}
+                    label="Teléfono"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.telefono_contabilidad?.message}
+                  />
+                )}
               />
               <CampoFicha
                 label="Correo"
@@ -319,7 +469,7 @@ export default function InformacionProveedorForm({
             Siguiente
           </Button>
         ) : (
-          <Button type="button" onClick={handleSubmit(onSubmit)} isLoading={isSubmitting}>
+          <Button type="button" onClick={handleSubmit(onSubmit, alFallarValidacion)} isLoading={isSubmitting}>
             Guardar y continuar
           </Button>
         )}

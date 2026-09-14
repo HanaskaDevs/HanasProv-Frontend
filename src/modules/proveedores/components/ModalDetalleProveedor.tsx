@@ -1,5 +1,6 @@
 // src/modules/proveedores/components/ModalDetalleProveedor.tsx
 import { useQuery } from '@tanstack/react-query';
+import { formatearTelefono } from '../../miFicha/utils/telefono';
 import Modal from '../../../shared/components/Modal';
 import Spinner from '../../../shared/components/Spinner';
 import Badge from '../../../shared/components/Badge';
@@ -102,7 +103,7 @@ export default function ModalDetalleProveedor({
             <Fila etiqueta="Razón social" valor={s1?.razon_social} />
             <Fila etiqueta="Nombre comercial" valor={s1?.nombre_comercial} />
             <Fila etiqueta="Correo" valor={s1?.email} />
-            <Fila etiqueta="Teléfono" valor={s1?.telefono} />
+            <Fila etiqueta="Teléfono" valor={s1?.telefono ? formatearTelefono(s1.telefono) : s1?.telefono} />
             <Fila etiqueta="Dirección" valor={s1?.direccion} />
             <Fila etiqueta="Ciudad" valor={s1?.ciudad} />
             <Fila etiqueta="Página web" valor={s1?.pagina_web} />
@@ -111,25 +112,25 @@ export default function ModalDetalleProveedor({
           <Bloque titulo="Representante Legal">
             <Fila etiqueta="Nombre" valor={s1?.representante_legal} />
             <Fila etiqueta="Correo" valor={s1?.correo_representante} />
-            <Fila etiqueta="Teléfono" valor={s1?.telefono_representante} />
+            <Fila etiqueta="Teléfono" valor={s1?.telefono_representante ? formatearTelefono(s1.telefono_representante) : s1?.telefono_representante} />
           </Bloque>
 
           <Bloque titulo="Contacto de Ventas">
             <Fila etiqueta="Nombre" valor={s1?.contacto_venta} />
             <Fila etiqueta="Correo" valor={s1?.correo_venta} />
-            <Fila etiqueta="Teléfono" valor={s1?.telefono_contacto_venta} />
+            <Fila etiqueta="Teléfono" valor={s1?.telefono_contacto_venta ? formatearTelefono(s1.telefono_contacto_venta) : s1?.telefono_contacto_venta} />
           </Bloque>
 
           <Bloque titulo="Contacto de Calidad">
             <Fila etiqueta="Nombre" valor={s1?.contacto_calidad} />
             <Fila etiqueta="Correo" valor={s1?.correo_calidad} />
-            <Fila etiqueta="Teléfono" valor={s1?.telefono_contacto_calidad} />
+            <Fila etiqueta="Teléfono" valor={s1?.telefono_contacto_calidad ? formatearTelefono(s1.telefono_contacto_calidad) : s1?.telefono_contacto_calidad} />
           </Bloque>
 
           <Bloque titulo="Contacto de Contabilidad">
             <Fila etiqueta="Nombre" valor={s1?.contacto_contabilidad} />
             <Fila etiqueta="Correo" valor={s1?.correo_contabilidad} />
-            <Fila etiqueta="Teléfono" valor={s1?.telefono_contabilidad} />
+            <Fila etiqueta="Teléfono" valor={s1?.telefono_contabilidad ? formatearTelefono(s1.telefono_contabilidad) : s1?.telefono_contabilidad} />
           </Bloque>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -151,7 +152,7 @@ export default function ModalDetalleProveedor({
             </div>
             <div>
               <p className="text-xs font-semibold text-brand-900/70 uppercase tracking-wide mb-2">
-                Categoría de Productos
+                Categoría de producto/servicio
               </p>
               {ficha.seccion_3.categorias.length === 0 ? (
                 <p className="text-sm text-brand-900/40">Sin registrar</p>

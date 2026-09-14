@@ -13,7 +13,6 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import FiltroMultiple from '../../../shared/components/FiltroMultiple';
 import Paginador from '../../../shared/components/Paginador';
 import ModalProducto, { sePuedeEditar } from './ModalProducto';
-import ModalEditarPrecio from './ModalEditarPrecio';
 import ModalConfirmarRegistro from './ModalConfirmarRegistro';
 import ModalDocumentosProducto, {
   contarDocumentosPorObligatoriedad,
@@ -35,10 +34,36 @@ import Modal from '../../../shared/components/Modal';
 // lista quedaba desparejo. El botón además lleva ancho fijo (ver
 // ANCHO_BOTON_REGISTRO), así se ve idéntico en todas las filas, tengan o no
 // el "Editar" al lado.
-const PLANTILLA_COLUMNAS_LISTA = '24px 1fr 150px 130px 152px 28px';
+const PLANTILLA_COLUMNAS_LISTA = '24px 1fr 150px 130px 198px 28px';
 
 /** Mismo ancho en todas las filas, haya o no botón de editar al lado. */
-const ANCHO_BOTON_REGISTRO = '!w-[92px] !whitespace-nowrap';
+const ANCHO_BOTON_REGISTRO = '!w-[138px] !whitespace-nowrap';
+
+/**
+ * Qué dice el botón que abre los documentos del producto.
+ *
+ * Antes decía "Ver registro" siempre, y nadie entendía de qué registro
+ * hablaba ni que ahí adentro es donde se cargan los PDF (pedido del
+ * usuario, 12-sep-2026: "no es intuitivo, el usuario no sabe de qué está
+ * hablando"). Ahora el botón dice la ACCIÓN que toca hacer:
+ *
+ *   - Faltan documentos obligatorios y todavía se pueden subir
+ *     -> "Cargar documentos".
+ *   - Ya están todos, o el producto está bloqueado y no se puede tocar
+ *     -> "Ver documentos".
+ *
+ * El conteo es solo de los OBLIGATORIOS: los opcionales pueden quedar
+ * vacíos para siempre sin que eso signifique que falte algo.
+ */
+function textoBotonDocumentos(
+  obligatoriosSubidos: number,
+  obligatoriosTotal: number,
+  puedeSubir: boolean
+): string {
+  const faltan = obligatoriosSubidos < obligatoriosTotal;
+
+  return faltan && puedeSubir ? 'Cargar documentos' : 'Ver documentos';
+}
 
 function EncabezadoListaProductos() {
   return (
@@ -65,10 +90,8 @@ function FilaProducto({
   onEliminar,
   eliminando,
   onAbrirDocumentos,
-  onEditarPrecio,
   onEditarProducto,
   puedeEditar,
-  esComprador,
   indice,
 }: {
   producto: Producto;
@@ -77,10 +100,8 @@ function FilaProducto({
   onEliminar: () => void;
   eliminando: boolean;
   onAbrirDocumentos: () => void;
-  onEditarPrecio: () => void;
   onEditarProducto: () => void;
   puedeEditar: boolean;
-  esComprador: boolean;
   indice: number;
 }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
@@ -139,38 +160,25 @@ function FilaProducto({
             </span>
           ))}
         </div>
+        {/* El lápiz de "solicitar cambio de precio" que vivía acá se quitó
+            (pedido del usuario, 12-sep-2026): había DOS caminos para tocar
+            el precio y ninguno decía en qué se diferenciaban. Ahora el
+            precio se edita desde "Editar", junto con el resto del producto,
+            y la consecuencia la decide el estado: si todavía no está
+            aprobado se guarda y listo, y si ya lo está el producto vuelve a
+            calificación (ver ProductoService::actualizar). */}
         <p className="text-[12px] text-brand-900/50 truncate flex items-center gap-1">
           <span>
             {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
             {producto.precio != null && ` · $${producto.precio}`}
           </span>
-          {producto.precio_en_revision ? (
+          {producto.precio_en_revision && (
             <span
               className="inline-flex items-center gap-0.5 text-amber-700 font-medium shrink-0"
               title="El precio está pendiente de aprobación"
             >
               🔒 Precio en revisión
             </span>
-          ) : (
-            // La SOLICITUD de cambio de precio la firma el proveedor: es su
-            // declaración de precio, y el backend solo se la acepta a él.
-            // El comprador que necesite corregir un precio lo hace desde
-            // "Editar", mientras el producto todavía es editable -> ofrecerle
-            // este lápiz sería mandarlo a un 403.
-            !esComprador && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditarPrecio();
-                }}
-                className="shrink-0 text-brand-900/30 hover:text-brand-700 transition-colors"
-                title="Solicitar cambio de precio"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                </svg>
-              </button>
-            )
           )}
         </p>
       </div>
@@ -214,7 +222,7 @@ function FilaProducto({
               className={`!text-[12px] !px-2 !py-1 ${ANCHO_BOTON_REGISTRO}`}
               onClick={onAbrirDocumentos}
             >
-              Ver registro
+              {textoBotonDocumentos(obligatoriosSubidos, obligatoriosTotal, !producto.bloqueado || puedeEditar)}
             </Button>
             {puedeEditar && (
               <button
@@ -286,7 +294,6 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
   // cada tarjeta, sin duplicar el flujo de validación.
   const [idsParaRegistrar, setIdsParaRegistrar] = useState<number[] | null>(null);
   const [idProductoAbierto, setIdProductoAbierto] = useState<number | null>(null);
-  const [idProductoEditandoPrecio, setIdProductoEditandoPrecio] = useState<number | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<EstadoFiltroProducto[]>([]);
   const [pagina, setPagina] = useState(1);
@@ -381,7 +388,6 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
   // documento mientras el modal está abierto, se refleje al toque -> la
   // invalidación de 'mis-productos' ya refresca este arreglo solo.
   const productoAbierto = productos.find((p) => p.id_producto === idProductoAbierto) ?? null;
-  const productoEditandoPrecio = productos.find((p) => p.id_producto === idProductoEditandoPrecio) ?? null;
   const productoEditando = productos.find((p) => p.id_producto === idProductoEditando) ?? null;
   const correccionesPendientes = resumen?.correcciones_pendientes ?? false;
   // Solo los que se pueden seleccionar (los bloqueados ni siquiera
@@ -508,10 +514,8 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
                 onEliminar={() => eliminarUno.mutate(producto.id_producto)}
                 eliminando={eliminarUno.isPending}
                 onAbrirDocumentos={() => setIdProductoAbierto(producto.id_producto)}
-                onEditarPrecio={() => setIdProductoEditandoPrecio(producto.id_producto)}
                 onEditarProducto={() => setIdProductoEditando(producto.id_producto)}
                 puedeEditar={sePuedeEditar(producto, correccionesPendientes)}
-                esComprador={esComprador}
               />
             ))}
           </div>
@@ -534,10 +538,6 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
           idProveedor={idProveedor}
           onClose={() => setIdProductoEditando(null)}
         />
-      )}
-
-      {productoEditandoPrecio && (
-        <ModalEditarPrecio producto={productoEditandoPrecio} onClose={() => setIdProductoEditandoPrecio(null)} />
       )}
 
       {productoAbierto && (

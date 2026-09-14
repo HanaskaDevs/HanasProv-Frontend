@@ -46,8 +46,20 @@ export interface Producto {
   id_unidad_presentacion: number;
   precio: string | null;
   peso: string | null;
+  /** Calculado de las medidas de la unidad, no se escribe a mano. */
   volumen: string | null;
+  /** Calculado de las medidas del masterpack. */
+  volumen_masterpack: string | null;
+  /** En pantalla: "Unidades x Masterpack (caja)". */
   unidad_por_caja: number | null;
+  /** Solo cuando la unidad de presentación es "Paquete". */
+  contenido_paquete: number | null;
+  masterpack_largo_cm: string | null;
+  masterpack_ancho_cm: string | null;
+  masterpack_alto_cm: string | null;
+  unidad_largo_cm: string | null;
+  unidad_ancho_cm: string | null;
+  unidad_alto_cm: string | null;
   // true mientras hay una solicitud de cambio de precio pendiente de
   // aprobación (ver SolicitudCambioPrecio en el backend) -> el precio
   // queda de solo lectura hasta que Admin/Calidad la resuelva, el resto
@@ -67,8 +79,16 @@ export interface NuevoProducto {
   id_unidad_presentacion: number;
   precio?: number;
   peso?: number;
-  volumen?: number;
   unidad_por_caja?: number;
+  contenido_paquete?: number;
+  // Medidas en centímetros, todas opcionales. 'volumen' NO se manda: lo
+  // calcula el backend a partir de las medidas de la unidad.
+  masterpack_largo_cm?: number;
+  masterpack_ancho_cm?: number;
+  masterpack_alto_cm?: number;
+  unidad_largo_cm?: number;
+  unidad_ancho_cm?: number;
+  unidad_alto_cm?: number;
   /**
    * Ids de los grupos elegidos. Al EDITAR, mandar [] es la forma de
    * quitarle todos los grupos al producto, y no mandar la clave deja los

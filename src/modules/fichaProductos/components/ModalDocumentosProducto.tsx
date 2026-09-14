@@ -452,10 +452,33 @@ export default function ModalDocumentosProducto({
         {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
         {producto.precio != null && ` · $${producto.precio}`}
         {producto.precio_en_revision && ' · 🔒 Precio en revisión'}
+        {producto.contenido_paquete != null && ` · ${producto.contenido_paquete} u/paquete`}
         {producto.peso != null && ` · ${producto.peso} kg`}
         {producto.volumen != null && ` · ${producto.volumen} m³`}
-        {producto.unidad_por_caja != null && ` · ${producto.unidad_por_caja} u/caja`}
+        {/* "u/masterpack" y no "u/caja": es el mismo dato, con el nombre
+            que usa ahora el formulario. */}
+        {producto.unidad_por_caja != null && ` · ${producto.unidad_por_caja} u/masterpack`}
       </p>
+
+      {/* Medidas, si las cargaron. En su propia línea: seis números
+          metidos en el renglón de arriba lo volvían ilegible. */}
+      {(producto.masterpack_largo_cm || producto.unidad_largo_cm) && (
+        <p className="text-xs text-brand-900/40 -mt-2 mb-3">
+          {producto.masterpack_largo_cm && (
+            <>
+              Masterpack: {producto.masterpack_largo_cm} × {producto.masterpack_ancho_cm ?? '?'} ×{' '}
+              {producto.masterpack_alto_cm ?? '?'} cm
+            </>
+          )}
+          {producto.masterpack_largo_cm && producto.unidad_largo_cm && ' · '}
+          {producto.unidad_largo_cm && (
+            <>
+              Unidad: {producto.unidad_largo_cm} × {producto.unidad_ancho_cm ?? '?'} ×{' '}
+              {producto.unidad_alto_cm ?? '?'} cm
+            </>
+          )}
+        </p>
+      )}
 
       {producto.estado_calificacion === 'Rechazado' && producto.comentario_calificacion && (
         <div className="mb-3 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1.5">

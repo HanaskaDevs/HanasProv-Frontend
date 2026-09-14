@@ -116,7 +116,7 @@ function armarSecciones(ficha: FichaProveedor): SeccionInfo[] {
     },
     {
       numero: 3,
-      titulo: 'Categoría de Productos',
+      titulo: 'Categoría de producto/servicio',
       descripcion: 'Las categorías de producto que ofrece.',
       completa: ficha.seccion_3.categorias.length > 0,
       camposRechazados: Object.entries(ficha.calificaciones_campos)
