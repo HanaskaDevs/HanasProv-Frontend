@@ -1,11 +1,17 @@
 // src/modules/miFicha/components/ModalEditarContactos.tsx
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm, type Control, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axios from 'axios';
 import Modal from '../../../shared/components/Modal';
 import Input from '../../../shared/components/Input';
+import {
+  PLACEHOLDER_TELEFONO,
+  digitosTrasEditar,
+  formatearTelefono,
+  soloDigitos,
+} from '../utils/telefono';
 import Button from '../../../shared/components/Button';
 import { guardarContactos, type ContactosData } from '../api/fichaApi';
 import type { FichaProveedor } from '../types';
@@ -47,6 +53,50 @@ function Bloque({ titulo, children }: { titulo: string; children: React.ReactNod
  * la próxima vez que entre a Calificación), pero el proveedor SIGUE
  * Aprobado -> no hace falta esperar nada para operar mientras tanto.
  */
+/**
+ * Mismo formato agrupado que la Ficha (095 899 1687), pero sobre el
+ * <Input> compartido que usa este modal. Controlado por la misma razón
+ * que allá: hay que reescribir lo tecleado para intercalar los espacios,
+ * y al estado del formulario solo entran los dígitos.
+ *
+ * A NIVEL DE MÓDULO y no dentro del componente: declarado adentro sería
+ * una función nueva en cada render, React remontaría el input en lugar de
+ * actualizarlo, y el campo perdería el foco a media palabra.
+ */
+function CampoTelefonoContacto({
+  campo,
+  label,
+  control,
+  errors,
+}: {
+  campo: keyof FormValues;
+  label: string;
+  control: Control<FormValues>;
+  errors: FieldErrors<FormValues>;
+}) {
+  return (
+    <Controller
+      name={campo}
+      control={control}
+      render={({ field }) => {
+        const textoVisible = formatearTelefono(field.value ?? '');
+
+        return (
+          <Input
+            label={label}
+            inputMode="numeric"
+            autoComplete="tel"
+            placeholder={PLACEHOLDER_TELEFONO}
+            value={textoVisible}
+            onChange={(e) => field.onChange(digitosTrasEditar(e.target.value, textoVisible))}
+            error={errors[campo]?.message}
+          />
+        );
+      }}
+    />
+  );
+}
+
 export default function ModalEditarContactos({
   ficha,
   onClose,
@@ -60,6 +110,7 @@ export default function ModalEditarContactos({
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
@@ -67,16 +118,16 @@ export default function ModalEditarContactos({
     defaultValues: {
       representante_legal: ficha.seccion_1.representante_legal ?? '',
       correo_representante: ficha.seccion_1.correo_representante ?? '',
-      telefono_representante: ficha.seccion_1.telefono_representante ?? '',
+      telefono_representante: soloDigitos(ficha.seccion_1.telefono_representante ?? ''),
       contacto_venta: ficha.seccion_1.contacto_venta ?? '',
       correo_venta: ficha.seccion_1.correo_venta ?? '',
-      telefono_contacto_venta: ficha.seccion_1.telefono_contacto_venta ?? '',
+      telefono_contacto_venta: soloDigitos(ficha.seccion_1.telefono_contacto_venta ?? ''),
       contacto_calidad: ficha.seccion_1.contacto_calidad ?? '',
       correo_calidad: ficha.seccion_1.correo_calidad ?? '',
-      telefono_contacto_calidad: ficha.seccion_1.telefono_contacto_calidad ?? '',
+      telefono_contacto_calidad: soloDigitos(ficha.seccion_1.telefono_contacto_calidad ?? ''),
       contacto_contabilidad: ficha.seccion_1.contacto_contabilidad ?? '',
       correo_contabilidad: ficha.seccion_1.correo_contabilidad ?? '',
-      telefono_contabilidad: ficha.seccion_1.telefono_contabilidad ?? '',
+      telefono_contabilidad: soloDigitos(ficha.seccion_1.telefono_contabilidad ?? ''),
     },
   });
 
@@ -106,25 +157,25 @@ export default function ModalEditarContactos({
         <Bloque titulo="Representante Legal">
           <Input label="Nombre" error={errors.representante_legal?.message} {...register('representante_legal')} />
           <Input label="Correo" error={errors.correo_representante?.message} {...register('correo_representante')} />
-          <Input label="Teléfono" error={errors.telefono_representante?.message} {...register('telefono_representante')} />
+          <CampoTelefonoContacto campo="telefono_representante" label="Teléfono" control={control} errors={errors} />
         </Bloque>
 
         <Bloque titulo="Contacto de Ventas">
           <Input label="Nombre" error={errors.contacto_venta?.message} {...register('contacto_venta')} />
           <Input label="Correo" error={errors.correo_venta?.message} {...register('correo_venta')} />
-          <Input label="Teléfono" error={errors.telefono_contacto_venta?.message} {...register('telefono_contacto_venta')} />
+          <CampoTelefonoContacto campo="telefono_contacto_venta" label="Teléfono" control={control} errors={errors} />
         </Bloque>
 
         <Bloque titulo="Contacto de Calidad">
           <Input label="Nombre" error={errors.contacto_calidad?.message} {...register('contacto_calidad')} />
           <Input label="Correo" error={errors.correo_calidad?.message} {...register('correo_calidad')} />
-          <Input label="Teléfono" error={errors.telefono_contacto_calidad?.message} {...register('telefono_contacto_calidad')} />
+          <CampoTelefonoContacto campo="telefono_contacto_calidad" label="Teléfono" control={control} errors={errors} />
         </Bloque>
 
         <Bloque titulo="Contacto de Contabilidad">
           <Input label="Nombre" error={errors.contacto_contabilidad?.message} {...register('contacto_contabilidad')} />
           <Input label="Correo" error={errors.correo_contabilidad?.message} {...register('correo_contabilidad')} />
-          <Input label="Teléfono" error={errors.telefono_contabilidad?.message} {...register('telefono_contabilidad')} />
+          <CampoTelefonoContacto campo="telefono_contabilidad" label="Teléfono" control={control} errors={errors} />
         </Bloque>
 
         {errorGeneral && <p className="text-sm text-brand-wine">{errorGeneral}</p>}

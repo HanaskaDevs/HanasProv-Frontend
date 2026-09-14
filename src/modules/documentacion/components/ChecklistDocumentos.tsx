@@ -11,7 +11,7 @@ import Badge from '../../../shared/components/Badge';
 import Modal from '../../../shared/components/Modal';
 import ModalVisorPdf from '../../../shared/components/ModalVisorPdf';
 import ModalDocumentacionRegistrada from './ModalDocumentacionRegistrada';
-import ModalDatosBancarios from './ModalDatosBancarios';
+import PanelDatosBancarios from './PanelDatosBancarios';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 
 const TAMANO_MAXIMO_MB = 4;
@@ -83,19 +83,6 @@ function IconoDescargaPlantilla({ className = '' }: { className?: string }) {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-function IconoBanco({ className = '' }: { className?: string }) {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <line x1="3" y1="22" x2="21" y2="22" />
-      <line x1="6" y1="18" x2="6" y2="11" />
-      <line x1="10" y1="18" x2="10" y2="11" />
-      <line x1="14" y1="18" x2="14" y2="11" />
-      <line x1="18" y1="18" x2="18" y2="11" />
-      <polygon points="12 2 20 7 4 7" />
     </svg>
   );
 }
@@ -379,15 +366,6 @@ function FilaDocumento({
   // archivo rechazado, otro para agregar uno adicional).
   const [reemplazandoId, setReemplazandoId] = useState<number | null>(null);
   const [descargandoPlantilla, setDescargandoPlantilla] = useState(false);
-  const [modalBancarioAbierto, setModalBancarioAbierto] = useState(false);
-
-  // Solo se consulta en el Certificado bancario -> en los demás tipos
-  // de documento no hace falta y sería una llamada al aire.
-  const { data: cuentaBancaria } = useQuery({
-    queryKey: ['mi-cuenta-bancaria'],
-    queryFn: fichaApi.obtenerMiCuentaBancaria,
-    enabled: tipo.requiere_datos_bancarios,
-  });
 
   async function handleDescargarPlantilla() {
     setDescargandoPlantilla(true);
@@ -456,7 +434,7 @@ function FilaDocumento({
   const mostrarCuadroCarga = puedeSubirNuevo && (tipo.permite_multiples || !yaSubido) && reemplazandoId === null;
 
   return (
-    <div className="rounded-2xl border border-brand-900/20 bg-white p-2.5 transition-all duration-150 hover:border-brand-900/35 hover:shadow-sm">
+    <div className="flex h-full flex-col rounded-2xl border border-brand-900/20 bg-white p-2.5 transition-all duration-150 hover:border-brand-900/35 hover:shadow-sm">
       <div className="flex items-center gap-1.5 min-w-0">
         <span
           className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
@@ -494,34 +472,12 @@ function FilaDocumento({
           </button>
         )}
 
-        {/* Certificado bancario: además del PDF hay que declarar los
-            datos de la cuenta. Se muestra el resumen si ya los registró
-            (así se ve de un vistazo que ese paso está hecho) y el botón
-            queda para corregirlos. */}
-        {tipo.requiere_datos_bancarios && (
-          <>
-            {cuentaBancaria ? (
-              <Badge tone="success">
-                {cuentaBancaria.nombre_banco} · {cuentaBancaria.tipo_cuenta} · {cuentaBancaria.nro_cuenta}
-              </Badge>
-            ) : (
-              <Badge tone="danger">Datos bancarios pendientes</Badge>
-            )}
-            {!soloLectura && (
-              <button
-                type="button"
-                onClick={() => setModalBancarioAbierto(true)}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700/70 hover:text-brand-700"
-              >
-                <IconoBanco />
-                {cuentaBancaria ? 'Editar sus datos' : 'Registre sus datos'}
-              </button>
-            )}
-          </>
-        )}
       </div>
 
-      {modalBancarioAbierto && <ModalDatosBancarios onClose={() => setModalBancarioAbierto(false)} />}
+      {/* Certificado bancario: además del PDF hay que declarar los datos de
+          la cuenta. Va en su propio bloque y no como una etiqueta más de la
+          fila de arriba -ver PanelDatosBancarios para el porqué-. */}
+      {tipo.requiere_datos_bancarios && <PanelDatosBancarios soloLectura={soloLectura} />}
 
       {tipo.documentos.map((doc) => (
         <ArchivoSubido
@@ -662,6 +618,7 @@ function FranjaSuperior({
   documentosRechazados,
   correccionesPendientes,
   todosAprobados,
+  faltanDatosBancarios,
 }: {
   totalObligatorios: number;
   cargadosObligatorios: number;
@@ -673,6 +630,13 @@ function FranjaSuperior({
   documentosRechazados: { tipo: TipoDocumentoChecklist; doc: DocumentoSubido }[];
   correccionesPendientes: boolean;
   todosAprobados: boolean;
+  /**
+   * El Certificado bancario le corresponde a este proveedor pero todavía
+   * no declaró banco / tipo de cuenta / número. El backend rechaza el
+   * registro en ese caso (DocumentoProveedorService::registrar), así que
+   * el botón no se habilita hasta completarlos.
+   */
+  faltanDatosBancarios: boolean;
 }) {
   const queryClient = useQueryClient();
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -803,16 +767,24 @@ function FranjaSuperior({
               <Button
                 variant="primary"
                 className="!text-xs !px-3 !py-1.5"
-                disabled={faltantes.length > 0}
+                disabled={faltantes.length > 0 || faltanDatosBancarios}
                 onClick={() => setModalAbierto(true)}
               >
                 Registrar documentación
               </Button>
-              {faltantes.length > 0 && (
+              {/* El motivo concreto, no un "faltan cosas" genérico: si no
+                  se dice CUÁL falta, el proveedor mira un botón apagado sin
+                  saber qué tiene que hacer para encenderlo. */}
+              {faltantes.length > 0 ? (
                 <p className="text-[11px] text-brand-900/40 mt-1">
-                  Se habilita al cargar los {faltantes.length === 1 ? 'obligatorio' : 'obligatorios'} que faltan
+                  Se habilita al cargar {faltantes.length === 1 ? 'el obligatorio' : 'los obligatorios'} que
+                  {faltantes.length === 1 ? ' falta' : ' faltan'}
                 </p>
-              )}
+              ) : faltanDatosBancarios ? (
+                <p className="text-[11px] text-amber-700 mt-1">
+                  Falta completar la información de su cuenta bancaria
+                </p>
+              ) : null}
             </div>
           )}
         </div>
@@ -974,6 +946,25 @@ export default function ChecklistDocumentos() {
     queryKey: ['mi-documentos'],
     queryFn: documentacionApi.obtenerChecklist,
   });
+
+  /*
+   * La cuenta bancaria se consulta ACÁ ARRIBA además de dentro del panel:
+   * es el botón de "Registrar documentación" el que tiene que saber si
+   * falta, y ese botón vive fuera de la tarjeta del Certificado bancario.
+   * React Query deduplica por clave, así que sigue siendo UNA sola
+   * petición aunque la pidan los dos.
+   *
+   * enabled: solo se pide si a este proveedor le corresponde el
+   * certificado -a quien está excluido por su clase no se le pregunta por
+   * una cuenta que no va a necesitar.
+   */
+  const requiereDatosBancarios = !!data?.documentos?.some((t) => t.requiere_datos_bancarios);
+
+  const { data: cuentaBancaria } = useQuery({
+    queryKey: ['mi-cuenta-bancaria'],
+    queryFn: fichaApi.obtenerMiCuentaBancaria,
+    enabled: requiereDatosBancarios,
+  });
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [pagina, setPagina] = useState(1);
 
@@ -1013,6 +1004,11 @@ export default function ChecklistDocumentos() {
   );
 
   const faltantes = tipos.filter((t) => t.obligatorio && t.documentos.length === 0).map((t) => t.nombre_documento);
+
+  // == null y no !cuentaBancaria: cubre tanto el null de "no la registró"
+  // como el undefined de "todavía cargando". Bloquear de más mientras se
+  // sabe es preferible a habilitar un botón que el backend va a rechazar.
+  const faltanDatosBancarios = requiereDatosBancarios && cuentaBancaria == null;
 
   const statsPorCategoria = categorias.map((categoria) => {
     const tiposCategoria = tipos
@@ -1069,6 +1065,7 @@ export default function ChecklistDocumentos() {
           registrado={data?.registrado ?? false}
           fechaRegistro={data?.fecha_registro ?? null}
           faltantes={faltantes}
+          faltanDatosBancarios={faltanDatosBancarios}
           documentosRechazados={documentosRechazados}
           correccionesPendientes={data?.correcciones_pendientes ?? false}
           todosAprobados={todosAprobados}
@@ -1113,7 +1110,12 @@ export default function ChecklistDocumentos() {
             <div key={`${categoriaSeleccionada}-${paginaSegura}`} className="animar-entrada-pagina sm:px-11">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {tiposPagina.map((tipo, indice) => (
-                  <div key={tipo.id_tipo_documento} className="animar-fila" style={{ animationDelay: `${indice * 40}ms` }}>
+                  // h-full: deja que el alto de la fila de la cuadrícula
+                  // llegue hasta la tarjeta. Sin esto la tarjeta conserva su
+                  // alto natural y, cuando la de al lado es más alta (el
+                  // Certificado bancario lleva el panel de la cuenta), los
+                  // bordes terminan a distinta altura.
+                  <div key={tipo.id_tipo_documento} className="animar-fila h-full" style={{ animationDelay: `${indice * 40}ms` }}>
                     <FilaDocumento
                       tipo={tipo}
                       soloLectura={data?.registrado ?? false}

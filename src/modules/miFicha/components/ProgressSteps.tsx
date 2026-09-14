@@ -5,7 +5,7 @@ interface ProgressStepsProps {
   porcentaje: number;
 }
 
-const ETIQUETAS = ['Datos Generales', 'Contactos', 'Clase de Proveedor', 'Categoría de Productos'];
+const ETIQUETAS = ['Datos Generales', 'Contactos', 'Clase de Proveedor', 'Categoría de producto/servicio'];
 
 export default function ProgressSteps({ pasoActual, pasosCompletados, onIrAPaso, porcentaje }: ProgressStepsProps) {
   return (
@@ -30,7 +30,7 @@ export default function ProgressSteps({ pasoActual, pasosCompletados, onIrAPaso,
           const clickeable = completado || esActual;
 
           return (
-            <div key={paso} className="flex items-center flex-1 last:flex-none">
+            <div key={paso} className="flex items-start flex-1 last:flex-none">
               <button
                 type="button"
                 disabled={!clickeable}
@@ -44,13 +44,13 @@ export default function ProgressSteps({ pasoActual, pasosCompletados, onIrAPaso,
                   {completado ? '✓' : paso}
                 </span>
                 <span
-                  className={`text-xs text-center max-w-[90px] ${esActual ? 'text-brand-900 font-medium' : 'text-brand-900/50'}`}
+                  className={`text-xs text-center leading-tight max-w-[116px] ${esActual ? 'text-brand-900 font-medium' : 'text-brand-900/50'}`}
                 >
                   {etiqueta}
                 </span>
               </button>
               {index < ETIQUETAS.length - 1 && (
-                <div className={`h-px flex-1 mx-2 ${pasosCompletados[index] ? 'bg-brand-900' : 'bg-brand-200'}`} />
+                <div className={`h-px flex-1 mx-2 self-start mt-4 ${pasosCompletados[index] ? 'bg-brand-900' : 'bg-brand-200'}`} />
               )}
             </div>
           );
