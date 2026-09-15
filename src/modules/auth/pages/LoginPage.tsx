@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import { obtenerTokenTurnstile } from '../utils/turnstile';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEffect, useState } from 'react';
@@ -46,7 +47,14 @@ export default function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setErrorGeneral(null);
     try {
-      await login(values.email, values.password);
+      // El token del captcha se pide ACÁ, al enviar, y no al abrir la
+      // pantalla: dura pocos minutos y es de un solo uso, así que uno
+      // pedido al cargar llegaría vencido si la persona se demora
+      // escribiendo. Devuelve null si el captcha está apagado o si el
+      // script no cargó, y en ese caso decide el backend.
+      const tokenCaptcha = await obtenerTokenTurnstile();
+
+      await login(values.email, values.password, tokenCaptcha);
       navigate('/panel');
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) {

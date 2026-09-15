@@ -1,8 +1,20 @@
 import apiClient from '../../../shared/api/apiClient';
 import type { LoginResponse, MeResponse } from '../types';
 
-export async function login(email: string, password: string): Promise<LoginResponse> {
-  const { data } = await apiClient.post<LoginResponse>('/auth/login', { email, password });
+export async function login(
+  email: string,
+  password: string,
+  tokenCaptcha?: string | null
+): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>('/auth/login', {
+    email,
+    password,
+    // Nombre del campo igual al que usa Cloudflare en su propio
+    // formulario, para no traducirlo en el camino. Si no hay token (el
+    // captcha está apagado, o el script no cargó) el campo no viaja y lo
+    // resuelve el backend, que es donde la decisión no se puede manipular.
+    ...(tokenCaptcha ? { 'cf-turnstile-response': tokenCaptcha } : {}),
+  });
   return data;
 }
 
