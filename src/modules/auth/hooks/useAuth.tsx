@@ -25,7 +25,7 @@ interface AuthContextValue {
   esGuardia: boolean;
   esProveedor: boolean;
   puedeGestionarRecepciones: boolean;
-  login: (email: string, password: string) => Promise<Usuario>;
+  login: (email: string, password: string, tokenCaptcha?: string | null) => Promise<Usuario>;
   logout: () => Promise<void>;
   cambiarEmpresa: (idEmpresa: number) => Promise<void>;
   refetchUsuario: () => Promise<void>;
@@ -118,8 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', alVolverALaPestaña);
   }, []);
 
- async function login(email: string, password: string) {
-  const { usuario: usuarioLogueado, token, id_empresa_activa } = await authApi.login(email, password);
+ async function login(email: string, password: string, tokenCaptcha?: string | null) {
+  const { usuario: usuarioLogueado, token, id_empresa_activa } = await authApi.login(
+    email,
+    password,
+    tokenCaptcha
+  );
   localStorage.setItem('token', token);
   setUsuario(usuarioLogueado);
 
