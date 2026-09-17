@@ -281,8 +281,8 @@ function CasillaDocumento({
           <p className="font-medium mb-1">¿Aún no tienes el análisis de Laboratorio?</p>
           <p className="text-white/80 leading-relaxed">
             Puedes realizarlo con nosotros. Para más información contáctanos a{' '}
-            <a href="mailto:analisis@hanska.com" className="underline font-medium">
-              analisis@hanska.com
+            <a href="mailto:analisis_laboratorio@hanaska.com" className="underline font-medium">
+              analisis_laboratorio@hanaska.com
             </a>
           </p>
           <div className="absolute top-full left-4 h-2 w-2 -mt-1 rotate-45 bg-brand-900" />

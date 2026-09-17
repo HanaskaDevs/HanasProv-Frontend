@@ -42,6 +42,13 @@ export interface FichaProveedor {
    * lados terminó en que la ficha aparecía completa estando vacía.
    */
   seccion_1_completa: boolean;
+  /**
+   * Fecha ('YYYY-MM-DD') en que el proveedor aceptó las Políticas de
+   * Hanaska al enviar su ficha a revisión; null si todavía no la envió.
+   * Mientras sea null, el guardado que complete la ficha exige la casilla
+   * de aceptación (ver AceptacionPoliticas y FichaProveedorService).
+   */
+  fecha_aceptacion_politicas: string | null;
   id_proveedor: number;
   seccion_actual: number | string;
   porcentaje_completado: number | string;

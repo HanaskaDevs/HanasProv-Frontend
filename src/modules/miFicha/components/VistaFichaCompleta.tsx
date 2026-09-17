@@ -1,6 +1,7 @@
 // src/modules/miFicha/components/VistaFichaCompleta.tsx
 import { Link } from 'react-router-dom';
 import CamposFichaSoloLectura from './CamposFichaSoloLectura';
+import { formatearFechaLarga } from '../utils/fecha';
 import type { FichaProveedor } from '../types';
 
 export default function VistaFichaCompleta({
@@ -34,6 +35,11 @@ export default function VistaFichaCompleta({
             </>
           )}
         </p>
+        {ficha.fecha_aceptacion_politicas && (
+          <p className={`text-xs mt-1 ${aprobada ? 'text-emerald-800/80' : 'text-brand-900/60'}`}>
+            Políticas de Hanaska aceptadas el {formatearFechaLarga(ficha.fecha_aceptacion_politicas)}.
+          </p>
+        )}
         {!documentacionRegistrada && (
           <>
             <p className={`text-sm mt-1 ${aprobada ? 'text-emerald-800' : 'text-brand-900/70'}`}>

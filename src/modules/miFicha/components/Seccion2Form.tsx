@@ -1,20 +1,30 @@
 import { useEffect, useState } from 'react';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+import AceptacionPoliticas from './AceptacionPoliticas';
 import { guardarSeccion2 } from '../api/fichaApi';
 import { listarClasesProveedor, type ClaseProveedorCatalogo } from '../api/catalogosApi';
+import { mensajeDeError } from '../utils/mensajeDeError';
+import { MENSAJE_POLITICAS_REQUERIDAS } from '../constants/politicas';
 import type { ClaseSeleccionada, FichaProveedor } from '../types';
 
 export default function Seccion2Form({
   seleccionadas,
   onGuardado,
+  requiereAceptarPoliticas = false,
 }: {
   seleccionadas: ClaseSeleccionada[];
   onGuardado: (ficha: FichaProveedor) => void;
+  /** Ver Seccion3Form: solo si ESTE guardado completa la ficha. En el
+   *  wizard normal casi nunca pasa (la categoría va después), pero los
+   *  pasos completados se pueden revisitar y guardar en cualquier orden. */
+  requiereAceptarPoliticas?: boolean;
 }) {
   const [catalogo, setCatalogo] = useState<ClaseProveedorCatalogo[]>([]);
   const [isLoadingCatalogo, setIsLoadingCatalogo] = useState(true);
   const [seleccionIds, setSeleccionIds] = useState<number[]>(seleccionadas.map((c) => c.id_clase_proveedor));
+  const [aceptaPoliticas, setAceptaPoliticas] = useState(false);
+  const [errorPoliticas, setErrorPoliticas] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,16 +40,24 @@ export default function Seccion2Form({
 
   async function onSubmit() {
     setError(null);
+    setErrorPoliticas(null);
+
     if (seleccionIds.length === 0) {
       setError('Selecciona al menos una clase.');
       return;
     }
+
+    if (requiereAceptarPoliticas && !aceptaPoliticas) {
+      setErrorPoliticas(MENSAJE_POLITICAS_REQUERIDAS);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const ficha = await guardarSeccion2(seleccionIds);
+      const ficha = await guardarSeccion2(seleccionIds, requiereAceptarPoliticas ? aceptaPoliticas : undefined);
       onGuardado(ficha);
-    } catch {
-      setError('No se pudo guardar. Intenta de nuevo.');
+    } catch (e) {
+      setError(mensajeDeError(e, 'No se pudo guardar. Intenta de nuevo.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -79,11 +97,22 @@ export default function Seccion2Form({
         ))}
       </div>
 
+      {requiereAceptarPoliticas && (
+        <AceptacionPoliticas
+          aceptado={aceptaPoliticas}
+          onChange={(v) => {
+            setAceptaPoliticas(v);
+            if (v) setErrorPoliticas(null);
+          }}
+          error={errorPoliticas}
+        />
+      )}
+
       {error && <p className="text-sm text-brand-wine">{error}</p>}
 
       <div className="flex justify-end">
         <Button onClick={onSubmit} isLoading={isSubmitting}>
-          Guardar y continuar
+          {requiereAceptarPoliticas ? 'Guardar y enviar a revisión' : 'Guardar y continuar'}
         </Button>
       </div>
     </div>

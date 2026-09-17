@@ -6,18 +6,37 @@ export async function obtenerMiFicha(): Promise<FichaProveedor> {
   return data;
 }
 
-export async function guardarSeccion1(payload: Partial<Seccion1Data>): Promise<FichaProveedor> {
-  const { data } = await apiClient.put<FichaProveedor>('/mi-ficha/seccion-1', payload);
+/**
+ * `acepta_politicas` solo viaja cuando el formulario lo pidió (es el
+ * guardado que completa la ficha y la manda a revisión). El backend lo
+ * exige en ese caso y lo ignora en los demás; el campo ausente no rompe
+ * nada.
+ */
+function conAceptacion(cuerpo: Record<string, unknown>, aceptaPoliticas?: boolean) {
+  return aceptaPoliticas === undefined ? cuerpo : { ...cuerpo, acepta_politicas: aceptaPoliticas };
+}
+
+export async function guardarSeccion1(
+  payload: Partial<Seccion1Data>,
+  aceptaPoliticas?: boolean
+): Promise<FichaProveedor> {
+  const { data } = await apiClient.put<FichaProveedor>('/mi-ficha/seccion-1', conAceptacion(payload, aceptaPoliticas));
   return data;
 }
 
-export async function guardarSeccion2(idClases: number[]): Promise<FichaProveedor> {
-  const { data } = await apiClient.put<FichaProveedor>('/mi-ficha/seccion-2', { id_clases: idClases });
+export async function guardarSeccion2(idClases: number[], aceptaPoliticas?: boolean): Promise<FichaProveedor> {
+  const { data } = await apiClient.put<FichaProveedor>(
+    '/mi-ficha/seccion-2',
+    conAceptacion({ id_clases: idClases }, aceptaPoliticas)
+  );
   return data;
 }
 
-export async function guardarSeccion3(idCategorias: number[]): Promise<FichaProveedor> {
-  const { data } = await apiClient.put<FichaProveedor>('/mi-ficha/seccion-3', { id_categorias: idCategorias });
+export async function guardarSeccion3(idCategorias: number[], aceptaPoliticas?: boolean): Promise<FichaProveedor> {
+  const { data } = await apiClient.put<FichaProveedor>(
+    '/mi-ficha/seccion-3',
+    conAceptacion({ id_categorias: idCategorias }, aceptaPoliticas)
+  );
   return data;
 }
 

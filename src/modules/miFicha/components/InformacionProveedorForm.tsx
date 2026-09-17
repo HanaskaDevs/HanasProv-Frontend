@@ -8,10 +8,13 @@ import CampoFichaCombo from './CampoFichaCombo';
 import CampoFichaTelefono from './CampoFichaTelefono';
 import Button from '../../../shared/components/Button';
 import LocationPicker from './LocationPicker';
+import AceptacionPoliticas from './AceptacionPoliticas';
+import { MENSAJE_POLITICAS_REQUERIDAS } from '../constants/politicas';
 import { guardarSeccion1 } from '../api/fichaApi';
 import { listarGruposImpuesto } from '../api/catalogosApi';
 import { CIUDADES_ECUADOR } from '../constants/ciudadesEcuador';
 import { enfocarPrimerCampoConError } from '../utils/enfocarCampo';
+import { mensajeDeError } from '../utils/mensajeDeError';
 import { soloDigitos } from '../utils/telefono';
 import type { FichaProveedor, Seccion1Data } from '../types';
 
@@ -120,13 +123,20 @@ export default function InformacionProveedorForm({
   datosIniciales,
   onIrAPaso,
   onGuardado,
+  requiereAceptarPoliticas = false,
 }: {
   subPaso: 1 | 2;
   datosIniciales: Seccion1Data;
   onIrAPaso: (paso: number) => void;
   onGuardado: (ficha: FichaProveedor) => void;
+  /** Ver Seccion3Form: solo si ESTE guardado completa la ficha (clase y
+   *  categoría ya elegidas). Pasa cuando el proveedor vuelve a un paso
+   *  anterior desde la barra de progreso y guarda desde ahí. */
+  requiereAceptarPoliticas?: boolean;
 }) {
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+  const [aceptaPoliticas, setAceptaPoliticas] = useState(false);
+  const [errorPoliticas, setErrorPoliticas] = useState<string | null>(null);
 
   // Clase de contribuyente: catálogo de BC, no texto libre. Si la
   // consulta falla se deja el selector vacío en vez de tumbar el
@@ -225,15 +235,25 @@ export default function InformacionProveedorForm({
 
   async function onSubmit(values: FormValues) {
     setErrorGeneral(null);
+    setErrorPoliticas(null);
+
+    if (requiereAceptarPoliticas && !aceptaPoliticas) {
+      setErrorPoliticas(MENSAJE_POLITICAS_REQUERIDAS);
+      return;
+    }
+
     try {
-      const ficha = await guardarSeccion1({
-        ...values,
-        latitud: values.latitud ? Number(values.latitud) : null,
-        longitud: values.longitud ? Number(values.longitud) : null,
-      } as Partial<Seccion1Data>);
+      const ficha = await guardarSeccion1(
+        {
+          ...values,
+          latitud: values.latitud ? Number(values.latitud) : null,
+          longitud: values.longitud ? Number(values.longitud) : null,
+        } as Partial<Seccion1Data>,
+        requiereAceptarPoliticas ? aceptaPoliticas : undefined
+      );
       onGuardado(ficha);
-    } catch {
-      setErrorGeneral('No se pudo guardar. Revisa los campos e intenta de nuevo.');
+    } catch (e) {
+      setErrorGeneral(mensajeDeError(e, 'No se pudo guardar. Revisa los campos e intenta de nuevo.'));
     }
   }
 
@@ -450,6 +470,20 @@ export default function InformacionProveedorForm({
               />
             </div>
           </section>
+
+          {requiereAceptarPoliticas && (
+            <>
+              <Divisor />
+              <AceptacionPoliticas
+                aceptado={aceptaPoliticas}
+                onChange={(v) => {
+                  setAceptaPoliticas(v);
+                  if (v) setErrorPoliticas(null);
+                }}
+                error={errorPoliticas}
+              />
+            </>
+          )}
         </div>
       )}
 
@@ -470,7 +504,7 @@ export default function InformacionProveedorForm({
           </Button>
         ) : (
           <Button type="button" onClick={handleSubmit(onSubmit, alFallarValidacion)} isLoading={isSubmitting}>
-            Guardar y continuar
+            {requiereAceptarPoliticas ? 'Guardar y enviar a revisión' : 'Guardar y continuar'}
           </Button>
         )}
       </div>

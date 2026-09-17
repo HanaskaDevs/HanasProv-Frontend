@@ -115,6 +115,22 @@ export default function ModalFichaProveedor({
   const pasosCompletados = [datosGeneralesCompleta, datosGeneralesCompleta, clase, categoria];
   const porcentaje = Math.round((pasosCompletados.filter(Boolean).length / 4) * 100);
 
+  /**
+   * La aceptación de las Políticas de Hanaska se pide en el guardado que
+   * COMPLETA la ficha, porque ese es el que la envía a revisión (no hay un
+   * botón "enviar" aparte: al 100% ya aparece en la cola del equipo). En el
+   * wizard normal ese guardado es el de Categoría; pero los pasos ya
+   * completados se pueden revisitar desde la barra de progreso, así que
+   * cada formulario recibe si ES ÉL quien completa. Si ya la aceptó en un
+   * envío anterior no se vuelve a pedir: la fecha original es la que vale.
+   */
+  const yaAceptoPoliticas = ficha.fecha_aceptacion_politicas !== null;
+  const requiereAceptarEn = {
+    informacion: !yaAceptoPoliticas && clase && categoria,
+    clase: !yaAceptoPoliticas && datosGeneralesCompleta && categoria,
+    categoria: !yaAceptoPoliticas && datosGeneralesCompleta && clase,
+  };
+
   // Al cambiar de paso (ej. "Siguiente" en Datos Generales -> Contactos),
   // el contenedor con scroll conserva la posición anterior por defecto
   // -> el nuevo paso aparecía scrolleado hacia abajo. Lo llevamos al
@@ -244,13 +260,22 @@ export default function ModalFichaProveedor({
                   datosIniciales={ficha.seccion_1}
                   onIrAPaso={setPasoVisible}
                   onGuardado={handleGuardadoInformacion}
+                  requiereAceptarPoliticas={requiereAceptarEn.informacion}
                 />
               )}
               {pasoVisible === 3 && (
-                <Seccion2Form seleccionadas={ficha.seccion_2.clases} onGuardado={handleGuardadoClase} />
+                <Seccion2Form
+                  seleccionadas={ficha.seccion_2.clases}
+                  onGuardado={handleGuardadoClase}
+                  requiereAceptarPoliticas={requiereAceptarEn.clase}
+                />
               )}
               {pasoVisible === 4 && (
-                <Seccion3Form seleccionadas={ficha.seccion_3.categorias} onGuardado={handleGuardadoCategoria} />
+                <Seccion3Form
+                  seleccionadas={ficha.seccion_3.categorias}
+                  onGuardado={handleGuardadoCategoria}
+                  requiereAceptarPoliticas={requiereAceptarEn.categoria}
+                />
               )}
             </div>
           </>

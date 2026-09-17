@@ -1,5 +1,10 @@
 import { useForm } from 'react-hook-form';
-import { obtenerTokenTurnstile } from '../utils/turnstile';
+import {
+  ID_CONTENEDOR_TURNSTILE,
+  destruirTurnstile,
+  obtenerTokenTurnstile,
+  prepararTurnstile,
+} from '../utils/turnstile';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEffect, useState } from 'react';
@@ -36,6 +41,16 @@ export default function LoginPage() {
     } catch {
       // sin sessionStorage no hay motivo que mostrar, no pasa nada
     }
+  }, []);
+
+  // El widget del captcha se dibuja al abrir la pantalla (SIN ejecutar el
+  // desafío): así el script de Cloudflare ya está cargado cuando la
+  // persona pulsa Ingresar y el primer intento no paga esa espera. El
+  // token se pide igual al enviar, ver onSubmit. Al salir del login se
+  // libera el widget.
+  useEffect(() => {
+    void prepararTurnstile();
+    return () => destruirTurnstile();
   }, []);
 
   const {
@@ -100,6 +115,12 @@ export default function LoginPage() {
             className="!bg-black/30 !border-white/25 !text-white placeholder:!text-white/40 shadow-lg focus:!ring-brand-yellow focus:!border-brand-yellow/60"
           />
         </div>
+
+        {/* Casilla del captcha. Mide 0 px mientras Cloudflare no necesite
+            preguntar nada; si decide mostrar el desafío, aparece ACÁ, a la
+            vista, y no escondida detrás de la página como antes (ver
+            utils/turnstile.ts). */}
+        <div id={ID_CONTENEDOR_TURNSTILE} className="flex justify-center" />
 
         {errorGeneral && (
           <p className="animar-fila text-sm text-red-300">{errorGeneral}</p>

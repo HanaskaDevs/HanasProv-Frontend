@@ -322,7 +322,12 @@ function MiFichaPageContenido() {
         />
       )}
 
-      {modalRegistradaAbierto && <ModalFichaRegistrada onClose={() => setModalRegistradaAbierto(false)} />}
+      {modalRegistradaAbierto && (
+        <ModalFichaRegistrada
+          onClose={() => setModalRegistradaAbierto(false)}
+          fechaAceptacionPoliticas={ficha.fecha_aceptacion_politicas}
+        />
+      )}
 
       {modalContactosAbierto && (
         <ModalEditarContactos
