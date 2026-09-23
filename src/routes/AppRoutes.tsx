@@ -41,6 +41,7 @@ const ProveedoresPage = lazy(() => import('../modules/proveedores/pages/Proveedo
 const DetalleProveedoresPage = lazy(() => import('../modules/proveedores/pages/DetalleProveedoresPage'));
 const CatalogoProductosPage = lazy(() => import('../modules/catalogoProductos/pages/CatalogoProductosPage'));
 const ProductosProveedorPage = lazy(() => import('../modules/productosProveedor/pages/ProductosProveedorPage'));
+const RevisionComprasPage = lazy(() => import('../modules/revisionCompras/pages/RevisionComprasPage'));
 const CalificacionPage = lazy(() => import('../modules/calificacion/pages/CalificacionPage'));
 const PedidosPage = lazy(() => import('../modules/pedidos/pages/PedidosPage'));
 const ReclamosAbiertosPage = lazy(() => import('../modules/reclamos/pages/ReclamosAbiertosPage'));
@@ -124,6 +125,7 @@ export default function AppRoutes() {
           <Route path="/proveedores/detalle" element={<DetalleProveedoresPage />} />
           <Route path="/catalogo-productos" element={<CatalogoProductosPage />} />
           <Route path="/productos-proveedor" element={<ProductosProveedorPage />} />
+          <Route path="/productos-revision" element={<RevisionComprasPage />} />
 
           <Route path="/calificacion" element={<CalificacionPage />} />
           <Route path="/pedidos" element={<PedidosPage />} />
