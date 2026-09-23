@@ -103,6 +103,20 @@ const POLITICAS_ITEM: SubMenuItem = {
  * de la empresa juntos y de solo lectura, para asignar el código de BC.
  * Este entra a UN proveedor a cargarle y corregirle la ficha.
  */
+/**
+ * Bandeja del primer paso del circuito de aprobación de productos
+ * (23-sep-2026): lo que el proveedor envió y espera a Compras. Va ANTES
+ * que "Productos por proveedor" en el menú porque es trabajo entrante -lo
+ * que hay que atender hoy-, mientras que el otro es una herramienta de
+ * carga que se usa cuando hace falta.
+ */
+const PRODUCTOS_POR_REVISAR: SubMenuItem = {
+  to: '/productos-revision',
+  label: 'Productos por revisar',
+  icono: 'checklist',
+  descripcion: 'Lo que los proveedores enviaron a aprobación',
+};
+
 const PRODUCTOS_POR_PROVEEDOR: SubMenuItem = {
   to: '/productos-proveedor',
   label: 'Productos por proveedor',
@@ -164,6 +178,7 @@ const AREA_PROVEEDORES: MenuItem = {
       icono: 'caja',
       descripcion: 'Todos los productos con su código BC',
     },
+    PRODUCTOS_POR_REVISAR,
     PRODUCTOS_POR_PROVEEDOR,
   ],
 };
@@ -389,7 +404,7 @@ const SEGUIMIENTO_HOY_PLANO: MenuItem = { label: 'Seguimiento de hoy', to: '/cal
  */
 const AREA_PROVEEDORES_COMPRAS: MenuItem = {
   label: 'Proveedores',
-  children: [PRODUCTOS_POR_PROVEEDOR],
+  children: [PRODUCTOS_POR_REVISAR, PRODUCTOS_POR_PROVEEDOR],
 };
 
 const MENU_COMPRAS: MenuItem[] = [

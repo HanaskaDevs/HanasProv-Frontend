@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type ChangeEvent } from 'react';
+import { fechaCaducidadMinima, textoVigenciaMinima } from '../../../shared/utils/vigenciaDocumentos';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as productosApi from '../api/productosApi';
 import type { IdProveedorObjetivo } from '../api/productosApi';
@@ -70,15 +71,31 @@ export function BadgeCalificacion({ producto }: { producto: Producto }) {
   }
   if (producto.estado_calificacion === 'Rechazado') {
     return (
-      <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">
+      <span
+        className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap"
+        // Quién lo devolvió. Antes decía solo "Por corregir" y el proveedor
+        // no tenía a quién preguntarle.
+        title={producto.etapa_aprobacion ? `Devuelto por ${producto.etapa_aprobacion}` : undefined}
+      >
         Por corregir
       </span>
     );
   }
   if (producto.bloqueado) {
+    // "En revisión" a secas no dice en qué parte del circuito está. Desde
+    // el 23-sep-2026 el producto pasa por Compras y después por Calidad,
+    // así que se nombra el escritorio donde está parado: el proveedor sabe
+    // cuánto le falta y a quién corresponde preguntarle.
+    const dondeEsta =
+      producto.etapa_aprobacion === 'Compras'
+        ? 'Revisando Compras'
+        : producto.etapa_aprobacion === 'Calidad'
+          ? 'Revisando Calidad'
+          : 'En revisión';
+
     return (
       <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-brand-200 text-brand-700 whitespace-nowrap">
-        En revisión
+        {dondeEsta}
       </span>
     );
   }
@@ -375,6 +392,8 @@ function CasillaDocumento({
                     </span>
                     <input
                       type="date"
+                      min={fechaCaducidadMinima()}
+                      title={textoVigenciaMinima()}
                       value={fechaCaducidad}
                       onChange={(e) => setFechaCaducidad(e.target.value)}
                       className="text-[11px] rounded-md border border-brand-900/15 px-2 py-1.5 bg-white"

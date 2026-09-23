@@ -233,3 +233,33 @@ export async function rechazarCambioPrecio(idSolicitud: number, motivo?: string)
   const { data } = await apiClient.post<SolicitudCambioPrecio>(`/cambios-precio/${idSolicitud}/rechazar`, { motivo });
   return data;
 }
+
+/* -------------------------------------------------------------------------
+ * PRIMER PASO del circuito de aprobación: la bandeja de Compras.
+ *
+ *     proveedor envía  ->  COMPRAS  ->  Calidad  ->  aprobado
+ *
+ * Compras revisa antes que nadie: aprueba (y ahí pasa a Calidad), rechaza
+ * para que el proveedor corrija, o elimina el producto del catálogo. Las
+ * dos últimas exigen un motivo que le llega al proveedor por correo.
+ * ------------------------------------------------------------------------- */
+
+export async function listarProductosEnRevision(): Promise<Producto[]> {
+  const { data } = await apiClient.get<Producto[]>('/productos-revision');
+  return data;
+}
+
+export async function aprobarEnCompras(idProducto: number): Promise<{ message: string }> {
+  const { data } = await apiClient.post(`/productos-revision/${idProducto}/aprobar`);
+  return data;
+}
+
+export async function rechazarEnCompras(idProducto: number, observacion: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post(`/productos-revision/${idProducto}/rechazar`, { observacion });
+  return data;
+}
+
+export async function eliminarEnCompras(idProducto: number, observacion: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post(`/productos-revision/${idProducto}/eliminar`, { observacion });
+  return data;
+}

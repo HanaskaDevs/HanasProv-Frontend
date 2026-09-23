@@ -5,7 +5,14 @@ export interface DocumentoSubido {
   /** true si vence en 30 días o menos (o ya venció) -> usado para que
    *  un proveedor YA APROBADO pueda reemplazar este documento puntual
    *  aunque el resto de su documentación ya esté aprobada y bloqueada. */
+  /** Está por vencer pero TODAVÍA no venció. */
   proximo_a_vencer: boolean;
+  /** Ya venció. Antes no existía y 'proximo_a_vencer' daba verdadero para
+   *  los dos casos: la tarjeta decía "Próximo a vencer" sobre un documento
+   *  caducado hacía 241 días mientras el panel de inicio decía "caducado". */
+  vencido: boolean;
+  /** Negativo = venció hace tantos días. Null si el documento no caduca. */
+  dias_para_vencer: number | null;
   estado: string;
   fecha_creacion: string;
   estado_calificacion: 'Aprobado' | 'Rechazado' | null;

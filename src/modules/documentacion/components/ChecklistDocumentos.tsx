@@ -12,6 +12,7 @@ import Modal from '../../../shared/components/Modal';
 import ModalVisorPdf from '../../../shared/components/ModalVisorPdf';
 import ModalDocumentacionRegistrada from './ModalDocumentacionRegistrada';
 import PanelDatosBancarios from './PanelDatosBancarios';
+import { fechaCaducidadMinima, textoVigenciaMinima } from '../../../shared/utils/vigenciaDocumentos';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 
 const TAMANO_MAXIMO_MB = 4;
@@ -192,8 +193,14 @@ function ArchivoSubido({
   // confirmás, todo vuelve a quedar bloqueado hasta que el admin revise
   // de nuevo. El backend aplica exactamente esta misma regla.
   const rechazado = doc.estado_calificacion === 'Rechazado';
+  // doc.vencido además de proximo_a_vencer: un proveedor ya aprobado tiene
+  // que poder reemplazar el documento que se le venció, no solo el que
+  // está por vencer.
   const puedeEditar =
-    !soloLectura || (correccionesPendientes && doc.estado_calificacion !== 'Aprobado') || doc.proximo_a_vencer;
+    !soloLectura ||
+    (correccionesPendientes && doc.estado_calificacion !== 'Aprobado') ||
+    doc.proximo_a_vencer ||
+    doc.vencido;
 
   return (
     <div className="py-1">
@@ -213,8 +220,21 @@ function ArchivoSubido({
               Por corregir
             </Badge>
           )}
+          {/* Vencido y "próximo a vencer" son cosas distintas. Antes había
+              una sola bandera que daba verdadero para las dos, así que un
+              documento caducado hacía 241 días se anunciaba como "próximo a
+              vencer" mientras el panel de inicio decía "caducado". */}
+          {doc.vencido && doc.estado_calificacion !== 'Rechazado' && (
+            <Badge tone="danger" className="whitespace-nowrap shrink-0">
+              Vencido
+              {doc.dias_para_vencer != null && ` hace ${Math.abs(doc.dias_para_vencer)} día${Math.abs(doc.dias_para_vencer) === 1 ? '' : 's'}`}
+            </Badge>
+          )}
           {doc.proximo_a_vencer && doc.estado_calificacion !== 'Rechazado' && (
-            <Badge tone="warning" className="whitespace-nowrap shrink-0">Próximo a vencer</Badge>
+            <Badge tone="warning" className="whitespace-nowrap shrink-0">
+              Próximo a vencer
+              {doc.dias_para_vencer != null && ` · ${doc.dias_para_vencer} día${doc.dias_para_vencer === 1 ? '' : 's'}`}
+            </Badge>
           )}
         </div>
 
@@ -272,6 +292,8 @@ function ArchivoSubido({
             {tipo.requiere_fecha_caducidad && (
               <input
                 type="date"
+              min={fechaCaducidadMinima()}
+              title={textoVigenciaMinima()}
                 value={nuevaFecha}
                 onChange={(e) => setNuevaFecha(e.target.value)}
                 className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[12px]
@@ -512,6 +534,8 @@ function FilaDocumento({
           {tipo.requiere_fecha_caducidad && (
             <input
               type="date"
+              min={fechaCaducidadMinima()}
+              title={textoVigenciaMinima()}
               value={fechaCaducidad}
               onChange={(e) => setFechaCaducidad(e.target.value)}
               className="rounded-sm border border-brand-900/20 bg-white px-1.5 py-1 text-[12px]

@@ -67,6 +67,23 @@ export interface Producto {
   precio_en_revision: boolean;
   bloqueado: boolean;
   estado_calificacion: 'Pendiente' | 'Aprobado' | 'Rechazado' | null;
+  /**
+   * En qué escritorio está parado el producto dentro del circuito de
+   * aprobación (23-sep-2026):
+   *
+   *     proveedor envía -> 'Compras' -> 'Calidad' -> aprobado
+   *
+   * estado_calificacion sigue siendo el VEREDICTO; esto es la ETAPA. Al
+   * rechazar se conserva la etapa donde se rechazó, que es lo que permite
+   * decirle al proveedor quién se lo devolvió.
+   */
+  etapa_aprobacion: 'Compras' | 'Calidad' | null;
+  /** Solo viene en la bandeja de Compras, que lista varios proveedores. */
+  proveedor?: {
+    id_proveedor: number;
+    razon_social: string | null;
+    nombre_comercial: string | null;
+  };
   comentario_calificacion: string | null;
   /** Opcional y múltiple: puede venir vacío. */
   grupos: GrupoProducto[];
