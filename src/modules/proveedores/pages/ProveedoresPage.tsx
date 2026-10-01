@@ -346,10 +346,14 @@ function ProveedoresContent() {
 }
 
 export default function ProveedoresPage() {
-  const { esSistemas, esAdmin } = useAuth();
+  // Calidad entra por la segunda etapa del circuito de productos
+  // (proveedor -> Compras -> Calidad): acá elige el proveedor y adentro
+  // del modal solo ve la pestaña de Productos, que es lo único que el
+  // backend le habilita (ver CalificacionProveedorService).
+  const { esSistemas, esAdmin, esCalidad } = useAuth();
 
   return (
-    <RoleRoute allow={esSistemas || esAdmin}>
+    <RoleRoute allow={esSistemas || esAdmin || esCalidad}>
       <ProveedoresContent />
     </RoleRoute>
   );

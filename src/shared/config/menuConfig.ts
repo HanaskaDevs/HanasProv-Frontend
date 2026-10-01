@@ -422,8 +422,32 @@ const AREA_REPORTES_CALIDAD: MenuItem = {
   children: [REPORTE_CADUCIDAD],
 };
 
+/**
+ * Calidad es la SEGUNDA etapa del circuito de productos (proveedor ->
+ * Compras -> Calidad, 23-sep-2026) y hasta ahora no tenía por dónde
+ * entrar: el aviso de "Compras aprobó, falta Calidad" le llegaba por
+ * correo y el rol no tenía la pantalla en el menú (ni permiso en el
+ * backend, ver CalificacionProveedorService).
+ *
+ * Entra SOLO la calificación de proveedores, y ahí dentro solo ve la
+ * pestaña de Productos: la ficha general y los documentos del proveedor
+ * siguen siendo de Admin/Sistemas.
+ */
+const AREA_PROVEEDORES_CALIDAD: MenuItem = {
+  label: 'Proveedores',
+  children: [
+    {
+      to: '/proveedores',
+      label: 'Calificación de proveedores',
+      icono: 'checklist',
+      descripcion: 'Aprobar los productos que pasó Compras',
+    },
+  ],
+};
+
 const MENU_CALIDAD: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
+  AREA_PROVEEDORES_CALIDAD,
   AREA_OPERACION_CALIDAD,
   AUDITORIAS,
   AREA_REPORTES_CALIDAD,
