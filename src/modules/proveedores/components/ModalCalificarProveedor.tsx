@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../../auth/hooks/useAuth';
 import SeccionCalificarFicha from './SeccionCalificarFicha';
 import SeccionCalificarDocumentos from './SeccionCalificarDocumentos';
 import SeccionCalificarProductos from './SeccionCalificarProductos';
@@ -33,6 +34,13 @@ type Pestana = 'ficha' | 'documentos' | 'productos';
  * en vez de un stepper de progreso, hay 3 pestañas: Ficha de Proveedor,
  * Documentos y Productos -> cada una es su propia sección de
  * calificación completa.
+ *
+ * CALIDAD VE UNA SOLA PESTAÑA. El rol Calidad resuelve la segunda etapa
+ * del circuito de productos (proveedor -> Compras -> Calidad), pero la
+ * ficha general y los documentos del proveedor siguen siendo de
+ * Admin/Sistemas en el backend (ver CalificacionProveedorService). Si se
+ * le mostraran las tres, dos de ellas contestarían 403 y parecería que la
+ * pantalla está rota.
  */
 export default function ModalCalificarProveedor({
   idProveedor,
@@ -43,7 +51,17 @@ export default function ModalCalificarProveedor({
   razonSocial: string;
   onClose: () => void;
 }) {
-  const [pestana, setPestana] = useState<Pestana>('ficha');
+  const { esCalidad } = useAuth();
+
+  const pestanas: [Pestana, string][] = esCalidad
+    ? [['productos', 'Calificar Productos']]
+    : [
+        ['ficha', 'Calificar Ficha'],
+        ['documentos', 'Calificar Documentos'],
+        ['productos', 'Calificar Productos'],
+      ];
+
+  const [pestana, setPestana] = useState<Pestana>(esCalidad ? 'productos' : 'ficha');
   const [expandido, setExpandido] = useState(false);
 
   return (
@@ -83,13 +101,7 @@ export default function ModalCalificarProveedor({
         </div>
 
         <div className="shrink-0 flex items-center gap-1 px-6 pt-3 border-b border-brand-900/8">
-          {(
-            [
-              ['ficha', 'Calificar Ficha'],
-              ['documentos', 'Calificar Documentos'],
-              ['productos', 'Calificar Productos'],
-            ] as [Pestana, string][]
-          ).map(([valor, etiqueta]) => (
+          {pestanas.map(([valor, etiqueta]) => (
             <button
               key={valor}
               onClick={() => setPestana(valor)}

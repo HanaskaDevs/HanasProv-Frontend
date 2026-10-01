@@ -5,6 +5,7 @@ import type { GuiaPaso } from '../types';
 import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+import PanelVideoTutorial from './PanelVideoTutorial';
 
 const TARGETS = [
   { value: 'tour-mi-ficha', label: 'Mi Ficha' },
@@ -72,6 +73,8 @@ export default function TabGuiaPasos() {
 
   return (
     <div className="space-y-4">
+      <PanelVideoTutorial />
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-brand-900/60">
           Pasos del tour guiado que ve un proveedor nuevo en su primer inicio de sesión.

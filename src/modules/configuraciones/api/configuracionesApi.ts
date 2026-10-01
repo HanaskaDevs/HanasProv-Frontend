@@ -127,6 +127,26 @@ export async function eliminarPasoGuia(id: number): Promise<{ message: string }>
   const { data } = await apiClient.delete(`/configuraciones/guia-pasos/${id}`);
   return data;
 }
+// ---- Video tutorial del proveedor ----
+
+export type VideoTutorial = {
+  /** La URL tal como la pegó el administrador. Null = sin video configurado. */
+  url: string | null;
+  video_id: string | null;
+  /** Lista para el src del iframe. El backend la arma; acá no se parsea nada. */
+  url_embed: string | null;
+};
+
+export async function obtenerVideoTutorial(): Promise<VideoTutorial> {
+  const { data } = await apiClient.get<VideoTutorial>('/configuraciones/video-tutorial');
+  return data;
+}
+
+export async function guardarVideoTutorial(url: string): Promise<VideoTutorial> {
+  const { data } = await apiClient.post<VideoTutorial>('/configuraciones/video-tutorial', { url });
+  return data;
+}
+
 // ---- Políticas (administración) ----
 
 export async function listarPoliticas(): Promise<Politica[]> {
