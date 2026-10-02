@@ -6,7 +6,7 @@ import axios from 'axios';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
 import { listarRoles, type Rol } from '../../roles/api/rolesApi';
-import { crearInterno } from '../api/usuariosApi';
+import { crearInterno, type ResultadoEnvio } from '../api/usuariosApi';
 import * as empresasApi from '../../empresas/api/empresasApi';
 
 const schema = z.object({
@@ -23,7 +23,7 @@ export default function ModalCrearUsuarioInterno({
   onCreado,
 }: {
   onClose: () => void;
-  onCreado: () => void;
+  onCreado: (envio: ResultadoEnvio) => void;
 }) {
   const [roles, setRoles] = useState<Rol[]>([]);
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
@@ -65,8 +65,11 @@ export default function ModalCrearUsuarioInterno({
   async function onSubmit(values: FormOutput) {
     setErrorGeneral(null);
     try {
-      await crearInterno(values.email, values.id_rol, values.id_empresas);
-      onCreado();
+      const { envio } = await crearInterno(values.email, values.id_rol, values.id_empresas);
+      // El alta y el envío del código son dos cosas distintas: se le
+      // pasa el resultado a la pantalla para que lo muestre tal cual,
+      // incluso cuando el usuario quedó creado y el correo no salió.
+      onCreado(envio);
       onClose();
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) {

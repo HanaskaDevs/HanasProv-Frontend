@@ -40,17 +40,39 @@ export interface UsuarioExterno {
   fecha_creacion: string;
 }
 
+/**
+ * El resultado de mandar el código de activación, ya en castellano: lo
+ * arma el backend (ver ResultadoEnvioCodigo) porque es el único que sabe
+ * qué contestó el servidor de correo.
+ */
+export interface ResultadoEnvio {
+  enviado: boolean;
+  correo: string;
+  titulo: string;
+  mensaje: string;
+  sugerencia: string | null;
+  /** Respuesta cruda del servidor. Solo para Sistemas, nunca de entrada. */
+  detalle_tecnico: string | null;
+}
+
 export async function listarInternos(): Promise<UsuarioInterno[]> {
   const { data } = await apiClient.get<UsuarioInterno[]>('/usuarios/internos');
   return data;
 }
 
-export async function crearInterno(email: string, idRol: number, idEmpresas: number[]): Promise<UsuarioInterno> {
-  const { data } = await apiClient.post<UsuarioInterno>('/usuarios/internos', {
-    email,
-    id_rol: idRol,
-    id_empresas: idEmpresas,
-  });
+/**
+ * Crear el usuario y enviarle el código son DOS cosas: el usuario puede
+ * quedar creado y el correo no salir. Por eso vienen separados.
+ */
+export async function crearInterno(
+  email: string,
+  idRol: number,
+  idEmpresas: number[]
+): Promise<{ usuario: UsuarioInterno; envio: ResultadoEnvio }> {
+  const { data } = await apiClient.post<{ usuario: UsuarioInterno; envio: ResultadoEnvio }>(
+    '/usuarios/internos',
+    { email, id_rol: idRol, id_empresas: idEmpresas }
+  );
   return data;
 }
 
@@ -59,11 +81,14 @@ export async function listarExternos(): Promise<UsuarioExterno[]> {
   return data;
 }
 
-export async function crearExterno(email: string, idEmpresas: number[]): Promise<UsuarioExterno> {
-  const { data } = await apiClient.post<UsuarioExterno>('/usuarios/externos', {
-    email,
-    id_empresas: idEmpresas,
-  });
+export async function crearExterno(
+  email: string,
+  idEmpresas: number[]
+): Promise<{ usuario: UsuarioExterno; envio: ResultadoEnvio }> {
+  const { data } = await apiClient.post<{ usuario: UsuarioExterno; envio: ResultadoEnvio }>(
+    '/usuarios/externos',
+    { email, id_empresas: idEmpresas }
+  );
   return data;
 }
 
@@ -142,13 +167,28 @@ export async function inactivarUsuario(id: number): Promise<{ message: string }>
   const { data } = await apiClient.patch(`/usuarios/${id}/inactivar`);
   return data;
 }
-export async function reactivarUsuario(id: number): Promise<{ message: string }> {
-  const { data } = await apiClient.patch(`/usuarios/${id}/reactivar`);
+/**
+ * Reactiva (o desbloquea) y le manda un código para que fije una
+ * contraseña nueva. Devuelve el resultado de ESE envío: desbloquear sin
+ * que le llegue el código deja a la persona igual de afuera que antes.
+ */
+export async function reactivarUsuario(id: number): Promise<ResultadoEnvio> {
+  const { data } = await apiClient.patch<ResultadoEnvio>(`/usuarios/${id}/reactivar`);
   return data;
 }
 
-export async function reenviarActivacion(id: number): Promise<{ message: string }> {
-  const { data } = await apiClient.post(`/usuarios/${id}/reenviar-activacion`);
+/**
+ * BORRA DEFINITIVAMENTE la cuenta. No es una baja lógica: la fila deja de
+ * existir y el correo queda libre. El backend solo lo permite sobre
+ * cuentas que nunca se activaron, y solo a Sistemas.
+ */
+export async function eliminarCuentaDefinitivamente(id: number): Promise<{ message: string }> {
+  const { data } = await apiClient.delete(`/usuarios/${id}`);
+  return data;
+}
+
+export async function reenviarActivacion(id: number): Promise<ResultadoEnvio> {
+  const { data } = await apiClient.post<ResultadoEnvio>(`/usuarios/${id}/reenviar-activacion`);
   return data;
 }
 

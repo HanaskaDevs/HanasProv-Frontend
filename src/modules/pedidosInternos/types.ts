@@ -24,10 +24,20 @@ export interface BodegaPedidos {
   pedidos: PedidoInterno[];
 }
 
-/** Llave = código de bodega (CD-0001/CD-0002/CD-0003). */
+/** Llave = código de bodega. */
 export type PedidosPorBodega = Record<string, BodegaPedidos>;
 
-export const BODEGAS_PEDIDOS_INTERNOS = ['CD-0001', 'CD-0002', 'CD-0003'] as const;
+/**
+ * Las bodegas que maneja el portal. CD-0006 se sumó el 02-oct-2026.
+ *
+ * TIENE QUE COINCIDIR CON PedidoInternoService::BODEGAS en el backend. Es
+ * la única copia que queda del lado del cliente, y se usa para dos cosas:
+ * las pestañas de Pedidos Internos y las casillas con las que Sistemas le
+ * asigna bodegas a un usuario de Compras. Si acá falta una que el backend
+ * sí tiene, esa bodega no se puede asignar desde la pantalla aunque sus
+ * pedidos ya se estén mostrando.
+ */
+export const BODEGAS_PEDIDOS_INTERNOS = ['CD-0001', 'CD-0002', 'CD-0003', 'CD-0006'] as const;
 
 export interface FiltrosPedidosInternos {
   /**

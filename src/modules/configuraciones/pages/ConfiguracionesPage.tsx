@@ -10,8 +10,10 @@ import TabPoliticas from '../components/TabPoliticas';
 import TabDocumentos from '../components/TabDocumentos';
 import TabModoTv from '../components/TabModoTv';
 import TabSeguridad from '../components/TabSeguridad';
+import TabResponsables from '../../responsables/components/TabResponsables';
+import TabBannerInformativo from '../../banner/components/TabBannerInformativo';
 
-type Tab = 'home' | 'login' | 'bot' | 'guia' | 'politicas' | 'documentos' | 'modo-tv' | 'seguridad';
+type Tab = 'home' | 'login' | 'banner' | 'bot' | 'guia' | 'responsables' | 'politicas' | 'documentos' | 'modo-tv' | 'seguridad';
 
 function ConfiguracionesPageContenido() {
   const { esSistemas } = useAuth();
@@ -30,8 +32,10 @@ function ConfiguracionesPageContenido() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'home', label: 'Home' },
     { id: 'login', label: 'Login' },
+    { id: 'banner', label: 'Banner informativo' },
     { id: 'bot', label: 'Bot' },
     { id: 'guia', label: 'Guía de inicio' },
+    { id: 'responsables', label: 'Responsables' },
     { id: 'politicas', label: 'Políticas' },
     { id: 'documentos', label: 'Documentos' },
     { id: 'modo-tv', label: 'Modo TV' },
@@ -71,7 +75,9 @@ function ConfiguracionesPageContenido() {
       {tab === 'home' && <TabHomeSlides />}
       {tab === 'login' && <TabLoginImagen />}
       {tab === 'bot' && <TabBotReglas />}
+      {tab === 'banner' && <TabBannerInformativo />}
       {tab === 'guia' && <TabGuiaPasos />}
+      {tab === 'responsables' && <TabResponsables />}
       {tab === 'politicas' && <TabPoliticas />}
       {tab === 'documentos' && <TabDocumentos />}
       {tab === 'modo-tv' && <TabModoTv />}
