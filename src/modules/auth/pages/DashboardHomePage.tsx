@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import Card from '../../../shared/components/Card';
 import ModalVideoTutorial from '../../../shared/components/ModalVideoTutorial';
+import TarjetaMiResponsable from '../../responsables/components/TarjetaMiResponsable';
 import * as videoTutorialApi from '../../../shared/api/videoTutorialApi';
 import PanelProveedor from '../components/PanelProveedor';
 import PanelAspirante from '../components/PanelAspirante';
@@ -110,6 +111,11 @@ export default function DashboardHomePage() {
           </p>
         </Card>
       )}
+
+      {/* Su contacto en Hanaska. Se dibuja sola solo si tiene responsable
+          asignado (ver TarjetaMiResponsable), así que para el resto el
+          panel queda exactamente igual que antes. */}
+      {esProveedor && <TarjetaMiResponsable />}
 
       {verVideo && video?.url_embed && video.url && (
         <ModalVideoTutorial

@@ -13,6 +13,8 @@ import GuiaInicioTour from '../components/GuiaInicioTour';
 import type { GuiaPasoPublico } from '../api/publicConfigApi';
 import HanaBot from '../components/HanaBot';
 import Footer from '../components/Footer';
+import TarjetaMiResponsable from '../../modules/responsables/components/TarjetaMiResponsable';
+import ModalBannerInformativo from '../../modules/banner/components/ModalBannerInformativo';
 
 function IconoFicha({ className = '' }: { className?: string }) {
   return (
@@ -279,6 +281,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
               {menuUsuarioAbierto && (
                 <div className="absolute right-0 top-full bg-white rounded-md shadow-lg border border-brand-900/10 py-1 min-w-[200px] z-20">
+                  {/* Su contacto en Hanaska. Va para CUALQUIER proveedor,
+                      también el Aspirante: durante el registro es cuando
+                      más preguntas tiene. Si no tiene responsable
+                      asignado no se dibuja nada. */}
+                  {esProveedor && (
+                    <>
+                      <TarjetaMiResponsable variante="menu" className="text-brand-900/80" />
+                      <div className="border-t border-brand-900/8 my-1" />
+                    </>
+                  )}
                   {esProveedor && !esAspirante && (
                     <>
                       {/* Para el proveedor ya aprobado, Mi Ficha y Mi
@@ -548,6 +560,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="py-2">
+              {esProveedor && (
+                <>
+                  <TarjetaMiResponsable variante="menu" className="text-white/80" />
+                  <div className="border-t border-white/10 my-1" />
+                </>
+              )}
               {esProveedor && !esAspirante && (
                 <>
                   <Link
@@ -610,6 +628,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </main>
 
       {modalPasswordAbierto && <ModalCambiarPassword onClose={() => setModalPasswordAbierto(false)} />}
+
+      {/* El aviso de Sistemas. Se dibuja solo si está encendido y este
+          navegador no cerró ya esta misma versión; si no, no renderiza
+          nada. Va en el layout y no en una pantalla concreta porque tiene
+          que verse caiga donde caiga el usuario al entrar. */}
+      <ModalBannerInformativo />
 
       <GuiaInicioTour
         visible={tourVisible}

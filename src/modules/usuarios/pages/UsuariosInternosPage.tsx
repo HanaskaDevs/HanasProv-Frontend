@@ -11,7 +11,15 @@ import EstadoBadge from '../components/EstadoBadge';
 import ModalCrearUsuarioInterno from '../components/ModalCrearUsuarioInterno';
 import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
 import ModalEditarUsuario from '../components/ModalEditarUsuario';
-import { listarInternos, inactivarUsuario, reactivarUsuario, reenviarActivacion, type UsuarioInterno } from '../api/usuariosApi';
+import ModalResultadoEnvio from '../components/ModalResultadoEnvio';
+import {
+  listarInternos,
+  inactivarUsuario,
+  reactivarUsuario,
+  reenviarActivacion,
+  type ResultadoEnvio,
+  type UsuarioInterno,
+} from '../api/usuariosApi';
 
 function UsuariosInternosContent() {
   const [usuarios, setUsuarios] = useState<UsuarioInterno[]>([]);
@@ -21,7 +29,7 @@ function UsuariosInternosContent() {
   const [usuarioEditando, setUsuarioEditando] = useState<number | null>(null);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
   const [reenviandoId, setReenviandoId] = useState<number | null>(null);
-  const [mensajeReenvio, setMensajeReenvio] = useState<string | null>(null);
+  const [resultadoEnvio, setResultadoEnvio] = useState<{ resultado: ResultadoEnvio; idUsuario: number } | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
@@ -68,8 +76,9 @@ function UsuariosInternosContent() {
   async function desbloquear(u: UsuarioInterno) {
     setProcesandoId(u.id);
     try {
-      await reactivarUsuario(u.id);
-      setMensajeReenvio(`Cuenta desbloqueada. Se envió un código a ${u.email} para que defina una contraseña nueva.`);
+      // La cuenta queda desbloqueada pase lo que pase con el correo; lo
+      // que el modal informa es si el código llegó a salir.
+      setResultadoEnvio({ resultado: await reactivarUsuario(u.id), idUsuario: u.id });
       await cargar();
     } finally {
       setProcesandoId(null);
@@ -82,7 +91,8 @@ function UsuariosInternosContent() {
       if (u.activo) {
         await inactivarUsuario(u.id);
       } else {
-        await reactivarUsuario(u.id);
+        // Reactivar manda un código nuevo: el resultado se muestra.
+        setResultadoEnvio({ resultado: await reactivarUsuario(u.id), idUsuario: u.id });
       }
       await cargar();
     } finally {
@@ -90,12 +100,12 @@ function UsuariosInternosContent() {
     }
   }
 
-  async function reenviar(u: UsuarioInterno) {
-    setReenviandoId(u.id);
-    setMensajeReenvio(null);
+  /** Ver el equivalente en UsuariosExternosPage: el backend espera la
+   *  respuesta del servidor y devuelve el texto ya redactado. */
+  async function reenviar(idUsuario: number) {
+    setReenviandoId(idUsuario);
     try {
-      await reenviarActivacion(u.id);
-      setMensajeReenvio(`Correo de activación reenviado a ${u.email}.`);
+      setResultadoEnvio({ resultado: await reenviarActivacion(idUsuario), idUsuario });
     } finally {
       setReenviandoId(null);
     }
@@ -111,14 +121,6 @@ function UsuariosInternosContent() {
         <Button onClick={() => setModalAbierto(true)}>Nuevo usuario</Button>
       </div>
 
-      {mensajeReenvio && (
-        <div className="rounded-md bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-800 flex items-center justify-between">
-          {mensajeReenvio}
-          <button onClick={() => setMensajeReenvio(null)} className="text-emerald-700/60 hover:text-emerald-900 ml-4">
-            ✕
-          </button>
-        </div>
-      )}
 
       <div className="flex items-center gap-3">
         <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por nombre o correo..." />
@@ -194,7 +196,7 @@ function UsuariosInternosContent() {
                         variant="ghost"
                         className="text-xs px-2 py-1"
                         isLoading={reenviandoId === u.id}
-                        onClick={() => reenviar(u)}
+                        onClick={() => reenviar(u.id)}
                       >
                         Reenviar activación
                       </Button>
@@ -232,7 +234,15 @@ function UsuariosInternosContent() {
       </Card>
 
       {modalAbierto && (
-        <ModalCrearUsuarioInterno onClose={() => setModalAbierto(false)} onCreado={cargar} />
+        <ModalCrearUsuarioInterno
+          onClose={() => setModalAbierto(false)}
+          onCreado={(envio) => {
+            cargar();
+            // El usuario ya quedó creado; el modal informa si el código
+            // de activación salió o no.
+            setResultadoEnvio({ resultado: envio, idUsuario: 0 });
+          }}
+        />
       )}
 
       {usuarioParaEmpresa !== null && (
@@ -250,6 +260,17 @@ function UsuariosInternosContent() {
           esInterno
           onClose={() => setUsuarioEditando(null)}
           onActualizado={() => cargar(true)}
+        />
+      )}
+
+      {resultadoEnvio && (
+        <ModalResultadoEnvio
+          resultado={resultadoEnvio.resultado}
+          onCerrar={() => setResultadoEnvio(null)}
+          onReintentar={
+            resultadoEnvio.idUsuario > 0 ? () => reenviar(resultadoEnvio.idUsuario) : undefined
+          }
+          reintentando={reenviandoId === resultadoEnvio.idUsuario}
         />
       )}
     </div>

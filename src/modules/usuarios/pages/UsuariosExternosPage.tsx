@@ -8,11 +8,23 @@ import Badge from '../../../shared/components/Badge';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import EstadoBadge from '../components/EstadoBadge';
+import MenuAcciones from '../components/MenuAcciones';
+import ModalResultadoEnvio from '../components/ModalResultadoEnvio';
+import ModalEliminarCuenta from '../components/ModalEliminarCuenta';
 import ModalCrearUsuarioExterno from '../components/ModalCrearUsuarioExterno';
 import ModalCargaMasivaExternos from '../components/ModalCargaMasivaExternos';
 import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
 import ModalEditarUsuario from '../components/ModalEditarUsuario';
-import { listarExternos, inactivarUsuario, reactivarUsuario, reenviarActivacion, type UsuarioExterno } from '../api/usuariosApi';
+import { isAxiosError } from 'axios';
+import {
+  listarExternos,
+  inactivarUsuario,
+  reactivarUsuario,
+  reenviarActivacion,
+  eliminarCuentaDefinitivamente,
+  type ResultadoEnvio,
+  type UsuarioExterno,
+} from '../api/usuariosApi';
 
 function UsuariosExternosContent() {
   // La pantalla la ven Sistemas y Admin, pero la carga masiva es solo de
@@ -29,7 +41,15 @@ function UsuariosExternosContent() {
   const [usuarioEditando, setUsuarioEditando] = useState<number | null>(null);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
   const [reenviandoId, setReenviandoId] = useState<number | null>(null);
-  const [mensajeReenvio, setMensajeReenvio] = useState<string | null>(null);
+  /*
+   * El resultado del último envío de código, para el modal. Guarda además
+   * a quién se le mandó: si falló, el modal ofrece reintentar y hay que
+   * saber sobre quién.
+   */
+  const [resultadoEnvio, setResultadoEnvio] = useState<{ resultado: ResultadoEnvio; idUsuario: number } | null>(null);
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState<UsuarioExterno | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroFicha, setFiltroFicha] = useState('');
@@ -75,8 +95,10 @@ function UsuariosExternosContent() {
   async function desbloquear(u: UsuarioExterno) {
     setProcesandoId(u.id);
     try {
-      await reactivarUsuario(u.id);
-      setMensajeReenvio(`Cuenta desbloqueada. Se envió un código a ${u.email} para que defina una contraseña nueva.`);
+      // La cuenta queda desbloqueada pase lo que pase con el correo; lo
+      // que el modal informa es si el código llegó a salir.
+      const resultado = await reactivarUsuario(u.id);
+      setResultadoEnvio({ resultado, idUsuario: u.id });
       await cargar();
     } finally {
       setProcesandoId(null);
@@ -89,7 +111,9 @@ function UsuariosExternosContent() {
       if (u.activo) {
         await inactivarUsuario(u.id);
       } else {
-        await reactivarUsuario(u.id);
+        // Reactivar manda un código nuevo: el resultado se muestra igual
+        // que en los demás envíos.
+        setResultadoEnvio({ resultado: await reactivarUsuario(u.id), idUsuario: u.id });
       }
       await cargar();
     } finally {
@@ -97,14 +121,48 @@ function UsuariosExternosContent() {
     }
   }
 
-  async function reenviar(u: UsuarioExterno) {
-    setReenviandoId(u.id);
-    setMensajeReenvio(null);
+  /**
+   * Manda el código y muestra el resultado REAL en un modal.
+   *
+   * Antes esto ponía siempre "Correo de activación reenviado a X" en una
+   * franja verde, sin esperar al servidor: si el envío fallaba después
+   * -una dirección mal escrita, el servidor pidiéndonos esperar- nadie se
+   * enteraba y el proveedor seguía sin su código. Ahora el backend espera
+   * la respuesta y devuelve el texto ya redactado (ver
+   * ResultadoEnvioCodigo), así que acá solo se muestra.
+   */
+  async function reenviar(idUsuario: number) {
+    setReenviandoId(idUsuario);
     try {
-      await reenviarActivacion(u.id);
-      setMensajeReenvio(`Correo de activación reenviado a ${u.email}.`);
+      const resultado = await reenviarActivacion(idUsuario);
+      setResultadoEnvio({ resultado, idUsuario });
     } finally {
       setReenviandoId(null);
+    }
+  }
+
+  /**
+   * Borrado DEFINITIVO. Las reglas de cuándo se puede las decide el
+   * backend (solo Sistemas, solo cuentas sin activar, sin información
+   * asociada); acá solo se muestra el resultado. Esconder la opción es
+   * comodidad, no seguridad.
+   */
+  async function eliminarCuenta() {
+    if (!usuarioAEliminar) return;
+
+    setEliminando(true);
+    setErrorEliminar(null);
+    try {
+      await eliminarCuentaDefinitivamente(usuarioAEliminar.id);
+      setUsuarioAEliminar(null);
+      await cargar();
+    } catch (error) {
+      const datos = isAxiosError(error)
+        ? (error.response?.data as { message?: string } | undefined)
+        : undefined;
+      setErrorEliminar(datos?.message ?? 'No se pudo eliminar la cuenta.');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -124,15 +182,6 @@ function UsuariosExternosContent() {
           <Button onClick={() => setModalAbierto(true)}>Nuevo usuario</Button>
         </div>
       </div>
-
-      {mensajeReenvio && (
-        <div className="rounded-md bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-800 flex items-center justify-between">
-          {mensajeReenvio}
-          <button onClick={() => setMensajeReenvio(null)} className="text-emerald-700/60 hover:text-emerald-900 ml-4">
-            ✕
-          </button>
-        </div>
-      )}
 
       <div className="flex items-center gap-3">
         <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por nombre, proveedor o correo..." />
@@ -166,98 +215,169 @@ function UsuariosExternosContent() {
             No hay usuarios externos que coincidan con la búsqueda.
           </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-brand-200/30 text-left text-brand-900/70">
-              <tr>
-                <th className="px-4 py-3 font-medium">Nombre / Proveedor</th>
-                <th className="px-4 py-3 font-medium">Correo</th>
-                <th className="px-4 py-3 font-medium">Ficha</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3 font-medium text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-brand-900/8">
-              {usuariosFiltrados.map((u) => (
-                <tr key={u.id}>
-                  <td className="px-4 py-3 text-brand-900">
-                    {u.proveedor?.razon_social ? (
-                      u.proveedor.razon_social
-                    ) : u.requiere_activacion ? (
-                      <span className="text-brand-900/40 italic">Pendiente de activar</span>
-                    ) : (
-                      <span className="text-brand-900/40 italic">Ficha sin completar</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-brand-900/70">{u.email}</td>
-                  <td className="px-4 py-3">
-                    {u.ficha_completada ? (
-                      <Badge tone="info">{u.proveedor?.porcentaje_completado_ficha ?? 0}% completo</Badge>
-                    ) : (
-                      <Badge tone="neutral">Sin ficha</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.bloqueado_por_intentos ? (
-                      <Badge tone="danger">Bloqueado</Badge>
-                    ) : (
-                      <EstadoBadge activo={u.activo} requiereActivacion={u.requiere_activacion} />
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => setUsuarioEditando(u.id)}>
-                      Editar
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="text-xs px-2 py-1"
-                      onClick={() => setUsuarioParaEmpresa(u.id)}
-                    >
-                      + Empresa
-                    </Button>
-                    {u.requiere_activacion && (
-                      <Button
-                        variant="ghost"
-                        className="text-xs px-2 py-1"
-                        isLoading={reenviandoId === u.id}
-                        onClick={() => reenviar(u)}
-                      >
-                        Reenviar activación
-                      </Button>
-                    )}
-                    {/* Bloqueado por intentos fallidos: `activo` sigue en true,
-                        así que sin este caso aparte el botón diría "Inactivar"
-                        y Sistemas no tendría forma de destrabar la cuenta.
-                        Reactivar además le manda un código para que ponga una
-                        contraseña nueva (ver UsuarioService::reactivar). */}
-                    {u.bloqueado_por_intentos ? (
-                      <Button
-                        variant="ghost"
-                        className="text-xs px-2 py-1 text-emerald-700"
-                        isLoading={procesandoId === u.id}
-                        onClick={() => desbloquear(u)}
-                      >
-                        Desbloquear
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        className={`text-xs px-2 py-1 ${u.activo ? 'text-brand-wine' : 'text-emerald-700'}`}
-                        isLoading={procesandoId === u.id}
-                        onClick={() => alternarEstado(u)}
-                      >
-                        {u.activo ? 'Inactivar' : 'Reactivar'}
-                      </Button>
-                    )}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              {/* El encabezado queda fijo al hacer scroll: con cientos de
+                  proveedores, a media lista ya no se sabía qué columna era
+                  cuál. */}
+              <thead className="sticky top-0 z-10 bg-brand-200/40 text-left text-xs uppercase tracking-wide text-brand-900/60 backdrop-blur">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">Proveedor</th>
+                  <th className="px-4 py-2.5 font-medium w-44">Ficha</th>
+                  <th className="px-4 py-2.5 font-medium w-40">Estado</th>
+                  <th className="px-4 py-2.5 font-medium w-40">Último acceso</th>
+                  <th className="px-4 py-2.5 font-medium w-12"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-brand-900/[0.07]">
+                {usuariosFiltrados.map((u) => {
+                  const porcentaje = u.proveedor?.porcentaje_completado_ficha ?? 0;
+
+                  return (
+                    <tr key={u.id} className="hover:bg-brand-200/20 transition-colors">
+                      {/* Razón social y correo en una sola celda: antes eran
+                          dos columnas y la primera repetía el mismo
+                          "Pendiente de activar" que ya decía la insignia de
+                          Estado, gastando el ancho en decir dos veces lo
+                          mismo. */}
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-brand-900 truncate max-w-xs">
+                          {u.proveedor?.razon_social ?? (
+                            <span className="font-normal text-brand-900/35">Todavía sin ficha</span>
+                          )}
+                        </p>
+                        <a
+                          href={`mailto:${u.email}`}
+                          className="text-xs text-brand-900/55 hover:text-brand-700 hover:underline"
+                        >
+                          {u.email}
+                        </a>
+                      </td>
+
+                      {/* Una barra en vez de una insignia: el avance de la
+                          ficha es un número de 0 a 100 y así se compara de
+                          un vistazo entre filas. */}
+                      <td className="px-4 py-2.5">
+                        {u.ficha_completada || porcentaje > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-20 rounded-full bg-brand-900/10 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  porcentaje >= 100 ? 'bg-emerald-500' : 'bg-brand-700'
+                                }`}
+                                style={{ width: `${Math.min(100, porcentaje)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs tabular-nums text-brand-900/60">{porcentaje}%</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-brand-900/35">Sin ficha</span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-2.5">
+                        {u.bloqueado_por_intentos ? (
+                          <Badge tone="danger">Bloqueado</Badge>
+                        ) : (
+                          <EstadoBadge activo={u.activo} requiereActivacion={u.requiere_activacion} />
+                        )}
+                      </td>
+
+                      {/* Dato que ya venía del backend y no se mostraba. Es
+                          lo que distingue a un proveedor que nunca entró de
+                          uno que dejó de entrar. */}
+                      <td className="px-4 py-2.5 text-xs text-brand-900/55">
+                        {u.ultimo_acceso ? (
+                          new Date(u.ultimo_acceso).toLocaleDateString('es-EC', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        ) : (
+                          <span className="text-brand-900/35">Nunca ingresó</span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-2.5 text-right">
+                        <MenuAcciones
+                          acciones={[
+                            { etiqueta: 'Editar', onClick: () => setUsuarioEditando(u.id) },
+                            { etiqueta: 'Agregar empresa', onClick: () => setUsuarioParaEmpresa(u.id) },
+                            ...(u.requiere_activacion
+                              ? [
+                                  {
+                                    etiqueta: 'Reenviar activación',
+                                    onClick: () => reenviar(u.id),
+                                    cargando: reenviandoId === u.id,
+                                  },
+                                ]
+                              : []),
+                            /* Bloqueado por intentos fallidos: `activo`
+                               sigue en true, así que sin este caso aparte
+                               la opción diría "Inactivar" y Sistemas no
+                               tendría forma de destrabar la cuenta.
+                               Desbloquear además le manda un código para
+                               que ponga una contraseña nueva. */
+                            u.bloqueado_por_intentos
+                              ? {
+                                  etiqueta: 'Desbloquear',
+                                  tono: 'bien' as const,
+                                  onClick: () => desbloquear(u),
+                                  cargando: procesandoId === u.id,
+                                }
+                              : {
+                                  etiqueta: u.activo ? 'Inactivar' : 'Reactivar',
+                                  tono: (u.activo ? 'peligro' : 'bien') as 'peligro' | 'bien',
+                                  onClick: () => alternarEstado(u),
+                                  cargando: procesandoId === u.id,
+                                },
+                            /* Eliminar definitivamente. Solo aparece para
+                               Sistemas y solo sobre cuentas que nunca se
+                               activaron: es el caso del correo mal
+                               escrito, donde inactivar no alcanza porque
+                               la dirección queda ocupada igual. */
+                            ...(esSistemas && u.requiere_activacion && !u.ultimo_acceso
+                              ? [
+                                  {
+                                    etiqueta: 'Eliminar definitivamente',
+                                    tono: 'peligro' as const,
+                                    onClick: () => {
+                                      setErrorEliminar(null);
+                                      setUsuarioAEliminar(u);
+                                    },
+                                  },
+                                ]
+                              : []),
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
 
+      {!isLoading && usuariosFiltrados.length > 0 && (
+        <p className="text-xs text-brand-900/45">
+          {usuariosFiltrados.length === usuarios.length
+            ? `${usuarios.length} usuario(s)`
+            : `${usuariosFiltrados.length} de ${usuarios.length} usuario(s)`}
+        </p>
+      )}
+
       {modalAbierto && (
-        <ModalCrearUsuarioExterno onClose={() => setModalAbierto(false)} onCreado={cargar} />
+        <ModalCrearUsuarioExterno
+          onClose={() => setModalAbierto(false)}
+          onCreado={(envio) => {
+            cargar();
+            // El usuario ya quedó creado; lo que el modal informa es si el
+            // código de activación salió o no.
+            setResultadoEnvio({ resultado: envio, idUsuario: 0 });
+          }}
+        />
       )}
 
       {modalCargaAbierto && (
@@ -279,6 +399,32 @@ function UsuariosExternosContent() {
           esInterno={false}
           onClose={() => setUsuarioEditando(null)}
           onActualizado={cargar}
+        />
+      )}
+
+      {usuarioAEliminar && (
+        <ModalEliminarCuenta
+          correo={usuarioAEliminar.email}
+          eliminando={eliminando}
+          error={errorEliminar}
+          onConfirmar={eliminarCuenta}
+          onCerrar={() => {
+            setUsuarioAEliminar(null);
+            setErrorEliminar(null);
+          }}
+        />
+      )}
+
+      {resultadoEnvio && (
+        <ModalResultadoEnvio
+          resultado={resultadoEnvio.resultado}
+          onCerrar={() => setResultadoEnvio(null)}
+          // Reintentar solo tiene sentido sobre un usuario concreto: en el
+          // alta no se guarda el id, así que ahí el modal solo informa.
+          onReintentar={
+            resultadoEnvio.idUsuario > 0 ? () => reenviar(resultadoEnvio.idUsuario) : undefined
+          }
+          reintentando={reenviandoId === resultadoEnvio.idUsuario}
         />
       )}
     </div>

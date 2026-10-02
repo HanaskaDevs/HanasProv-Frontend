@@ -3,6 +3,7 @@ import axios from 'axios';
 import * as authApi from '../api/authApi';
 import { ROLES, type Usuario, type EmpresaAcceso } from '../types';
 import { marcarSaludoPendiente, olvidarSaludoPendiente } from '../../../shared/utils/saludoDeSesion';
+import { marcarInicioDeSesion } from '../../../shared/utils/inicioDeSesion';
 // En su propio módulo, sin dependencias: si viviera acá, apiClient tendría que
 // importar este archivo y se formaría un ciclo que rompe todas las peticiones.
 import {
@@ -131,6 +132,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // lo consume una vez y lo borra; sin esta marca no saluda, así que una
   // recarga o un cambio de empresa ya no repiten el saludo.
   marcarSaludoPendiente();
+  // Identifica ESTE login. Lo usa el banner informativo para saber si
+  // corresponde mostrarlo de nuevo cuando está en modo "siempre".
+  marcarInicioDeSesion();
 
   // El backend sólo devuelve id_empresa_activa cuando el usuario tiene UNA
   // sola empresa; con varias llega null y hay que elegir la primera.
