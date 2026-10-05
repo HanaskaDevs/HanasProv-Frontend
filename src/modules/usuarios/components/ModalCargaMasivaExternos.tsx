@@ -77,6 +77,7 @@ function Metrica({ valor, etiqueta, tono }: { valor: number; etiqueta: string; t
 
 const CLASES_ESTADO: Record<ResultadoFilaCarga['estado'], string> = {
   creado: 'text-emerald-700',
+  reenviado: 'text-emerald-700',
   acceso_agregado: 'text-sky-700',
   omitido: 'text-brand-900/50',
   error: 'text-brand-wine',
@@ -84,6 +85,7 @@ const CLASES_ESTADO: Record<ResultadoFilaCarga['estado'], string> = {
 
 const ETIQUETA_ESTADO: Record<ResultadoFilaCarga['estado'], string> = {
   creado: 'Creado',
+  reenviado: 'Código reenviado',
   acceso_agregado: 'Acceso agregado',
   omitido: 'Sin cambios',
   error: 'Error',
@@ -482,21 +484,32 @@ export default function ModalCargaMasivaExternos({ onClose, onCargado }: Props) 
         {/* ---------------- 3. Resultado ---------------- */}
         {paso === 'listo' && reporte && (
           <>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               <Metrica valor={reporte.resumen.creados} etiqueta="Creados" tono="ok" />
+              <Metrica valor={reporte.resumen.reenviados ?? 0} etiqueta="Código reenviado" tono="ok" />
               <Metrica valor={reporte.resumen.acceso_agregado} etiqueta="Acceso agregado" tono="info" />
               <Metrica valor={reporte.resumen.omitidos} etiqueta="Sin cambios" tono="neutro" />
               <Metrica valor={reporte.resumen.con_error} etiqueta="Con error" tono="error" />
             </div>
 
-            {reporte.resumen.creados > 0 && (
+            {reporte.resumen.creados + (reporte.resumen.reenviados ?? 0) > 0 && (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 leading-relaxed">
-                Se crearon {reporte.resumen.creados} usuario{reporte.resumen.creados === 1 ? '' : 's'} y
-                se <strong className="font-semibold">encolaron</strong> sus correos de activación.
+                Se <strong className="font-semibold">encolaron</strong>{' '}
+                {reporte.resumen.creados + (reporte.resumen.reenviados ?? 0)} correo
+                {reporte.resumen.creados + (reporte.resumen.reenviados ?? 0) === 1 ? '' : 's'} de activación
+                {reporte.resumen.reenviados
+                  ? ` (${reporte.resumen.reenviados} a proveedores que ya estaban cargados pero nunca activaron su cuenta)`
+                  : ''}
+                .
                 <br />
-                Encolado no es entregado: los manda la cola de correo, pueden tardar unos minutos y el
-                servidor de correo puede rechazar alguno. Si un proveedor dice que no le llegó, usa
-                “Reenviar activación” en la lista.
+                {/* Salen espaciados para que el servidor de correo no los
+                    frene por volumen. Decirlo evita que alguien le avise a
+                    Compras "ya les llegó" cuando el último sale minutos
+                    después. */}
+                {reporte.minutos_estimados_envio > 0
+                  ? `Salen de a uno, espaciados, para que el servidor de correo no los frene: el último sale en unos ${reporte.minutos_estimados_envio} minuto${reporte.minutos_estimados_envio === 1 ? '' : 's'}. `
+                  : ''}
+                Encolado no es entregado: el servidor de correo todavía puede rechazar alguno.
               </div>
             )}
 

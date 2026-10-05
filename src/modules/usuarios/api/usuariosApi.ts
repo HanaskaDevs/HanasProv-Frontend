@@ -111,7 +111,11 @@ export interface FilaCargaMasiva {
   empresas: string[];
 }
 
-export type EstadoFilaCarga = 'creado' | 'acceso_agregado' | 'omitido' | 'error';
+/**
+ * 'reenviado': el correo ya existía, el proveedor nunca activó su cuenta y
+ * se le volvió a mandar el código (05-oct-2026).
+ */
+export type EstadoFilaCarga = 'creado' | 'reenviado' | 'acceso_agregado' | 'omitido' | 'error';
 
 export interface ResultadoFilaCarga {
   numero_fila: number;
@@ -127,10 +131,16 @@ export interface ReporteCargaMasiva {
   resumen: {
     total: number;
     creados: number;
+    reenviados: number;
     acceso_agregado: number;
     omitidos: number;
     con_error: number;
   };
+  /**
+   * Cuánto tardan en salir todos los correos de la carga. Salen
+   * espaciados para que el servidor de correo no los frene por volumen.
+   */
+  minutos_estimados_envio: number;
   filas: ResultadoFilaCarga[];
 }
 
@@ -184,6 +194,43 @@ export async function reactivarUsuario(id: number): Promise<ResultadoEnvio> {
  */
 export async function eliminarCuentaDefinitivamente(id: number): Promise<{ message: string }> {
   const { data } = await apiClient.delete(`/usuarios/${id}`);
+  return data;
+}
+
+export interface EnlaceActivacion {
+  url: string;
+  correo: string;
+  /** Fecha ISO en la que el enlace deja de servir. */
+  vence: string;
+  /** Lo mismo, en palabras ("3 días"), para el mensaje al proveedor. */
+  vigencia: string;
+}
+
+/**
+ * Genera un enlace de activación para mandar por WhatsApp o desde un
+ * Outlook propio. NO manda correo, y deja sin efecto el código que se le
+ * hubiera enviado antes. Ver UsuarioService::generarEnlaceActivacion.
+ */
+export async function generarEnlaceActivacion(id: number): Promise<EnlaceActivacion> {
+  const { data } = await apiClient.post<EnlaceActivacion>(`/usuarios/${id}/enlace-activacion`);
+  return data;
+}
+
+export interface ReporteReenvioMasivo {
+  resumen: { total: number; encolados: number; omitidos: number };
+  minutos_estimados_envio: number;
+  filas: { id: number; email: string | null; estado: 'encolado' | 'omitido'; mensaje: string }[];
+}
+
+/**
+ * Reenvía el código de activación a varios proveedores. Solo Sistemas, y
+ * solo les llega a los que nunca activaron su cuenta: el resto vuelve en
+ * el reporte con el motivo. Ver UsuarioService::reenviarActivacionMasivo.
+ */
+export async function reenviarActivacionMasivo(ids: number[]): Promise<ReporteReenvioMasivo> {
+  const { data } = await apiClient.post<ReporteReenvioMasivo>('/usuarios/externos/reenviar-activacion-masivo', {
+    ids,
+  });
   return data;
 }
 

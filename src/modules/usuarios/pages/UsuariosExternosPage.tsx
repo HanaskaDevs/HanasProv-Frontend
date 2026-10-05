@@ -8,9 +8,11 @@ import Badge from '../../../shared/components/Badge';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import EstadoBadge from '../components/EstadoBadge';
-import MenuAcciones from '../components/MenuAcciones';
+import MenuAcciones, { type AccionFila } from '../components/MenuAcciones';
+import ModalEnlaceActivacion from '../components/ModalEnlaceActivacion';
 import ModalResultadoEnvio from '../components/ModalResultadoEnvio';
 import ModalEliminarCuenta from '../components/ModalEliminarCuenta';
+import ModalReenvioMasivo from '../components/ModalReenvioMasivo';
 import ModalCrearUsuarioExterno from '../components/ModalCrearUsuarioExterno';
 import ModalCargaMasivaExternos from '../components/ModalCargaMasivaExternos';
 import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
@@ -26,12 +28,28 @@ import {
   type UsuarioExterno,
 } from '../api/usuariosApi';
 
+/**
+ * ¿A este proveedor se le puede reenviar el código de forma masiva?
+ *
+ * ES LA MISMA REGLA QUE EL BACKEND (UsuarioService::motivoParaNoReenviar):
+ * activo, sin bloqueo, sin activar y sin haber entrado nunca. Acá solo
+ * sirve para habilitar la casilla; quien decide de verdad es el servidor,
+ * que vuelve a revisar cada uno y reporta los que no califican.
+ *
+ * Ultimo_Acceso importa además de requiere_activacion: este último vuelve
+ * a true cuando a alguien se le reinicia la contraseña, aunque lleve meses
+ * usando el portal.
+ */
+function esPendienteDeActivacion(u: UsuarioExterno): boolean {
+  return u.requiere_activacion && !u.ultimo_acceso && u.activo && !u.bloqueado_por_intentos;
+}
+
 function UsuariosExternosContent() {
   // La pantalla la ven Sistemas y Admin, pero la carga masiva es solo de
   // Sistemas -> se necesita el rol acá dentro, no solo en el RoleRoute de
   // abajo. Ocultar el botón es comodidad: el backend igual rechaza a quien
   // no sea Sistemas (ver UsuarioService::crearUsuariosProveedorEnLote).
-  const { esSistemas } = useAuth();
+  const { esSistemas, esAdmin } = useAuth();
 
   const [usuarios, setUsuarios] = useState<UsuarioExterno[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +66,9 @@ function UsuariosExternosContent() {
    */
   const [resultadoEnvio, setResultadoEnvio] = useState<{ resultado: ResultadoEnvio; idUsuario: number } | null>(null);
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<UsuarioExterno | null>(null);
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
+  const [reenvioMasivoAbierto, setReenvioMasivoAbierto] = useState(false);
+  const [usuarioParaEnlace, setUsuarioParaEnlace] = useState<UsuarioExterno | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
@@ -77,7 +98,13 @@ function UsuariosExternosContent() {
         u.email.toLowerCase().includes(texto) ||
         (u.proveedor?.razon_social?.toLowerCase().includes(texto) ?? false);
 
-      const coincideEstado = !filtroEstado || (filtroEstado === 'activo' ? u.activo : !u.activo);
+      const coincideEstado =
+        !filtroEstado ||
+        (filtroEstado === 'pendiente'
+          ? esPendienteDeActivacion(u)
+          : filtroEstado === 'activo'
+            ? u.activo
+            : !u.activo);
 
       const coincideFicha =
         !filtroFicha || (filtroFicha === 'con_ficha' ? u.ficha_completada : !u.ficha_completada);
@@ -85,6 +112,35 @@ function UsuariosExternosContent() {
       return coincideBusqueda && coincideEstado && coincideFicha;
     });
   }, [usuarios, busqueda, filtroEstado, filtroFicha]);
+
+  /*
+   * La selección se calcula SIEMPRE contra los que siguen siendo
+   * elegibles en la lista cargada. Si después de reenviar o recargar uno
+   * dejó de calificar, no queda seleccionado "fantasma" y el contador no
+   * miente.
+   */
+  const pendientesVisibles = usuariosFiltrados.filter(esPendienteDeActivacion);
+  const usuariosSeleccionados = usuarios.filter((u) => seleccionados.has(u.id) && esPendienteDeActivacion(u));
+  const todosLosVisiblesSeleccionados =
+    pendientesVisibles.length > 0 && pendientesVisibles.every((u) => seleccionados.has(u.id));
+
+  function alternarSeleccion(id: number) {
+    setSeleccionados((previos) => {
+      const nuevos = new Set(previos);
+      if (nuevos.has(id)) nuevos.delete(id);
+      else nuevos.add(id);
+      return nuevos;
+    });
+  }
+
+  /** Selecciona o suelta SOLO los pendientes que están a la vista con el filtro actual. */
+  function alternarTodosLosVisibles() {
+    setSeleccionados((previos) => {
+      const nuevos = new Set(previos);
+      pendientesVisibles.forEach((u) => (todosLosVisiblesSeleccionados ? nuevos.delete(u.id) : nuevos.add(u.id)));
+      return nuevos;
+    });
+  }
 
   /**
    * Desbloquea una cuenta que se trabó sola por 3 intentos de login
@@ -142,6 +198,80 @@ function UsuariosExternosContent() {
   }
 
   /**
+   * Las acciones del menú de cada fila, en el orden en que se usan. Las
+   * de tono 'peligro' (inactivar, eliminar) las manda MenuAcciones al
+   * final, separadas.
+   */
+  function accionesDe(u: UsuarioExterno): AccionFila[] {
+    const pendiente = esPendienteDeActivacion(u);
+    const acciones: AccionFila[] = [
+      { etiqueta: 'Editar', icono: 'editar', onClick: () => setUsuarioEditando(u.id) },
+      { etiqueta: 'Agregar empresa', icono: 'empresa', onClick: () => setUsuarioParaEmpresa(u.id) },
+    ];
+
+    if (u.requiere_activacion) {
+      acciones.push({
+        etiqueta: 'Reenviar activación',
+        icono: 'correo',
+        ayuda: 'Por correo, como la primera vez',
+        onClick: () => reenviar(u.id),
+        cargando: reenviandoId === u.id,
+      });
+    }
+
+    // Para cuando el correo no le llega: un enlace para mandarle por
+    // WhatsApp o desde el Outlook propio. Sistemas y Admin, solo sobre
+    // cuentas que nunca se activaron (lo vuelve a validar el backend).
+    if ((esSistemas || esAdmin) && pendiente) {
+      acciones.push({
+        etiqueta: 'Copiar enlace de activación',
+        icono: 'enlace',
+        ayuda: 'Para mandarlo por WhatsApp o tu correo',
+        onClick: () => setUsuarioParaEnlace(u),
+      });
+    }
+
+    /* Bloqueado por intentos fallidos: `activo` sigue en true, así que sin
+       este caso aparte la opción diría "Inactivar" y no habría forma de
+       destrabar la cuenta. Desbloquear además le manda un código para que
+       ponga una contraseña nueva. */
+    if (u.bloqueado_por_intentos) {
+      acciones.push({
+        etiqueta: 'Desbloquear',
+        icono: 'desbloquear',
+        tono: 'bien',
+        onClick: () => desbloquear(u),
+        cargando: procesandoId === u.id,
+      });
+    } else {
+      acciones.push({
+        etiqueta: u.activo ? 'Inactivar' : 'Reactivar',
+        icono: u.activo ? 'inactivar' : 'activar',
+        tono: u.activo ? 'peligro' : 'bien',
+        onClick: () => alternarEstado(u),
+        cargando: procesandoId === u.id,
+      });
+    }
+
+    /* Eliminar definitivamente: solo Sistemas y solo cuentas que nunca se
+       activaron. Es el caso del correo mal escrito, donde inactivar no
+       alcanza porque la dirección queda ocupada igual. */
+    if (esSistemas && u.requiere_activacion && !u.ultimo_acceso) {
+      acciones.push({
+        etiqueta: 'Eliminar definitivamente',
+        icono: 'eliminar',
+        tono: 'peligro',
+        onClick: () => {
+          setErrorEliminar(null);
+          setUsuarioAEliminar(u);
+        },
+      });
+    }
+
+    return acciones;
+  }
+
+  /**
    * Borrado DEFINITIVO. Las reglas de cuándo se puede las decide el
    * backend (solo Sistemas, solo cuentas sin activar, sin información
    * asociada); acá solo se muestra el resultado. Esconder la opción es
@@ -191,6 +321,9 @@ function UsuariosExternosContent() {
           opciones={[
             { valor: 'activo', etiqueta: 'Activos' },
             { valor: 'inactivo', etiqueta: 'Inactivos' },
+            // Pensado para el reenvío masivo: filtrar y "seleccionar
+            // todos" deja listos de un clic a los que nunca entraron.
+            { valor: 'pendiente', etiqueta: 'Pendientes de activar' },
           ]}
           etiquetaTodos="Todos los estados"
         />
@@ -204,6 +337,25 @@ function UsuariosExternosContent() {
           etiquetaTodos="Todas las fichas"
         />
       </div>
+
+      {/* Barra de acción masiva. Aparece solo con algo seleccionado, así
+          no ocupa lugar el resto del tiempo. */}
+      {esSistemas && usuariosSeleccionados.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-700/20 bg-brand-200/40 px-4 py-2.5">
+          <p className="text-sm text-brand-900">
+            <strong>{usuariosSeleccionados.length}</strong> proveedor
+            {usuariosSeleccionados.length === 1 ? '' : 'es'} pendiente
+            {usuariosSeleccionados.length === 1 ? '' : 's'} de activar seleccionado
+            {usuariosSeleccionados.length === 1 ? '' : 's'}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" className="text-xs" onClick={() => setSeleccionados(new Set())}>
+              Limpiar selección
+            </Button>
+            <Button onClick={() => setReenvioMasivoAbierto(true)}>Reenviar código de activación</Button>
+          </div>
+        </div>
+      )}
 
       <Card className="p-0 overflow-hidden">
         {isLoading ? (
@@ -222,6 +374,25 @@ function UsuariosExternosContent() {
                   cuál. */}
               <thead className="sticky top-0 z-10 bg-brand-200/40 text-left text-xs uppercase tracking-wide text-brand-900/60 backdrop-blur">
                 <tr>
+                  {/* La columna de casillas solo existe para Sistemas: el
+                      reenvío masivo es suyo, igual que la carga por Excel. */}
+                  {esSistemas && (
+                    <th className="w-10 py-2.5 pl-4">
+                      <input
+                        type="checkbox"
+                        checked={todosLosVisiblesSeleccionados}
+                        disabled={pendientesVisibles.length === 0}
+                        onChange={alternarTodosLosVisibles}
+                        aria-label="Seleccionar todos los pendientes de activar"
+                        title={
+                          pendientesVisibles.length === 0
+                            ? 'No hay proveedores pendientes de activar en esta lista'
+                            : 'Seleccionar todos los pendientes de activar de esta lista'
+                        }
+                        className="h-4 w-4 cursor-pointer accent-brand-700 disabled:cursor-not-allowed"
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-2.5 font-medium">Proveedor</th>
                   <th className="px-4 py-2.5 font-medium w-44">Ficha</th>
                   <th className="px-4 py-2.5 font-medium w-40">Estado</th>
@@ -234,7 +405,34 @@ function UsuariosExternosContent() {
                   const porcentaje = u.proveedor?.porcentaje_completado_ficha ?? 0;
 
                   return (
-                    <tr key={u.id} className="hover:bg-brand-200/20 transition-colors">
+                    <tr
+                      key={u.id}
+                      className={`transition-colors ${
+                        seleccionados.has(u.id) && esPendienteDeActivacion(u)
+                          ? 'bg-brand-200/30'
+                          : 'hover:bg-brand-200/20'
+                      }`}
+                    >
+                      {esSistemas && (
+                        <td className="w-10 py-2.5 pl-4">
+                          {/* Deshabilitada (no escondida) para quien no
+                              califica: así se entiende por qué no se puede
+                              elegir, en vez de preguntarse dónde está. */}
+                          <input
+                            type="checkbox"
+                            checked={seleccionados.has(u.id) && esPendienteDeActivacion(u)}
+                            disabled={!esPendienteDeActivacion(u)}
+                            onChange={() => alternarSeleccion(u.id)}
+                            aria-label={`Seleccionar ${u.email}`}
+                            title={
+                              esPendienteDeActivacion(u)
+                                ? 'Seleccionar para reenviar el código'
+                                : 'Solo se puede reenviar a quien nunca activó su cuenta'
+                            }
+                            className="h-4 w-4 cursor-pointer accent-brand-700 disabled:cursor-not-allowed disabled:opacity-30"
+                          />
+                        </td>
+                      )}
                       {/* Razón social y correo en una sola celda: antes eran
                           dos columnas y la primera repetía el mismo
                           "Pendiente de activar" que ya decía la insignia de
@@ -299,57 +497,7 @@ function UsuariosExternosContent() {
                       </td>
 
                       <td className="px-4 py-2.5 text-right">
-                        <MenuAcciones
-                          acciones={[
-                            { etiqueta: 'Editar', onClick: () => setUsuarioEditando(u.id) },
-                            { etiqueta: 'Agregar empresa', onClick: () => setUsuarioParaEmpresa(u.id) },
-                            ...(u.requiere_activacion
-                              ? [
-                                  {
-                                    etiqueta: 'Reenviar activación',
-                                    onClick: () => reenviar(u.id),
-                                    cargando: reenviandoId === u.id,
-                                  },
-                                ]
-                              : []),
-                            /* Bloqueado por intentos fallidos: `activo`
-                               sigue en true, así que sin este caso aparte
-                               la opción diría "Inactivar" y Sistemas no
-                               tendría forma de destrabar la cuenta.
-                               Desbloquear además le manda un código para
-                               que ponga una contraseña nueva. */
-                            u.bloqueado_por_intentos
-                              ? {
-                                  etiqueta: 'Desbloquear',
-                                  tono: 'bien' as const,
-                                  onClick: () => desbloquear(u),
-                                  cargando: procesandoId === u.id,
-                                }
-                              : {
-                                  etiqueta: u.activo ? 'Inactivar' : 'Reactivar',
-                                  tono: (u.activo ? 'peligro' : 'bien') as 'peligro' | 'bien',
-                                  onClick: () => alternarEstado(u),
-                                  cargando: procesandoId === u.id,
-                                },
-                            /* Eliminar definitivamente. Solo aparece para
-                               Sistemas y solo sobre cuentas que nunca se
-                               activaron: es el caso del correo mal
-                               escrito, donde inactivar no alcanza porque
-                               la dirección queda ocupada igual. */
-                            ...(esSistemas && u.requiere_activacion && !u.ultimo_acceso
-                              ? [
-                                  {
-                                    etiqueta: 'Eliminar definitivamente',
-                                    tono: 'peligro' as const,
-                                    onClick: () => {
-                                      setErrorEliminar(null);
-                                      setUsuarioAEliminar(u);
-                                    },
-                                  },
-                                ]
-                              : []),
-                          ]}
-                        />
+                        <MenuAcciones acciones={accionesDe(u)} />
                       </td>
                     </tr>
                   );
@@ -399,6 +547,27 @@ function UsuariosExternosContent() {
           esInterno={false}
           onClose={() => setUsuarioEditando(null)}
           onActualizado={cargar}
+        />
+      )}
+
+      {usuarioParaEnlace && (
+        <ModalEnlaceActivacion
+          correo={usuarioParaEnlace.email}
+          idUsuario={usuarioParaEnlace.id}
+          onCerrar={() => setUsuarioParaEnlace(null)}
+        />
+      )}
+
+      {reenvioMasivoAbierto && (
+        <ModalReenvioMasivo
+          usuarios={usuariosSeleccionados}
+          onCerrar={() => setReenvioMasivoAbierto(false)}
+          onTerminado={() => {
+            // Ya se mandaron: la selección no tiene más sentido, y si se
+            // dejara, un segundo clic les volvería a mandar el código.
+            setSeleccionados(new Set());
+            cargar();
+          }}
         />
       )}
 
