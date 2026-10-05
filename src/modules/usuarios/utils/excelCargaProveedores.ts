@@ -298,6 +298,7 @@ export async function leerExcelCargaProveedores(archivo: File): Promise<FilaCarg
 
 const ETIQUETA_ESTADO: Record<ResultadoFilaCarga['estado'], string> = {
   creado: 'Creado',
+  reenviado: 'Código reenviado',
   acceso_agregado: 'Acceso agregado',
   omitido: 'Sin cambios',
   error: 'Error',
