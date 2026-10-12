@@ -222,15 +222,41 @@ function ProveedoresContent() {
           </p>
         ) : (
           <>
-            <table className="w-full text-sm">
+            {/*
+              ANCHOS FIJOS (table-fixed + colgroup), no automáticos.
+              Con anchos automáticos, la columna del proveedor crecía al
+              largo del nombre ("INGENIO AZUCARERO DEL NORTE COMPAÑIA DE
+              ECONOMIA MIXTA IANCEM") y empujaba la nota y el botón
+              Calificar fuera de la tarjeta, que los recortaba. El
+              `truncate` del nombre no servía de nada: en una tabla
+              automática la celda no tiene un ancho que respetar.
+              Ahora cada columna tiene su lugar fijo y el nombre ocupa el
+              espacio que sobra, cortado en dos renglones como mucho. En
+              pantallas angostas la tabla se desplaza de costado en vez de
+              aplastarse.
+            */}
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[1060px] table-fixed text-sm">
+              <colgroup>
+                {/* Medidos para que entre la insignia más larga de cada
+                    columna ("No registrada", "Sin documentos") y el botón
+                    "Ver calificación" sin partirse. */}
+                <col />
+                <col className="w-[132px]" />
+                <col className="w-[132px]" />
+                <col className="w-[128px]" />
+                <col className="w-[148px]" />
+                <col className="w-[112px]" />
+                <col className="w-[160px]" />
+              </colgroup>
               <thead className="bg-brand-200/30 text-left text-brand-900/70">
-                <tr>
+                <tr className="align-bottom">
                   <th className="px-4 py-2.5 text-xs font-medium">Proveedor</th>
-                  <th className="px-4 py-2.5 text-xs font-medium">Ficha</th>
-                  <th className="px-4 py-2.5 text-xs font-medium">Calificación Ficha</th>
-                  <th className="px-4 py-2.5 text-xs font-medium">Documentación</th>
-                  <th className="px-4 py-2.5 text-xs font-medium">Calificación Documentación</th>
-                  <th className="px-4 py-2.5 text-xs font-medium">Calificación global</th>
+                  <th className="px-3 py-2.5 text-xs font-medium">Ficha</th>
+                  <th className="px-3 py-2.5 text-xs font-medium leading-tight">Calificación<br />ficha</th>
+                  <th className="px-3 py-2.5 text-xs font-medium">Documentación</th>
+                  <th className="px-3 py-2.5 text-xs font-medium leading-tight">Calificación<br />documentación</th>
+                  <th className="px-3 py-2.5 text-xs font-medium leading-tight">Calificación<br />global</th>
                   <th className="px-4 py-2.5 text-xs font-medium text-right">Acciones</th>
                 </tr>
               </thead>
@@ -246,38 +272,45 @@ function ProveedoresContent() {
                     >
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <Avatar nombre={nombreVisibleProveedor(p)} className="h-8 w-8" />
+                          <Avatar nombre={nombreVisibleProveedor(p)} className="h-8 w-8 shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-brand-900 font-medium text-sm truncate">{nombreVisibleProveedor(p)}</p>
-                            <p className="text-[12px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
+                            {/* Hasta dos renglones; el nombre completo queda en
+                                el title, a un pase del mouse. */}
+                            <p
+                              className="line-clamp-2 text-sm font-medium leading-snug text-brand-900 [overflow-wrap:anywhere]"
+                              title={nombreVisibleProveedor(p)}
+                            >
+                              {nombreVisibleProveedor(p)}
+                            </p>
+                            <p className="text-[12px] tabular-nums text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-3 py-2.5">
                         {Number(p.porcentaje_completado_ficha) === 100 ? (
                           <Badge tone="success">Registrada</Badge>
                         ) : (
                           <Badge tone="neutral">No registrada</Badge>
                         )}
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-3 py-2.5">
                         <BadgeCalificacion estado={p.estado_calificacion_ficha} />
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-3 py-2.5">
                         {p.documentacion_registrada ? (
                           <Badge tone="success">Registrada</Badge>
                         ) : (
                           <Badge tone="neutral">Pendiente</Badge>
                         )}
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-3 py-2.5">
                         {Number(p.documentos_totales) === 0 ? (
-                          <span className="text-xs text-brand-900/40">Sin documentos</span>
+                          <span className="whitespace-nowrap text-xs text-brand-900/40">Sin documentos</span>
                         ) : (
                           <BadgeCalificacion estado={p.estado_calificacion_documentacion} />
                         )}
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-3 py-2.5">
                         {/* La nota ES el botón: se hace clic sobre el número
                             y se abre el desglose. Antes había un botón
                             "Desglose" aparte, que era una columna más para
@@ -315,6 +348,7 @@ function ProveedoresContent() {
                 })}
               </tbody>
             </table>
+            </div>
 
             <Paginador pagina={paginaSegura} totalPaginas={totalPaginas} onCambiar={setPagina} />
           </>
