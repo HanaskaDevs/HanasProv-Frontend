@@ -213,3 +213,59 @@ h1, h2, h3, h4, .font-display {
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Pantalla "procesando": el logo de Hanaska mientras el sistema       */
+/* trabaja en algo que tarda (ver shared/components/Procesando.tsx).  */
+/* ------------------------------------------------------------------ */
+
+@keyframes procesando-entrada {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes procesando-tarjeta {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* El anillo de colores que da la vuelta alrededor del logo. */
+@keyframes procesando-giro {
+  to { transform: rotate(360deg); }
+}
+
+/* El logo "respira": crece y vuelve, para que se note vivo sin marear. */
+@keyframes procesando-respirar {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* El halo de luz detrás, que late a otro ritmo que el logo. */
+@keyframes procesando-halo {
+  0%, 100% { opacity: 0.35; transform: scale(0.92); }
+  50% { opacity: 0.7; transform: scale(1.08); }
+}
+
+@keyframes procesando-punto {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+.procesando-fondo { animation: procesando-entrada 220ms ease-out both; }
+.procesando-tarjeta { animation: procesando-tarjeta 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.procesando-anillo { animation: procesando-giro 1.4s linear infinite; }
+.procesando-logo { animation: procesando-respirar 2.2s ease-in-out infinite; }
+.procesando-halo { animation: procesando-halo 2.2s ease-in-out infinite; }
+.procesando-punto { animation: procesando-punto 1.2s ease-in-out infinite; }
+.procesando-punto:nth-child(2) { animation-delay: 0.15s; }
+.procesando-punto:nth-child(3) { animation-delay: 0.3s; }
+
+/* Quien tiene activado "reducir movimiento" en su sistema ve el logo
+   quieto: un giro infinito puede marear o molestar. El anillo igual
+   indica que se está trabajando. */
+@media (prefers-reduced-motion: reduce) {
+  .procesando-anillo,
+  .procesando-logo,
+  .procesando-halo,
+  .procesando-punto { animation: none; }
+}

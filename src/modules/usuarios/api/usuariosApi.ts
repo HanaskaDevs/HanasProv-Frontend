@@ -46,6 +46,13 @@ export interface UsuarioExterno {
  * qué contestó el servidor de correo.
  */
 export interface ResultadoEnvio {
+  /**
+   * 'enviando': la acción ya se hizo y el correo está saliendo en este
+   * momento; la pantalla consulta con id_codigo hasta que termine.
+   * Desde el 12-oct-2026 las acciones ya no esperan al servidor de correo.
+   */
+  estado: 'enviando' | 'enviado' | 'fallido';
+  id_codigo: number | null;
   enviado: boolean;
   correo: string;
   titulo: string;
@@ -53,6 +60,12 @@ export interface ResultadoEnvio {
   sugerencia: string | null;
   /** Respuesta cruda del servidor. Solo para Sistemas, nunca de entrada. */
   detalle_tecnico: string | null;
+}
+
+/** Cómo va el envío de un código. Ver UsuarioService::estadoEnvioCodigo. */
+export async function obtenerEstadoEnvio(idCodigo: number): Promise<ResultadoEnvio> {
+  const { data } = await apiClient.get<ResultadoEnvio>(`/usuarios/codigos-activacion/${idCodigo}/envio`);
+  return data;
 }
 
 export async function listarInternos(): Promise<UsuarioInterno[]> {

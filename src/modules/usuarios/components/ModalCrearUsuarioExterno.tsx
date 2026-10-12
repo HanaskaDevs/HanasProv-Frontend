@@ -7,6 +7,7 @@ import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
 import { crearExterno, type ResultadoEnvio } from '../api/usuariosApi';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { useProcesando } from '../../../shared/components/Procesando';
 
 const schema = z.object({
   email: z.string().email('Correo inválido'),
@@ -22,6 +23,7 @@ export default function ModalCrearUsuarioExterno({
   onClose: () => void;
   onCreado: (envio: ResultadoEnvio) => void;
 }) {
+  const { ejecutar } = useProcesando();
   const { usuario } = useAuth();
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
 
@@ -49,7 +51,7 @@ export default function ModalCrearUsuarioExterno({
   async function onSubmit(values: FormValues) {
     setErrorGeneral(null);
     try {
-      const { envio } = await crearExterno(values.email, values.id_empresas);
+      const { envio } = await ejecutar('Creando la cuenta', () => crearExterno(values.email, values.id_empresas), values.email);
       // El alta y el envío del código son dos cosas distintas: se le
       // pasa el resultado a la pantalla para que lo muestre tal cual,
       // incluso cuando el usuario quedó creado y el correo no salió.

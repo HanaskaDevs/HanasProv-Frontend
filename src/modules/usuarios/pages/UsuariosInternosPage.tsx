@@ -20,6 +20,7 @@ import {
   type ResultadoEnvio,
   type UsuarioInterno,
 } from '../api/usuariosApi';
+import { useProcesando } from '../../../shared/components/Procesando';
 
 function UsuariosInternosContent() {
   const [usuarios, setUsuarios] = useState<UsuarioInterno[]>([]);
@@ -29,7 +30,12 @@ function UsuariosInternosContent() {
   const [usuarioEditando, setUsuarioEditando] = useState<number | null>(null);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
   const [reenviandoId, setReenviandoId] = useState<number | null>(null);
-  const [resultadoEnvio, setResultadoEnvio] = useState<{ resultado: ResultadoEnvio; idUsuario: number } | null>(null);
+  const [resultadoEnvio, setResultadoEnvio] = useState<{
+    resultado: ResultadoEnvio;
+    idUsuario: number;
+    accion?: string;
+  } | null>(null);
+  const { ejecutar } = useProcesando();
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
@@ -78,7 +84,8 @@ function UsuariosInternosContent() {
     try {
       // La cuenta queda desbloqueada pase lo que pase con el correo; lo
       // que el modal informa es si el código llegó a salir.
-      setResultadoEnvio({ resultado: await reactivarUsuario(u.id), idUsuario: u.id });
+      const resultado = await ejecutar('Desbloqueando la cuenta', () => reactivarUsuario(u.id), u.email);
+      setResultadoEnvio({ resultado, idUsuario: u.id, accion: 'La cuenta quedó desbloqueada' });
       await cargar();
     } finally {
       setProcesandoId(null);
@@ -89,10 +96,11 @@ function UsuariosInternosContent() {
     setProcesandoId(u.id);
     try {
       if (u.activo) {
-        await inactivarUsuario(u.id);
+        await ejecutar('Inactivando la cuenta', () => inactivarUsuario(u.id), u.email);
       } else {
         // Reactivar manda un código nuevo: el resultado se muestra.
-        setResultadoEnvio({ resultado: await reactivarUsuario(u.id), idUsuario: u.id });
+        const resultado = await ejecutar('Reactivando la cuenta', () => reactivarUsuario(u.id), u.email);
+        setResultadoEnvio({ resultado, idUsuario: u.id, accion: 'La cuenta quedó reactivada' });
       }
       await cargar();
     } finally {
@@ -105,7 +113,8 @@ function UsuariosInternosContent() {
   async function reenviar(idUsuario: number) {
     setReenviandoId(idUsuario);
     try {
-      setResultadoEnvio({ resultado: await reenviarActivacion(idUsuario), idUsuario });
+      const resultado = await ejecutar('Generando un código nuevo', () => reenviarActivacion(idUsuario));
+      setResultadoEnvio({ resultado, idUsuario });
     } finally {
       setReenviandoId(null);
     }
@@ -240,7 +249,7 @@ function UsuariosInternosContent() {
             cargar();
             // El usuario ya quedó creado; el modal informa si el código
             // de activación salió o no.
-            setResultadoEnvio({ resultado: envio, idUsuario: 0 });
+            setResultadoEnvio({ resultado: envio, idUsuario: 0, accion: 'La cuenta quedó creada' });
           }}
         />
       )}
@@ -266,6 +275,7 @@ function UsuariosInternosContent() {
       {resultadoEnvio && (
         <ModalResultadoEnvio
           resultado={resultadoEnvio.resultado}
+          accionRealizada={resultadoEnvio.accion}
           onCerrar={() => setResultadoEnvio(null)}
           onReintentar={
             resultadoEnvio.idUsuario > 0 ? () => reenviar(resultadoEnvio.idUsuario) : undefined

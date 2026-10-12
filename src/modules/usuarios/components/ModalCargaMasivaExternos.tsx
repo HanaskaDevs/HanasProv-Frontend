@@ -23,6 +23,7 @@ import {
   leerExcelCargaProveedores,
   SEPARADOR_EMPRESAS,
 } from '../utils/excelCargaProveedores';
+import { useProcesando } from '../../../shared/components/Procesando';
 
 /**
  * Carga masiva de proveedores desde Excel. Solo rol Sistemas.
@@ -92,6 +93,7 @@ const ETIQUETA_ESTADO: Record<ResultadoFilaCarga['estado'], string> = {
 };
 
 export default function ModalCargaMasivaExternos({ onClose, onCargado }: Props) {
+  const { ejecutar } = useProcesando();
   const { usuario } = useAuth();
   const inputArchivo = useRef<HTMLInputElement>(null);
 
@@ -245,7 +247,14 @@ export default function ModalCargaMasivaExternos({ onClose, onCargado }: Props) 
     setError(null);
 
     try {
-      const resultado = await crearExternosLote(filas);
+      // El proceso más largo del portal: cientos de filas, una por una.
+      // Sin una señal clara, es justo cuando alguien recarga la página
+      // creyendo que se colgó, a mitad de la carga.
+      const resultado = await ejecutar(
+        'Cargando proveedores',
+        () => crearExternosLote(filas),
+        `${filas.length} fila${filas.length === 1 ? '' : 's'}. Puede tardar un poco.`
+      );
       setReporte(resultado);
       setPaso('listo');
       // Se refresca la tabla aunque haya filas con error: las que sí se

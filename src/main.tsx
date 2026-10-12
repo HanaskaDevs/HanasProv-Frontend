@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './modules/auth/hooks/useAuth';
+import { ProcesandoProvider } from './shared/components/Procesando';
 import 'leaflet/dist/leaflet.css';
 
 const queryClient = new QueryClient({
@@ -37,7 +38,11 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          {/* La pantalla "procesando" con el logo, para las acciones que
+              tardan. Va dentro de todo para que cualquier pantalla la use. */}
+          <ProcesandoProvider>
+            <App />
+          </ProcesandoProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

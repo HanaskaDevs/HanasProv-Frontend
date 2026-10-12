@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import { reenviarActivacionMasivo, type ReporteReenvioMasivo, type UsuarioExterno } from '../api/usuariosApi';
 import Button from '../../../shared/components/Button';
+import { useProcesando } from '../../../shared/components/Procesando';
 
 /**
  * Reenvío masivo del código de activación: primero confirma, después
@@ -25,6 +26,7 @@ export default function ModalReenvioMasivo({
   onTerminado: () => void;
 }) {
   const [enviando, setEnviando] = useState(false);
+  const { ejecutar } = useProcesando();
   const [error, setError] = useState<string | null>(null);
   const [reporte, setReporte] = useState<ReporteReenvioMasivo | null>(null);
 
@@ -32,7 +34,13 @@ export default function ModalReenvioMasivo({
     setEnviando(true);
     setError(null);
     try {
-      setReporte(await reenviarActivacionMasivo(usuarios.map((u) => u.id)));
+      setReporte(
+        await ejecutar(
+          'Reenviando códigos de activación',
+          () => reenviarActivacionMasivo(usuarios.map((u) => u.id)),
+          `${usuarios.length} proveedor${usuarios.length === 1 ? '' : 'es'}`
+        )
+      );
       onTerminado();
     } catch (e) {
       const datos = isAxiosError(e) ? (e.response?.data as { message?: string } | undefined) : undefined;
