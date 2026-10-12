@@ -8,6 +8,7 @@ import Button from '../../../shared/components/Button';
 import { listarRoles, type Rol } from '../../roles/api/rolesApi';
 import { crearInterno, type ResultadoEnvio } from '../api/usuariosApi';
 import * as empresasApi from '../../empresas/api/empresasApi';
+import { useProcesando } from '../../../shared/components/Procesando';
 
 const schema = z.object({
   email: z.string().email('Correo inválido'),
@@ -25,6 +26,7 @@ export default function ModalCrearUsuarioInterno({
   onClose: () => void;
   onCreado: (envio: ResultadoEnvio) => void;
 }) {
+  const { ejecutar } = useProcesando();
   const [roles, setRoles] = useState<Rol[]>([]);
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
  const [empresasDisponibles, setEmpresasDisponibles] = useState<{ id_empresa: number; razon_social: string; nombre_comercial: string | null }[]>([]);
@@ -65,7 +67,7 @@ export default function ModalCrearUsuarioInterno({
   async function onSubmit(values: FormOutput) {
     setErrorGeneral(null);
     try {
-      const { envio } = await crearInterno(values.email, values.id_rol, values.id_empresas);
+      const { envio } = await ejecutar('Creando la cuenta', () => crearInterno(values.email, values.id_rol, values.id_empresas), values.email);
       // El alta y el envío del código son dos cosas distintas: se le
       // pasa el resultado a la pantalla para que lo muestre tal cual,
       // incluso cuando el usuario quedó creado y el correo no salió.

@@ -18,6 +18,7 @@ import ModalCargaMasivaExternos from '../components/ModalCargaMasivaExternos';
 import ModalAgregarEmpresa from '../components/ModalAgregarEmpresa';
 import ModalEditarUsuario from '../components/ModalEditarUsuario';
 import { isAxiosError } from 'axios';
+import { useProcesando } from '../../../shared/components/Procesando';
 import {
   listarExternos,
   inactivarUsuario,
@@ -64,7 +65,13 @@ function UsuariosExternosContent() {
    * a quién se le mandó: si falló, el modal ofrece reintentar y hay que
    * saber sobre quién.
    */
-  const [resultadoEnvio, setResultadoEnvio] = useState<{ resultado: ResultadoEnvio; idUsuario: number } | null>(null);
+  const [resultadoEnvio, setResultadoEnvio] = useState<{
+    resultado: ResultadoEnvio;
+    idUsuario: number;
+    /** Lo que ya quedó hecho, aparte del correo ("La cuenta quedó desbloqueada"). */
+    accion?: string;
+  } | null>(null);
+  const { ejecutar } = useProcesando();
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<UsuarioExterno | null>(null);
   const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
   const [reenvioMasivoAbierto, setReenvioMasivoAbierto] = useState(false);
@@ -151,10 +158,11 @@ function UsuariosExternosContent() {
   async function desbloquear(u: UsuarioExterno) {
     setProcesandoId(u.id);
     try {
-      // La cuenta queda desbloqueada pase lo que pase con el correo; lo
-      // que el modal informa es si el código llegó a salir.
-      const resultado = await reactivarUsuario(u.id);
-      setResultadoEnvio({ resultado, idUsuario: u.id });
+      // La cuenta queda desbloqueada pase lo que pase con el correo: el
+      // modal lo dice arriba, y abajo muestra en vivo cómo va el envío
+      // del código nuevo.
+      const resultado = await ejecutar('Desbloqueando la cuenta', () => reactivarUsuario(u.id), u.email);
+      setResultadoEnvio({ resultado, idUsuario: u.id, accion: 'La cuenta quedó desbloqueada' });
       await cargar();
     } finally {
       setProcesandoId(null);
@@ -165,11 +173,12 @@ function UsuariosExternosContent() {
     setProcesandoId(u.id);
     try {
       if (u.activo) {
-        await inactivarUsuario(u.id);
+        await ejecutar('Inactivando la cuenta', () => inactivarUsuario(u.id), u.email);
       } else {
         // Reactivar manda un código nuevo: el resultado se muestra igual
         // que en los demás envíos.
-        setResultadoEnvio({ resultado: await reactivarUsuario(u.id), idUsuario: u.id });
+        const resultado = await ejecutar('Reactivando la cuenta', () => reactivarUsuario(u.id), u.email);
+        setResultadoEnvio({ resultado, idUsuario: u.id, accion: 'La cuenta quedó reactivada' });
       }
       await cargar();
     } finally {
@@ -190,7 +199,7 @@ function UsuariosExternosContent() {
   async function reenviar(idUsuario: number) {
     setReenviandoId(idUsuario);
     try {
-      const resultado = await reenviarActivacion(idUsuario);
+      const resultado = await ejecutar('Generando un código nuevo', () => reenviarActivacion(idUsuario));
       setResultadoEnvio({ resultado, idUsuario });
     } finally {
       setReenviandoId(null);
@@ -234,16 +243,22 @@ function UsuariosExternosContent() {
     /* Bloqueado por intentos fallidos: `activo` sigue en true, así que sin
        este caso aparte la opción diría "Inactivar" y no habría forma de
        destrabar la cuenta. Desbloquear además le manda un código para que
-       ponga una contraseña nueva. */
-    if (u.bloqueado_por_intentos) {
+       ponga una contraseña nueva.
+
+       Desbloquear lo pueden Sistemas y Admin (12-oct-2026). Inactivar y
+       reactivar siguen siendo SOLO de Sistemas: antes Admin veía esas
+       opciones y el servidor se las rechazaba. Si la cuenta además está
+       inactivada, desbloquearla es reactivarla, así que es de Sistemas. */
+    if (u.bloqueado_por_intentos && u.activo) {
       acciones.push({
         etiqueta: 'Desbloquear',
         icono: 'desbloquear',
         tono: 'bien',
+        ayuda: 'Le llega un código para crear una contraseña nueva',
         onClick: () => desbloquear(u),
         cargando: procesandoId === u.id,
       });
-    } else {
+    } else if (esSistemas) {
       acciones.push({
         etiqueta: u.activo ? 'Inactivar' : 'Reactivar',
         icono: u.activo ? 'inactivar' : 'activar',
@@ -283,7 +298,7 @@ function UsuariosExternosContent() {
     setEliminando(true);
     setErrorEliminar(null);
     try {
-      await eliminarCuentaDefinitivamente(usuarioAEliminar.id);
+      await ejecutar('Eliminando la cuenta', () => eliminarCuentaDefinitivamente(usuarioAEliminar.id), usuarioAEliminar.email);
       setUsuarioAEliminar(null);
       await cargar();
     } catch (error) {
@@ -523,7 +538,7 @@ function UsuariosExternosContent() {
             cargar();
             // El usuario ya quedó creado; lo que el modal informa es si el
             // código de activación salió o no.
-            setResultadoEnvio({ resultado: envio, idUsuario: 0 });
+            setResultadoEnvio({ resultado: envio, idUsuario: 0, accion: 'La cuenta quedó creada' });
           }}
         />
       )}
@@ -587,6 +602,7 @@ function UsuariosExternosContent() {
       {resultadoEnvio && (
         <ModalResultadoEnvio
           resultado={resultadoEnvio.resultado}
+          accionRealizada={resultadoEnvio.accion}
           onCerrar={() => setResultadoEnvio(null)}
           // Reintentar solo tiene sentido sobre un usuario concreto: en el
           // alta no se guarda el id, así que ahí el modal solo informa.
