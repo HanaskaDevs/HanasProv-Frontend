@@ -1,6 +1,7 @@
 // src/modules/proveedores/pages/ProveedoresPage.tsx
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/hooks/useAuth';
 import RoleRoute from '../../../routes/RoleRoute';
 import Card from '../../../shared/components/Card';
@@ -126,6 +127,23 @@ function ProveedoresContent() {
     queryKey: ['proveedores-lista'],
     queryFn: proveedoresApi.listarProveedores,
   });
+
+  // ?calificar=<id>: el botón del correo que le llega a Calidad cuando
+  // Compras aprueba productos abre directo la calificación de ESE
+  // proveedor, sin tener que buscarlo en la lista.
+  const [parametros, setParametros] = useSearchParams();
+  const idDelEnlace = Number(parametros.get('calificar')) || null;
+  const proveedorDelEnlace = idDelEnlace ? ((proveedores ?? []).find((p) => p.id === idDelEnlace) ?? null) : null;
+  const proveedorAbierto = proveedorCalificando ?? proveedorDelEnlace;
+
+  function cerrarCalificacion() {
+    setProveedorCalificando(null);
+    if (parametros.has('calificar')) {
+      const siguientes = new URLSearchParams(parametros);
+      siguientes.delete('calificar');
+      setParametros(siguientes, { replace: true });
+    }
+  }
 
   const proveedoresFiltrados = useMemo(() => {
     return (proveedores ?? []).filter((p) => {
@@ -368,11 +386,11 @@ function ProveedoresContent() {
         </Modal>
       )}
 
-      {proveedorCalificando && (
+      {proveedorAbierto && (
         <ModalCalificarProveedor
-          idProveedor={proveedorCalificando.id}
-          razonSocial={nombreVisibleProveedor(proveedorCalificando)}
-          onClose={() => setProveedorCalificando(null)}
+          idProveedor={proveedorAbierto.id}
+          razonSocial={nombreVisibleProveedor(proveedorAbierto)}
+          onClose={cerrarCalificacion}
         />
       )}
     </div>
@@ -380,10 +398,9 @@ function ProveedoresContent() {
 }
 
 export default function ProveedoresPage() {
-  // Calidad entra por la segunda etapa del circuito de productos
-  // (proveedor -> Compras -> Calidad): acá elige el proveedor y adentro
-  // del modal solo ve la pestaña de Productos, que es lo único que el
-  // backend le habilita (ver CalificacionProveedorService).
+  // El proceso de calificación es de Calidad (ficha, documentos y
+  // productos), con Admin y Sistemas de apoyo (ver
+  // CalificacionProveedorService::verificarPuedeCalificar).
   const { esSistemas, esAdmin, esCalidad } = useAuth();
 
   return (
