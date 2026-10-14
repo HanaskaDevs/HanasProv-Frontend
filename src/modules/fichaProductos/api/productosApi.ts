@@ -254,6 +254,12 @@ export async function aprobarEnCompras(idProducto: number): Promise<{ message: s
   return data;
 }
 
+/** Aprueba varios de una vez: a Calidad le llega un solo correo por proveedor. */
+export async function aprobarVariosEnCompras(idsProductos: number[]): Promise<{ message: string; aprobados: number }> {
+  const { data } = await apiClient.post('/productos-revision/aprobar-varios', { productos: idsProductos });
+  return data;
+}
+
 export async function rechazarEnCompras(idProducto: number, observacion: string): Promise<{ message: string }> {
   const { data } = await apiClient.post(`/productos-revision/${idProducto}/rechazar`, { observacion });
   return data;

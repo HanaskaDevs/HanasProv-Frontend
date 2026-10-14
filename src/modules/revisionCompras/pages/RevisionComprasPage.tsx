@@ -38,6 +38,11 @@ function nombreProveedor(producto: Producto): string {
  *
  * Para CORREGIR los datos del producto (nombre, medidas, grupos) se usa
  * "Productos por proveedor", que ya existía: acá se decide, allá se edita.
+ *
+ * SELECCIÓN MÚLTIPLE (14-oct-2026): se pueden marcar varios y aprobarlos
+ * de una vez. A Calidad le llega UN correo por proveedor con todo lo que
+ * ese proveedor tiene pendiente, no uno por producto. Devolver y Retirar
+ * siguen siendo de a uno: cada uno lleva su propio motivo.
  */
 function RevisionComprasContenido() {
   const queryClient = useQueryClient();
@@ -46,6 +51,7 @@ function RevisionComprasContenido() {
   const [motivoPara, setMotivoPara] = useState<{ producto: Producto; accion: 'rechazar' | 'eliminar' } | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(() => new Set());
 
   const { data: productos = [], isLoading } = useQuery({
     queryKey: ['productos-en-revision'],
@@ -53,6 +59,7 @@ function RevisionComprasContenido() {
   });
 
   function alTerminar(mensaje: string) {
+    setSeleccionados(new Set());
     setAviso(mensaje);
     setError(null);
     setMotivoPara(null);
@@ -74,6 +81,12 @@ function RevisionComprasContenido() {
 
   const aprobar = useMutation({
     mutationFn: (id: number) => productosApi.aprobarEnCompras(id),
+    onSuccess: (r) => alTerminar(r.message),
+    onError: alFallar,
+  });
+
+  const aprobarVarios = useMutation({
+    mutationFn: (ids: number[]) => productosApi.aprobarVariosEnCompras(ids),
     onSuccess: (r) => alTerminar(r.message),
     onError: alFallar,
   });
@@ -111,6 +124,20 @@ function RevisionComprasContenido() {
   }, [filtrados]);
 
   const productoAbierto = productos.find((p) => p.id_producto === idAbierto) ?? null;
+
+  // Solo cuenta lo que se está viendo: si una búsqueda esconde un producto
+  // marcado, no se aprueba sin que nadie lo vea. Y lo que otro ya resolvió
+  // desaparece de la lista y de la selección solo.
+  const idsSeleccionados = filtrados.filter((p) => seleccionados.has(p.id_producto)).map((p) => p.id_producto);
+  const ocupadoEnLote = aprobarVarios.isPending;
+
+  function alternar(ids: number[], marcar: boolean) {
+    setSeleccionados((previos) => {
+      const siguientes = new Set(previos);
+      ids.forEach((id) => (marcar ? siguientes.add(id) : siguientes.delete(id)));
+      return siguientes;
+    });
+  }
 
   if (isLoading) {
     return (
@@ -157,6 +184,34 @@ function RevisionComprasContenido() {
         />
       )}
 
+      {idsSeleccionados.length > 0 && (
+        // Pegada arriba mientras se baja por la lista: con muchos
+        // proveedores, el botón no puede quedar fuera de la pantalla.
+        <div className="sticky top-2 z-20 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-900/10 bg-white px-4 py-2.5 shadow-lg">
+          <p className="text-sm text-brand-900">
+            <span className="font-semibold">{idsSeleccionados.length}</span> producto
+            {idsSeleccionados.length === 1 ? '' : 's'} seleccionado{idsSeleccionados.length === 1 ? '' : 's'}
+            <span className="ml-1.5 text-xs text-brand-900/50">· a Calidad le llega un solo correo por proveedor</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSeleccionados(new Set())}
+              disabled={ocupadoEnLote}
+              className="text-[12px] font-medium text-brand-900/55 hover:text-brand-900 disabled:opacity-40"
+            >
+              Quitar selección
+            </button>
+            <Button
+              className="!text-[12px] !px-3 !py-1.5"
+              isLoading={ocupadoEnLote}
+              onClick={() => aprobarVarios.mutate(idsSeleccionados)}
+            >
+              Aprobar seleccionados
+            </Button>
+          </div>
+        </div>
+      )}
+
       {filtrados.length === 0 ? (
         <Card>
           <p className="text-sm text-brand-900/55 text-center py-10">
@@ -166,80 +221,114 @@ function RevisionComprasContenido() {
           </p>
         </Card>
       ) : (
-        porProveedor.map(([proveedor, items]) => (
-          <Card key={proveedor} className="overflow-hidden p-0">
-            <div className="flex items-baseline justify-between gap-2 border-b border-brand-900/8 bg-brand-900/[0.015] px-4 py-2.5">
-              <h2 className="font-display text-sm font-semibold text-brand-900">{proveedor}</h2>
-              <span className="text-[12px] text-brand-900/45">
-                {items.length} producto{items.length === 1 ? '' : 's'}
-              </span>
-            </div>
+        porProveedor.map(([proveedor, items]) => {
+          const idsDelProveedor = items.map((p) => p.id_producto);
+          const marcados = idsDelProveedor.filter((id) => seleccionados.has(id)).length;
+          const todos = marcados === idsDelProveedor.length;
 
-            <ul className="divide-y divide-brand-900/6">
-              {items.map((producto) => {
-                const ocupado =
-                  (aprobar.isPending && aprobar.variables === producto.id_producto) ||
-                  (resolverConMotivo.isPending && resolverConMotivo.variables?.id === producto.id_producto);
+          return (
+            <Card key={proveedor} className="overflow-hidden p-0">
+              <div className="flex items-center justify-between gap-2 border-b border-brand-900/8 bg-brand-900/[0.015] px-4 py-2.5">
+                <label className="flex min-w-0 cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={todos}
+                    ref={(el) => {
+                      if (el) el.indeterminate = marcados > 0 && !todos;
+                    }}
+                    onChange={() => alternar(idsDelProveedor, !todos)}
+                    disabled={ocupadoEnLote}
+                    className="h-4 w-4 shrink-0 cursor-pointer accent-brand-900"
+                    aria-label={`Seleccionar todos los productos de ${proveedor}`}
+                  />
+                  <h2 className="truncate font-display text-sm font-semibold text-brand-900">{proveedor}</h2>
+                </label>
+                <span className="shrink-0 text-[12px] text-brand-900/45">
+                  {items.length} producto{items.length === 1 ? '' : 's'}
+                </span>
+              </div>
 
-                return (
-                  <li key={producto.id_producto} className="flex items-center gap-3 px-4 py-3 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
-                        {producto.grupos?.map((g) => (
-                          <span
-                            key={g.id_grupo_producto}
-                            className="shrink-0 rounded bg-brand-200 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-brand-700"
-                          >
-                            {g.codigo}
-                          </span>
-                        ))}
+              <ul className="divide-y divide-brand-900/6">
+                {items.map((producto) => {
+                  const ocupado =
+                    ocupadoEnLote ||
+                    (aprobar.isPending && aprobar.variables === producto.id_producto) ||
+                    (resolverConMotivo.isPending && resolverConMotivo.variables?.id === producto.id_producto);
+                  const marcado = seleccionados.has(producto.id_producto);
+
+                  return (
+                    <li
+                      key={producto.id_producto}
+                      className={`flex items-center gap-3 px-4 py-3 flex-wrap transition-colors ${
+                        marcado ? 'bg-brand-yellow/[0.12]' : ''
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={marcado}
+                        onChange={() => alternar([producto.id_producto], !marcado)}
+                        disabled={ocupado}
+                        className="h-4 w-4 shrink-0 cursor-pointer accent-brand-900"
+                        aria-label={`Seleccionar ${producto.nombre_producto}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
+                          {producto.grupos?.map((g) => (
+                            <span
+                              key={g.id_grupo_producto}
+                              className="shrink-0 rounded bg-brand-200 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-brand-700"
+                            >
+                              {g.codigo}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-[12px] text-brand-900/50 truncate">
+                          {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
+                          {producto.precio != null && ` · $${producto.precio}`}
+                          {` · ${producto.documentos.length} documento${producto.documentos.length === 1 ? '' : 's'}`}
+                        </p>
                       </div>
-                      <p className="text-[12px] text-brand-900/50 truncate">
-                        {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
-                        {producto.precio != null && ` · $${producto.precio}`}
-                        {` · ${producto.documentos.length} documento${producto.documentos.length === 1 ? '' : 's'}`}
-                      </p>
-                    </div>
 
-                    <Badge tone="neutral">Esperando a Compras</Badge>
+                      <Badge tone="neutral">Esperando a Compras</Badge>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={() => setIdAbierto(producto.id_producto)}
-                        className="text-[12px] font-medium text-brand-700 hover:text-brand-900"
-                      >
-                        Ver documentos
-                      </button>
-                      <Button
-                        className="!text-[12px] !px-2.5 !py-1"
-                        isLoading={ocupado && aprobar.isPending}
-                        disabled={ocupado}
-                        onClick={() => aprobar.mutate(producto.id_producto)}
-                      >
-                        Aprobar
-                      </Button>
-                      <button
-                        onClick={() => setMotivoPara({ producto, accion: 'rechazar' })}
-                        disabled={ocupado}
-                        className="text-[12px] font-medium text-amber-700 hover:text-amber-900 disabled:opacity-40"
-                      >
-                        Devolver
-                      </button>
-                      <button
-                        onClick={() => setMotivoPara({ producto, accion: 'eliminar' })}
-                        disabled={ocupado}
-                        className="text-[12px] font-medium text-brand-wine hover:opacity-80 disabled:opacity-40"
-                      >
-                        Retirar
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-        ))
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => setIdAbierto(producto.id_producto)}
+                          className="text-[12px] font-medium text-brand-700 hover:text-brand-900"
+                        >
+                          Ver documentos
+                        </button>
+                        <Button
+                          className="!text-[12px] !px-2.5 !py-1"
+                          isLoading={ocupado && aprobar.isPending}
+                          disabled={ocupado}
+                          onClick={() => aprobar.mutate(producto.id_producto)}
+                        >
+                          Aprobar
+                        </Button>
+                        <button
+                          onClick={() => setMotivoPara({ producto, accion: 'rechazar' })}
+                          disabled={ocupado}
+                          className="text-[12px] font-medium text-amber-700 hover:text-amber-900 disabled:opacity-40"
+                        >
+                          Devolver
+                        </button>
+                        <button
+                          onClick={() => setMotivoPara({ producto, accion: 'eliminar' })}
+                          disabled={ocupado}
+                          className="text-[12px] font-medium text-brand-wine hover:opacity-80 disabled:opacity-40"
+                        >
+                          Retirar
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          );
+        })
       )}
 
       {productoAbierto && (
