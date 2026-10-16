@@ -16,6 +16,7 @@ import { CIUDADES_ECUADOR } from '../constants/ciudadesEcuador';
 import { enfocarPrimerCampoConError } from '../utils/enfocarCampo';
 import { mensajeDeError } from '../utils/mensajeDeError';
 import { soloDigitos } from '../utils/telefono';
+import { aMayusculas, PLACEHOLDER_NOMBRE_COMERCIAL } from '../utils/nombresProveedor';
 import type { FichaProveedor, Seccion1Data } from '../types';
 
 const requerido = (mensaje = 'Requerido') => z.string().min(1, mensaje);
@@ -25,7 +26,8 @@ const schema = z.object({
   ruc: z.string().length(13, 'El RUC debe tener 13 dígitos'),
   clase_contribuyente: requerido(),
   razon_social: requerido(),
-  nombre_comercial: requerido(),
+  // Opcional: si no tiene, el backend guarda la razón social.
+  nombre_comercial: z.string().optional(),
   email: correoRequerido,
   telefono: requerido(),
   direccion: requerido(),
@@ -282,10 +284,19 @@ export default function InformacionProveedorForm({
                 />
               )}
             />
-            <CampoFicha label="Razón social" {...register('razon_social')} error={errors.razon_social?.message} />
+            {/* Mayúsculas: el CSS las muestra así mientras escribe y
+                setValueAs las manda así (ver utils/nombresProveedor). */}
             <CampoFicha
-              label="Nombre comercial"
-              {...register('nombre_comercial')}
+              label="Razón social"
+              className="uppercase"
+              {...register('razon_social', { setValueAs: aMayusculas })}
+              error={errors.razon_social?.message}
+            />
+            <CampoFicha
+              label="Nombre comercial (opcional)"
+              className="uppercase placeholder:normal-case"
+              placeholder={PLACEHOLDER_NOMBRE_COMERCIAL}
+              {...register('nombre_comercial', { setValueAs: aMayusculas })}
               error={errors.nombre_comercial?.message}
             />
             <CampoFicha label="Correo" type="email" {...register('email')} error={errors.email?.message} />

@@ -17,6 +17,7 @@ import { CAMPO_CATEGORIA, CAMPO_CLASE } from '../../../shared/constants/camposFi
 import { enfocarPrimerCampoConError } from '../utils/enfocarCampo';
 import { soloDigitos } from '../utils/telefono';
 import type { FichaProveedor } from '../types';
+import { aMayusculas, PLACEHOLDER_NOMBRE_COMERCIAL } from '../utils/nombresProveedor';
 
 const requerido = (mensaje = 'Requerido') => z.string().min(1, mensaje);
 const correoRequerido = z.string().min(1, 'Requerido').email('Correo inválido');
@@ -28,7 +29,8 @@ const schema = z.object({
   ruc: z.string().length(13, 'El RUC debe tener 13 dígitos'),
   clase_contribuyente: requerido(),
   razon_social: requerido(),
-  nombre_comercial: requerido(),
+  // Opcional: si no tiene, el backend guarda la razón social.
+  nombre_comercial: z.string().optional(),
   email: correoRequerido,
   telefono: requerido(),
   direccion: requerido(),
@@ -141,6 +143,9 @@ interface CampoProps {
   campo: keyof FormValues;
   label: string;
   tipo?: string;
+  /** Razón social y nombre comercial: se escriben y se guardan en mayúsculas. */
+  mayusculas?: boolean;
+  placeholder?: string;
 }
 
 export default function FormularioCorreccionFicha({
@@ -283,7 +288,7 @@ export default function FormularioCorreccionFicha({
     }
   }
 
-  function Campo({ campo, label, tipo }: CampoProps) {
+  function Campo({ campo, label, tipo, mayusculas = false, placeholder }: CampoProps) {
     const editable = esEditable(campo);
     return (
       <CampoFicha
@@ -291,8 +296,10 @@ export default function FormularioCorreccionFicha({
         type={tipo}
         disabled={!editable}
         resaltado={editable}
+        className={mayusculas ? 'uppercase placeholder:normal-case' : ''}
+        placeholder={placeholder}
         accesorio={editable ? <TooltipObservacion texto={observacionDe(campo)} /> : undefined}
-        {...register(campo)}
+        {...register(campo, mayusculas ? { setValueAs: aMayusculas } : undefined)}
         error={errors[campo]?.message}
       />
     );
@@ -334,8 +341,13 @@ export default function FormularioCorreccionFicha({
               />
             )}
           />
-          <Campo campo="razon_social" label="Razón social" />
-          <Campo campo="nombre_comercial" label="Nombre comercial" />
+          <Campo campo="razon_social" label="Razón social" mayusculas />
+          <Campo
+            campo="nombre_comercial"
+            label="Nombre comercial (opcional)"
+            mayusculas
+            placeholder={PLACEHOLDER_NOMBRE_COMERCIAL}
+          />
           <Campo campo="email" label="Correo" tipo="email" />
           <CampoTelefonoCorreccion
             campo="telefono"
