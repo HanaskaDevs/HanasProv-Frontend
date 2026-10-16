@@ -46,7 +46,7 @@ export default function ModalEliminarCuenta({
 
           <div className="mt-4 flex flex-col gap-1">
             <label htmlFor="confirmar-correo" className="text-sm font-medium text-brand-900">
-              Escribí el correo para confirmar
+              Escribe el correo para confirmar
             </label>
             <input
               id="confirmar-correo"

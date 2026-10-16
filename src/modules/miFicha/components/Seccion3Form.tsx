@@ -12,9 +12,14 @@ export default function Seccion3Form({
   seleccionadas,
   onGuardado,
   requiereAceptarPoliticas = false,
+  guardar,
+  textoBoton,
 }: {
   seleccionadas: CategoriaSeleccionada[];
   onGuardado: (ficha: FichaProveedor) => void;
+  /** Ver InformacionProveedorForm: la edición interna pasa la suya. */
+  guardar?: (idCategorias: number[]) => Promise<FichaProveedor>;
+  textoBoton?: string;
   /**
    * true cuando este guardado deja la ficha completa (las otras secciones
    * ya lo están) y el proveedor todavía no aceptó las políticas -> se
@@ -61,7 +66,9 @@ export default function Seccion3Form({
 
     setIsSubmitting(true);
     try {
-      const ficha = await guardarSeccion3(seleccionIds, requiereAceptarPoliticas ? aceptaPoliticas : undefined);
+      const ficha = guardar
+        ? await guardar(seleccionIds)
+        : await guardarSeccion3(seleccionIds, requiereAceptarPoliticas ? aceptaPoliticas : undefined);
       onGuardado(ficha);
     } catch (e) {
       setError(mensajeDeError(e, 'No se pudo guardar. Intenta de nuevo.'));
@@ -119,7 +126,7 @@ export default function Seccion3Form({
 
       <div className="flex justify-end">
         <Button onClick={onSubmit} isLoading={isSubmitting}>
-          {requiereAceptarPoliticas ? 'Guardar y enviar a revisión' : 'Guardar'}
+          {textoBoton ?? (requiereAceptarPoliticas ? 'Guardar y enviar a revisión' : 'Guardar')}
         </Button>
       </div>
     </div>

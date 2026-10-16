@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useBackHandler } from '../../../shared/hooks/useBackHandler';
@@ -15,17 +15,17 @@ import ResumenAuditoria from '../components/ResumenAuditoria';
 import ResumenPorSeccion from '../components/ResumenPorSeccion';
 import PasosSeccionesAuditoria from '../components/PasosSeccionesAuditoria';
 import ModalConfirmarFinalizar from '../components/ModalConfirmarFinalizar';
+import MiniReporteCalificaciones from '../components/MiniReporteCalificaciones';
 
 function seccionCompleta(seccion: SeccionAuditoria): boolean {
     return seccion.preguntas.every((p) => p.no_aplica || p.puntaje_obtenido !== null);
 }
 
 export default function AuditoriasPage() {
-    // 26-ago-2026, pedido explícito del usuario: "Auditorías solo para los
-    // roles CALIDAD y SISTEMAS" -> Admin queda fuera, coincide con
-    // AuditoriaService::verificarAcceso en el backend.
-    const { esSistemas, esCalidad } = useAuth();
-    const tieneAcceso = esSistemas || esCalidad;
+    // Sistemas, Admin y Calidad, igual que AuditoriaService::verificarAcceso
+    // (Admin volvió el 16-oct-2026).
+    const { esSistemas, esAdmin, esCalidad } = useAuth();
+    const tieneAcceso = esSistemas || esAdmin || esCalidad;
 
     const [idTipoElegido, setIdTipoElegido] = useState<number | null>(null);
     const [busquedaProveedor, setBusquedaProveedor] = useState('');
@@ -47,6 +47,14 @@ export default function AuditoriasPage() {
         enabled: tieneAcceso && idTipoElegido !== null,
     });
 
+    const queryClient = useQueryClient();
+
+    const { data: reporte, isLoading: cargandoReporte } = useQuery({
+        queryKey: ['auditorias-reporte'],
+        queryFn: auditoriasApi.obtenerReporte,
+        enabled: tieneAcceso,
+    });
+
     const iniciarMutation = useMutation({
         mutationFn: ({ idTipo, idProveedor }: { idTipo: number; idProveedor: number }) =>
             auditoriasApi.iniciar(idTipo, idProveedor),
@@ -61,6 +69,7 @@ export default function AuditoriasPage() {
         onSuccess: (data) => {
             setAuditoria(data);
             setMensajeFinalizada(true);
+            queryClient.invalidateQueries({ queryKey: ['auditorias-reporte'] });
             setMostrarConfirmacion(false);
             setErrorFinalizar(null);
         },
@@ -398,6 +407,13 @@ export default function AuditoriasPage() {
                     ))}
                 </div>
             )}
+
+            <MiniReporteCalificaciones
+                titulo="Proveedores auditados"
+                filas={reporte ?? []}
+                cargando={cargandoReporte}
+                mostrarTipo
+            />
         </div>
     );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../../auth/hooks/useAuth';
 import SeccionCalificarFicha from './SeccionCalificarFicha';
 import SeccionCalificarDocumentos from './SeccionCalificarDocumentos';
 import SeccionCalificarProductos from './SeccionCalificarProductos';
@@ -34,10 +35,12 @@ type Pestana = 'ficha' | 'documentos' | 'productos';
  * Documentos y Productos -> cada una es su propia sección de
  * calificación completa.
  *
- * Las tres pestañas son para todos los que califican (14-oct-2026): el
- * proceso es de Calidad, con Admin y Sistemas de apoyo (ver
+ * Las tres pestañas son para Calidad, con Admin y Sistemas de apoyo (ver
  * CalificacionProveedorService::verificarPuedeCalificar). Van en el orden
  * en que se trabaja, el mismo del correo que le llega a Calidad.
+ *
+ * Compras (16-oct-2026) califica y edita SOLO la ficha: ve únicamente esa
+ * pestaña, igual que el backend (verificarPuedeCalificarFicha).
  */
 const PESTANAS: [Pestana, string][] = [
   ['ficha', 'Calificar Ficha'],
@@ -54,6 +57,8 @@ export default function ModalCalificarProveedor({
   razonSocial: string;
   onClose: () => void;
 }) {
+  const { esCompras } = useAuth();
+  const pestanas = esCompras ? PESTANAS.filter(([valor]) => valor === 'ficha') : PESTANAS;
   const [pestana, setPestana] = useState<Pestana>('ficha');
   const [expandido, setExpandido] = useState(false);
 
@@ -94,7 +99,7 @@ export default function ModalCalificarProveedor({
         </div>
 
         <div className="shrink-0 flex items-center gap-1 px-6 pt-3 border-b border-brand-900/8">
-          {PESTANAS.map(([valor, etiqueta]) => (
+          {pestanas.map(([valor, etiqueta]) => (
             <button
               key={valor}
               onClick={() => setPestana(valor)}

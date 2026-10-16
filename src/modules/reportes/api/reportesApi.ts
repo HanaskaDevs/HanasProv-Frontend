@@ -73,3 +73,29 @@ export async function obtenerReporteCaducidad(): Promise<ReporteCaducidad> {
   const { data } = await apiClient.get<ReporteCaducidad>('/reportes/caducidad-documentos');
   return data;
 }
+
+/** Un proveedor en el seguimiento del Plan de contingencia contra el fenómeno del Niño. */
+export interface ProveedorPlanContingencia {
+  id_proveedor: number;
+  razon_social: string;
+  nombre_comercial: string | null;
+  ruc: string | null;
+  email: string | null;
+  estado: string | null;
+  /** Solo en con_plan: el documento vigente, para abrirlo en el visor. */
+  id_documento_proveedor?: number;
+  fecha_carga?: string | null;
+}
+
+export interface ResumenPlanContingencia {
+  total_proveedores: number;
+  cargaron: number;
+  con_plan: ProveedorPlanContingencia[];
+  sin_plan: ProveedorPlanContingencia[];
+}
+
+/** Quién cargó el Plan de contingencia Niño (Sistemas / Admin / Calidad). */
+export async function obtenerPlanContingenciaNino(): Promise<ResumenPlanContingencia> {
+  const { data } = await apiClient.get<ResumenPlanContingencia>('/reportes/plan-contingencia-nino');
+  return data;
+}

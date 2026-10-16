@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import type { AccionHana } from '../utils/recordatorioHana';
 
 /**
  * Tabla que Hana trae cuando usó una herramienta de consulta. Es lo que
@@ -15,6 +16,8 @@ export interface MensajeChat {
   contenido: string;
   /** Tabla descargable, si esa respuesta trajo datos de una consulta. */
   tabla?: TablaAsistente | null;
+  /** Botón que lleva a una pantalla (recordatorios, ver recordatorioHana). */
+  accion?: AccionHana;
 }
 
 export interface RespuestaAsistente {

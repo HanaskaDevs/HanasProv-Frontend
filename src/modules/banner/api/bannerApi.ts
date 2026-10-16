@@ -95,6 +95,16 @@ export async function actualizarPieza(
   return data;
 }
 
+/**
+ * Nuevo orden del carrusel: los ids de TODAS las piezas (también las
+ * ocultas), de la primera a la última. Va como JSON, no FormData: no hay
+ * archivo de por medio.
+ */
+export async function reordenarPiezas(ids: number[]): Promise<BannerInformativo> {
+  const { data } = await apiClient.put<BannerInformativo>('/configuraciones/banner-informativo/piezas/orden', { ids });
+  return data;
+}
+
 export async function eliminarPieza(id: number): Promise<{ message: string }> {
   const { data } = await apiClient.delete(`/configuraciones/banner-informativo/piezas/${id}`);
   return data;

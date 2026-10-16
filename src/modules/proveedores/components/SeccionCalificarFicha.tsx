@@ -5,6 +5,7 @@ import axios from 'axios';
 import * as proveedoresApi from '../api/proveedoresApi';
 import type { CampoRechazado } from '../api/proveedoresApi';
 import ModalSeleccionarCamposRechazados from './ModalSeleccionarCamposRechazados';
+import ModalEditarFichaProveedor from './ModalEditarFichaProveedor';
 import CamposFichaSoloLectura from '../../miFicha/components/CamposFichaSoloLectura';
 import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
@@ -52,6 +53,7 @@ export default function SeccionCalificarFicha({ idProveedor }: { idProveedor: nu
   const queryClient = useQueryClient();
   const [modalRechazoAbierto, setModalRechazoAbierto] = useState(false);
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
+  const [modalEdicionAbierto, setModalEdicionAbierto] = useState(false);
 
   const { data: ficha, isLoading } = useQuery({
     queryKey: ['calificacion-ficha', idProveedor],
@@ -159,7 +161,33 @@ export default function SeccionCalificarFicha({ idProveedor }: { idProveedor: nu
         )}
       </Card>
 
+      {/* Compras (y quienes califican la ficha) la corrigen mientras la
+          revisan. Solo si el proveedor no está aprobado: después ya está en
+          Business Central y las ediciones no se re-sincronizan. */}
+      {ficha.editable_por_interno && (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            className="!bg-brand-200/40 hover:!bg-brand-200/60 text-xs px-3 py-1.5"
+            onClick={() => setModalEdicionAbierto(true)}
+          >
+            Editar ficha
+          </Button>
+        </div>
+      )}
+
       <CamposFichaSoloLectura ficha={ficha} />
+
+      {modalEdicionAbierto && (
+        <ModalEditarFichaProveedor
+          fichaInicial={ficha}
+          onGuardado={(actualizada) => {
+            queryClient.setQueryData(['calificacion-ficha', idProveedor], actualizada);
+            queryClient.invalidateQueries({ queryKey: ['proveedores-lista'] });
+          }}
+          onClose={() => setModalEdicionAbierto(false)}
+        />
+      )}
 
       {modalRechazoAbierto && (
         <ModalSeleccionarCamposRechazados

@@ -67,7 +67,7 @@ export default function PanelVideoTutorial() {
       <p className="text-sm text-brand-900/60 mb-4">
         Enlace de YouTube con el tutorial de cómo cargar datos y documentos. El proveedor lo ve
         desde el botón <strong>Ver video tutorial</strong> de su panel, sin salir del portal.
-        Dejá el campo vacío para quitarlo.
+        Deja el campo vacío para quitarlo.
       </p>
 
       <div className="flex flex-col gap-1 mb-3">

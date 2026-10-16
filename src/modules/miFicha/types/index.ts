@@ -49,6 +49,10 @@ export interface FichaProveedor {
    * de aceptación (ver AceptacionPoliticas y FichaProveedorService).
    */
   fecha_aceptacion_politicas: string | null;
+  /** Si el personal interno (Compras / quienes califican la ficha) la puede
+   *  editar: false una vez aprobado el proveedor, porque las ediciones no
+   *  se re-sincronizan con Business Central. */
+  editable_por_interno?: boolean;
   id_proveedor: number;
   seccion_actual: number | string;
   porcentaje_completado: number | string;

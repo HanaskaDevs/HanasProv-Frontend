@@ -181,14 +181,23 @@ function FilaDocumento({
       )}
 
       <div className="pt-1 border-t border-brand-900/6">
-        <ControlesCalificacion
-          estado={doc.estado_calificacion}
-          observacion={doc.comentario_calificacion}
-          fecha={doc.fecha_calificacion}
-          calificando={calificar.isPending}
-          soloLectura={soloLectura}
-          onCalificar={(aprobado, observacion) => calificar.mutate({ aprobado, observacion })}
-        />
+        {/* Plan de contingencia Niño: informativo, el backend no deja
+            calificarlo (ver TipoDocumento::esInformativo). */}
+        {tipo.informativo ? (
+          <p className="flex items-center gap-1.5 pt-1 text-[12px] text-brand-900/55">
+            <Badge tone="info">Informativo</Badge>
+            No se califica.
+          </p>
+        ) : (
+          <ControlesCalificacion
+            estado={doc.estado_calificacion}
+            observacion={doc.comentario_calificacion}
+            fecha={doc.fecha_calificacion}
+            calificando={calificar.isPending}
+            soloLectura={soloLectura}
+            onCalificar={(aprobado, observacion) => calificar.mutate({ aprobado, observacion })}
+          />
+        )}
       </div>
     </div>
   );

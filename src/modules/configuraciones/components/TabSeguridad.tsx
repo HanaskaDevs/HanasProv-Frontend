@@ -101,7 +101,7 @@ export default function TabSeguridad() {
         )}
 
         {desbloquear.isError && (
-          <p className="text-xs text-brand-wine mt-3">No se pudo desbloquear. Intentá de nuevo.</p>
+          <p className="text-xs text-brand-wine mt-3">No se pudo desbloquear. Intenta de nuevo.</p>
         )}
       </Card>
 

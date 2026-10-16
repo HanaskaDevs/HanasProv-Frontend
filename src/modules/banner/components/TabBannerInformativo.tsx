@@ -140,7 +140,7 @@ export default function TabBannerInformativo() {
 
     if (nuevo.size > maxMb * 1024 * 1024) {
       const pesa = (nuevo.size / (1024 * 1024)).toFixed(1);
-      setErrorArchivo(`El archivo pesa ${pesa} MB y el servidor acepta hasta ${maxMb} MB. Comprimilo o elegí otro.`);
+      setErrorArchivo(`El archivo pesa ${pesa} MB y el servidor acepta hasta ${maxMb} MB. Comprímelo o elige otro.`);
       return;
     }
 
@@ -153,6 +153,21 @@ export default function TabBannerInformativo() {
       bannerApi.actualizarPieza(pieza.id_banner_informativo, { activo: !pieza.activo }),
     onSuccess: refrescar,
   });
+
+  const reordenar = useMutation({
+    mutationFn: bannerApi.reordenarPiezas,
+    onSuccess: refrescar,
+  });
+
+  /** Intercambia la pieza con su vecina y manda la lista completa. */
+  function moverPieza(indice: number, desplazamiento: -1 | 1) {
+    const ids = (banner?.piezas ?? []).map((pieza) => pieza.id_banner_informativo);
+    const destino = indice + desplazamiento;
+    if (destino < 0 || destino >= ids.length) return;
+
+    [ids[indice], ids[destino]] = [ids[destino], ids[indice]];
+    reordenar.mutate(ids);
+  }
 
   const borrarPieza = useMutation({
     mutationFn: (id: number) => bannerApi.eliminarPieza(id),
@@ -221,7 +236,7 @@ export default function TabBannerInformativo() {
               }, ${
                 banner?.frecuencia === 'siempre' ? 'en cada inicio de sesión' : 'una sola vez'
               }.`
-            : 'Apagado: nadie lo ve. Podés dejar todo preparado y encenderlo después.'}
+            : 'Apagado: nadie lo ve. Puedes dejar todo preparado y encenderlo después.'}
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -332,9 +347,16 @@ export default function TabBannerInformativo() {
       <Card>
         <h3 className="font-medium text-brand-900">Imágenes y video</h3>
         <p className="mt-0.5 mb-4 text-sm text-brand-900/60">
-          Podés subir una sola imagen, varias (se muestran como carrusel, en orden) o un video.
-          Imágenes JPG, PNG, WEBP o GIF; videos MP4 o WEBM, hasta 20 MB.
+          Puedes subir una sola imagen, varias (se muestran como carrusel, en orden) o un video.
+          Imágenes JPG, PNG, WEBP o GIF; videos MP4 o WEBM, hasta {banner?.max_mb ?? 20} MB.
+          Con las flechas ← → cambias el orden en que aparecen.
         </p>
+
+        {reordenar.isError && (
+          <p className="mb-3 text-sm text-brand-wine">
+            {mensajeDeError(reordenar.error, 'No se pudo cambiar el orden.')}
+          </p>
+        )}
 
         {(banner?.piezas ?? []).length === 0 ? (
           <p className="py-4 text-center text-sm text-brand-900/50">
@@ -342,7 +364,7 @@ export default function TabBannerInformativo() {
           </p>
         ) : (
           <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 items-start">
-            {(banner?.piezas ?? []).map((pieza) => (
+            {(banner?.piezas ?? []).map((pieza, indice, piezas) => (
               <div
                 key={pieza.id_banner_informativo}
                 className={`overflow-hidden rounded-lg border ${
@@ -377,6 +399,32 @@ export default function TabBannerInformativo() {
                   )}
 
                   <div className="mt-1.5 flex items-center gap-1">
+                    <span
+                      className="mr-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-900/[0.06] px-1.5 text-xs font-medium text-brand-900/70"
+                      title="Posición en el carrusel"
+                    >
+                      {indice + 1}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      className="px-2 py-1 text-xs"
+                      onClick={() => moverPieza(indice, -1)}
+                      disabled={indice === 0 || reordenar.isPending}
+                      aria-label="Mover antes"
+                      title="Mover antes"
+                    >
+                      ←
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="px-2 py-1 text-xs"
+                      onClick={() => moverPieza(indice, 1)}
+                      disabled={indice === piezas.length - 1 || reordenar.isPending}
+                      aria-label="Mover después"
+                      title="Mover después"
+                    >
+                      →
+                    </Button>
                     <Button
                       variant="ghost"
                       className="px-2 py-1 text-xs"

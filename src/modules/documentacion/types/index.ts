@@ -36,6 +36,13 @@ export interface TipoDocumentoChecklist {
    *  que se postean a la Ficha de Bancos de Business Central; del PDF no
    *  se pueden extraer). */
   requiere_datos_bancarios: boolean;
+  /** Codigo_Archivo del tipo (ej. 'PCNINO'): sirve para enlazar directo a
+   *  un documento con /documentos?documento=PCNINO. */
+  codigo: string | null;
+  /** true = informativo (Plan de contingencia contra el fenómeno del Niño):
+   *  se sube y se cambia en cualquier momento, aunque la documentación ya
+   *  esté registrada, y no se califica. */
+  informativo: boolean;
   documentos: DocumentoSubido[];
 }
 
@@ -45,3 +52,5 @@ export interface ChecklistDocumentacion {
   correcciones_pendientes: boolean;
   documentos: TipoDocumentoChecklist[];
 }
+/** Codigo_Archivo del Plan de contingencia contra el fenómeno del Niño. */
+export const CODIGO_PLAN_CONTINGENCIA_NINO = 'PCNINO';

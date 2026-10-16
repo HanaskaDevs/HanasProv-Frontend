@@ -172,7 +172,7 @@ function TarjetaProducto({
               ? Object.values(calificar.error.response.data.errors).flat().join(' ')
               : axios.isAxiosError(calificar.error) && calificar.error.response?.data?.message
               ? calificar.error.response.data.message
-              : 'No se pudo guardar. Revisa si ya se aplicó y probá de nuevo.'}
+              : 'No se pudo guardar. Revisa si ya se aplicó y prueba de nuevo.'}
           </p>
         )}
       </div>

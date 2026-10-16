@@ -87,14 +87,14 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
 }
 
 function CalendarioContenido() {
-  // CRUD (crear/editar/borrar horario): Sistemas, Admin y Compras
-  // (pedido explícito del usuario, 27-ago-2026) -> coincide con
+  // CRUD (crear/editar/borrar horario): Sistemas, Admin, Compras y Calidad
+  // (Calidad desde el 16-oct-2026) -> coincide con
   // HorarioEntregaService::verificarAccesoGestion en el backend.
-  const { esSistemas, esAdmin, esCompras } = useAuth();
+  const { esSistemas, esAdmin, esCompras, esCalidad } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<ClasificacionHorario>('Perecibles');
   const [modalAbierto, setModalAbierto] = useState(false);
-  const puedeGestionar = esSistemas || esAdmin || esCompras;
+  const puedeGestionar = esSistemas || esAdmin || esCompras || esCalidad;
 
   const { data: horarios, isLoading } = useQuery({
     queryKey: ['horarios-entrega', tab],

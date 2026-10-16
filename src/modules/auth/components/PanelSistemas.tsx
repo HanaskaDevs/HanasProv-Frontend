@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import Spinner from '../../../shared/components/Spinner';
 import { obtenerResumenDashboard } from '../api/dashboardSistemasApi';
+import TarjetaPlanContingencia from '../../reportes/components/TarjetaPlanContingencia';
 
 function IconoEmpresa({ className = '' }: { className?: string }) {
   return (
@@ -189,6 +190,8 @@ export default function PanelSistemas() {
           to="/reclamos/abiertos"
         />
       </div>
+
+      <TarjetaPlanContingencia />
     </div>
   );
 }

@@ -54,6 +54,8 @@ export interface TipoDocumentoCalificable {
   categoria: string;
   nombre_documento: string;
   obligatorio: boolean;
+  /** true = informativo (Plan de contingencia Niño): se ve, no se califica. */
+  informativo: boolean;
   /** Solo viene en el Certificado bancario; null si aún no los registró. */
   datos_bancarios: DatosBancariosDeclarados | null;
   documentos: DocumentoCalificable[];

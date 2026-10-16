@@ -100,7 +100,7 @@ export default function TabDocumentos() {
         </div>
 
         {cambiar.isError && (
-          <p className="text-xs text-brand-wine mt-3">No se pudo cambiar la configuración. Intentá de nuevo.</p>
+          <p className="text-xs text-brand-wine mt-3">No se pudo cambiar la configuración. Intenta de nuevo.</p>
         )}
       </Card>
 

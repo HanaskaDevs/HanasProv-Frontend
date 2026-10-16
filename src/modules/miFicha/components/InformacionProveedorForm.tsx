@@ -124,11 +124,16 @@ export default function InformacionProveedorForm({
   onIrAPaso,
   onGuardado,
   requiereAceptarPoliticas = false,
+  guardar,
 }: {
   subPaso: 1 | 2;
   datosIniciales: Seccion1Data;
   onIrAPaso: (paso: number) => void;
   onGuardado: (ficha: FichaProveedor) => void;
+  /** Quién guarda. Por defecto, el propio proveedor (/mi-ficha). La edición
+   *  interna (Compras, ver ModalEditarFichaProveedor) pasa la suya, que
+   *  guarda la ficha de OTRO proveedor y nunca pide aceptar políticas. */
+  guardar?: (payload: Partial<Seccion1Data>) => Promise<FichaProveedor>;
   /** Ver Seccion3Form: solo si ESTE guardado completa la ficha (clase y
    *  categoría ya elegidas). Pasa cuando el proveedor vuelve a un paso
    *  anterior desde la barra de progreso y guarda desde ahí. */
@@ -243,14 +248,14 @@ export default function InformacionProveedorForm({
     }
 
     try {
-      const ficha = await guardarSeccion1(
-        {
-          ...values,
-          latitud: values.latitud ? Number(values.latitud) : null,
-          longitud: values.longitud ? Number(values.longitud) : null,
-        } as Partial<Seccion1Data>,
-        requiereAceptarPoliticas ? aceptaPoliticas : undefined
-      );
+      const payload = {
+        ...values,
+        latitud: values.latitud ? Number(values.latitud) : null,
+        longitud: values.longitud ? Number(values.longitud) : null,
+      } as Partial<Seccion1Data>;
+      const ficha = guardar
+        ? await guardar(payload)
+        : await guardarSeccion1(payload, requiereAceptarPoliticas ? aceptaPoliticas : undefined);
       onGuardado(ficha);
     } catch (e) {
       setErrorGeneral(mensajeDeError(e, 'No se pudo guardar. Revisa los campos e intenta de nuevo.'));

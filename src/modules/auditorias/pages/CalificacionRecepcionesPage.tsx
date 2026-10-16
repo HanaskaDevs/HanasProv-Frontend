@@ -15,6 +15,7 @@ import Avatar from '../../../shared/components/Avatar';
 import AroProgreso from '../../../shared/components/AroProgreso';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import FilaParametroRecepcion from '../components/FilaParametroRecepcion';
+import MiniReporteCalificaciones from '../components/MiniReporteCalificaciones';
 
 
 /** Paso 1: a quién calificar. Los que tocan hoy vienen primero del backend. */
@@ -61,7 +62,7 @@ function SeleccionProveedor({
             >
                 <p className="text-sm text-brand-900">
                     {tocanHoy === 0 ? (
-                        <>Hoy no le toca la auditoría de recepción a ningún proveedor. Podés calificar a cualquiera igual.</>
+                        <>Hoy no le toca la auditoría de recepción a ningún proveedor. Puedes calificar a cualquiera igual.</>
                     ) : (
                         <>
                             Hoy le toca la auditoría de recepción a{' '}
@@ -321,6 +322,11 @@ function CalificacionRecepcionesContent() {
         queryFn: recepcionesApi.listarProveedores,
     });
 
+    const { data: reporte, isLoading: cargandoReporte } = useQuery({
+        queryKey: ['recepciones-reporte'],
+        queryFn: recepcionesApi.obtenerReporte,
+    });
+
     const iniciar = useMutation({
         mutationFn: (p: ProveedorParaRecepcion) => recepcionesApi.iniciar({ id_proveedor: p.id_proveedor }),
         onSuccess: (data) => {
@@ -373,6 +379,7 @@ function CalificacionRecepcionesContent() {
             // La lista de proveedores cambia (sube el conteo del año y la
             // última calificación) -> se invalida para cuando vuelva.
             queryClient.invalidateQueries({ queryKey: ['recepciones-proveedores'] });
+            queryClient.invalidateQueries({ queryKey: ['recepciones-reporte'] });
         },
         onError: (error) => {
             if (axios.isAxiosError(error) && error.response?.status === 422) {
@@ -424,9 +431,14 @@ function CalificacionRecepcionesContent() {
                         <p className="text-xs text-brand-wine">
                             {axios.isAxiosError(iniciar.error) && iniciar.error.response?.data?.errors
                                 ? Object.values(iniciar.error.response.data.errors).flat().join(' ')
-                                : 'No se pudo abrir la calificación. Intentá de nuevo.'}
+                                : 'No se pudo abrir la calificación. Intenta de nuevo.'}
                         </p>
                     )}
+                    <MiniReporteCalificaciones
+                        titulo="Proveedores calificados en recepción"
+                        filas={reporte ?? []}
+                        cargando={cargandoReporte}
+                    />
                 </>
             )}
         </div>
@@ -434,10 +446,10 @@ function CalificacionRecepcionesContent() {
 }
 
 export default function CalificacionRecepcionesPage() {
-    const { esSistemas, esCalidad } = useAuth();
+    const { esSistemas, esAdmin, esCalidad } = useAuth();
 
     return (
-        <RoleRoute allow={esSistemas || esCalidad}>
+        <RoleRoute allow={esSistemas || esAdmin || esCalidad}>
             <CalificacionRecepcionesContent />
         </RoleRoute>
     );

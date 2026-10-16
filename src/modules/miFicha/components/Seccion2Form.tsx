@@ -12,9 +12,14 @@ export default function Seccion2Form({
   seleccionadas,
   onGuardado,
   requiereAceptarPoliticas = false,
+  guardar,
+  textoBoton,
 }: {
   seleccionadas: ClaseSeleccionada[];
   onGuardado: (ficha: FichaProveedor) => void;
+  /** Ver InformacionProveedorForm: la edición interna pasa la suya. */
+  guardar?: (idClases: number[]) => Promise<FichaProveedor>;
+  textoBoton?: string;
   /** Ver Seccion3Form: solo si ESTE guardado completa la ficha. En el
    *  wizard normal casi nunca pasa (la categoría va después), pero los
    *  pasos completados se pueden revisitar y guardar en cualquier orden. */
@@ -54,7 +59,9 @@ export default function Seccion2Form({
 
     setIsSubmitting(true);
     try {
-      const ficha = await guardarSeccion2(seleccionIds, requiereAceptarPoliticas ? aceptaPoliticas : undefined);
+      const ficha = guardar
+        ? await guardar(seleccionIds)
+        : await guardarSeccion2(seleccionIds, requiereAceptarPoliticas ? aceptaPoliticas : undefined);
       onGuardado(ficha);
     } catch (e) {
       setError(mensajeDeError(e, 'No se pudo guardar. Intenta de nuevo.'));
@@ -112,7 +119,7 @@ export default function Seccion2Form({
 
       <div className="flex justify-end">
         <Button onClick={onSubmit} isLoading={isSubmitting}>
-          {requiereAceptarPoliticas ? 'Guardar y enviar a revisión' : 'Guardar y continuar'}
+          {textoBoton ?? (requiereAceptarPoliticas ? 'Guardar y enviar a revisión' : 'Guardar y continuar')}
         </Button>
       </div>
     </div>
