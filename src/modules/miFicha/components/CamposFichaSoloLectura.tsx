@@ -2,6 +2,7 @@ import Badge from '../../../shared/components/Badge';
 import CampoFicha from './CampoFicha';
 import { formatearTelefono } from '../utils/telefono';
 import type { FichaProveedor } from '../types';
+import { nombreComercialVisible } from '../utils/nombresProveedor';
 
 function aTexto(valor: string | number | null | undefined): string {
   return valor === null || valor === undefined ? '' : String(valor);
@@ -35,8 +36,13 @@ export default function CamposFichaSoloLectura({ ficha }: { ficha: FichaProveedo
       <Seccion titulo="Datos generales">
         <CampoFicha label="RUC" value={aTexto(s1.ruc)} disabled />
         <CampoFicha label="Clase de contribuyente" value={aTexto(s1.clase_contribuyente)} disabled />
-        <CampoFicha label="Razón social" value={aTexto(s1.razon_social)} disabled />
-        <CampoFicha label="Nombre comercial" value={aTexto(s1.nombre_comercial)} disabled />
+        <CampoFicha label="Razón social" value={aTexto(s1.razon_social).toUpperCase()} disabled />
+        {/* Nunca "N/A" ni vacío: si no tiene, la razón social. */}
+        <CampoFicha
+          label="Nombre comercial"
+          value={nombreComercialVisible(aTexto(s1.nombre_comercial), aTexto(s1.razon_social))}
+          disabled
+        />
         <CampoFicha label="Correo" value={aTexto(s1.email)} disabled />
         <CampoFicha label="Teléfono" value={formatearTelefono(aTexto(s1.telefono))} disabled />
         <CampoFicha label="Dirección" value={aTexto(s1.direccion)} disabled />
