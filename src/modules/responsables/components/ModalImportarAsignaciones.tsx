@@ -89,7 +89,7 @@ export default function ModalImportarAsignaciones({
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
           <div>
             <p className="text-sm text-brand-900/60 mb-3">
-              Subí tu archivo tal como lo tenés. Las columnas se detectan solas: se busca la del
+              Sube tu archivo tal como lo tienes. Las columnas se detectan solas: se busca la del
               código de proveedor de BC (PROV-0000056) y la del correo del responsable que esté a
               su lado. No hace falta reordenar ni renombrar nada.
             </p>
@@ -136,8 +136,8 @@ export default function ModalImportarAsignaciones({
                 Faltan cargar estos responsables
               </p>
               <p className="text-xs text-amber-900/80 mb-1.5">
-                El archivo los menciona, pero todavía no están en la lista. Agregalos primero —con
-                su nombre y teléfono— y volvé a importar; si no, esas filas van a dar error.
+                El archivo los menciona, pero todavía no están en la lista. Agrégalos primero —con
+                su nombre y teléfono— y vuelve a importar; si no, esas filas van a dar error.
               </p>
               <ul className="text-xs text-amber-900/90 space-y-0.5">
                 {correosFaltantes.map((correo) => (

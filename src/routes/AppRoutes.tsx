@@ -55,6 +55,7 @@ const CatalogosPage = lazy(() => import('../modules/catalogos/pages/CatalogosPag
 const ReporteCalificacionProveedoresPage = lazy(() => import('../modules/reportes/pages/ReporteCalificacionProveedoresPage'));
 const ReporteCumplimientoEntregasPage = lazy(() => import('../modules/reportes/pages/ReporteCumplimientoEntregasPage'));
 const ReporteCaducidadDocumentosPage = lazy(() => import('../modules/reportes/pages/ReporteCaducidadDocumentosPage'));
+const PlanContingenciaNinoPage = lazy(() => import('../modules/reportes/pages/PlanContingenciaNinoPage'));
 
 // Páginas legales: PÚBLICAS a propósito (fuera de ProtectedRoute). Quien
 // necesita ejercer un derecho sobre sus datos puede ser justamente alguien
@@ -142,6 +143,7 @@ export default function AppRoutes() {
           <Route path="/reportes/calificacion-proveedores" element={<ReporteCalificacionProveedoresPage />} />
           <Route path="/reportes/cumplimiento-entregas" element={<ReporteCumplimientoEntregasPage />} />
           <Route path="/reportes/caducidad-documentos" element={<ReporteCaducidadDocumentosPage />} />
+          <Route path="/reportes/plan-contingencia-nino" element={<PlanContingenciaNinoPage />} />
           <Route path="/configuraciones" element={<ConfiguracionesPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
         </Route>

@@ -221,26 +221,18 @@ const AREA_OPERACION_SISTEMAS: MenuItem = {
   children: [PEDIDOS_ITEM, SEGUIMIENTO_HOY_ITEM, APROBACIONES_ARRIBO_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
 };
 
-// Auditorías (26-ago-2026): el backend ahora solo deja entrar a Sistemas y
-// Calidad (AuditoriaService::verificarAcceso, "Auditorías solo para los
-// roles CALIDAD y SISTEMAS") -> Admin YA NO va acá, mismo criterio que ya
-// se usaba con Compras (ver comentario en MENU_COMPRAS de abajo: no tiene
-// sentido enseñar un ítem que el backend va a rechazar con 403).
-// Calificación de Recepciones sigue igual (Sistemas/Admin/Calidad, ver
-// CalificacionRecepcionService::verificarAcceso), así que Admin conserva
-// esa sola.
+// Auditorías y Calificación de Recepciones: Sistemas, Admin y Calidad
+// (AuditoriaService::verificarAcceso y CalificacionRecepcionService::
+// verificarAcceso). Admin había quedado fuera de las dos (26-ago y
+// 1-sep-2026) y vuelve con acceso completo el 16-oct-2026.
 const AREA_CALIDAD_SISTEMAS: MenuItem = {
   label: 'Calidad',
   children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
 };
 
-// Admin ya NO califica recepciones (1-sep-2026), igual que hace tiempo dejó
-// de auditar -> su área de Calidad se queda solo con Políticas. Las
-// puntuaciones de ambas las sigue viendo en Reportes -> Calificación de
-// proveedores, donde son dos de los cinco componentes de la nota.
 const AREA_CALIDAD_ADMIN: MenuItem = {
   label: 'Calidad',
-  children: [POLITICAS_ITEM],
+  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
 };
 
 // Compras: Pedidos + Calendario de horarios (lo ve pero no lo gestiona,
@@ -402,9 +394,19 @@ const SEGUIMIENTO_HOY_PLANO: MenuItem = { label: 'Seguimiento de hoy', to: '/cal
  * porque es el área donde van a caer las pantallas que se le sigan
  * habilitando al rol.
  */
+// Fichas de proveedores (16-oct-2026): Compras revisa, edita y califica la
+// ficha de todos los proveedores. Es la misma pantalla de Calificación de
+// proveedores, que a Compras le muestra solo la pestaña Ficha.
+const FICHAS_DE_PROVEEDORES_COMPRAS: SubMenuItem = {
+  to: '/proveedores',
+  label: 'Fichas de proveedores',
+  icono: 'checklist',
+  descripcion: 'Revisar, editar y calificar la ficha',
+};
+
 const AREA_PROVEEDORES_COMPRAS: MenuItem = {
   label: 'Proveedores',
-  children: [PRODUCTOS_POR_REVISAR, PRODUCTOS_POR_PROVEEDOR],
+  children: [FICHAS_DE_PROVEEDORES_COMPRAS, PRODUCTOS_POR_REVISAR, PRODUCTOS_POR_PROVEEDOR],
 };
 
 const MENU_COMPRAS: MenuItem[] = [
@@ -428,7 +430,8 @@ const AREA_REPORTES_CALIDAD: MenuItem = {
  * quedan de apoyo (ver CalificacionProveedorService::verificarPuedeCalificar).
  *
  * Detalle de proveedores entra para que vea cuántas fichas y cuánta
- * documentación esperan su revisión.
+ * documentación esperan su revisión. Productos por revisar (la etapa de
+ * Compras) entra con acceso total desde el 16-oct-2026.
  */
 const AREA_PROVEEDORES_CALIDAD: MenuItem = {
   label: 'Proveedores',
@@ -445,6 +448,8 @@ const AREA_PROVEEDORES_CALIDAD: MenuItem = {
       icono: 'checklist',
       descripcion: 'Revisar ficha, documentos y productos',
     },
+    // Acceso total a la etapa de Compras (16-oct-2026).
+    PRODUCTOS_POR_REVISAR,
   ],
 };
 

@@ -400,11 +400,13 @@ function ProveedoresContent() {
 export default function ProveedoresPage() {
   // El proceso de calificación es de Calidad (ficha, documentos y
   // productos), con Admin y Sistemas de apoyo (ver
-  // CalificacionProveedorService::verificarPuedeCalificar).
-  const { esSistemas, esAdmin, esCalidad } = useAuth();
+  // CalificacionProveedorService::verificarPuedeCalificar). Compras entra
+  // desde el 16-oct-2026 para revisar, editar y calificar SOLO la ficha
+  // (ver ModalCalificarProveedor).
+  const { esSistemas, esAdmin, esCalidad, esCompras } = useAuth();
 
   return (
-    <RoleRoute allow={esSistemas || esAdmin || esCalidad}>
+    <RoleRoute allow={esSistemas || esAdmin || esCalidad || esCompras}>
       <ProveedoresContent />
     </RoleRoute>
   );

@@ -363,15 +363,16 @@ function RevisionComprasContenido() {
 }
 
 /**
- * Compras (dueños del paso), Admin y Sistemas. El backend lo vuelve a
- * validar en RevisionComprasProductoService::verificarAcceso -esto es solo
- * para no dibujar una pantalla que después responde 403-.
+ * Compras (dueños del paso), Calidad (acceso total desde el 16-oct-2026),
+ * Admin y Sistemas. El backend lo vuelve a validar en
+ * RevisionComprasProductoService::verificarAcceso -esto es solo para no
+ * dibujar una pantalla que después responde 403-.
  */
 export default function RevisionComprasPage() {
-  const { esCompras, esAdmin, esSistemas } = useAuth();
+  const { esCompras, esCalidad, esAdmin, esSistemas } = useAuth();
 
   return (
-    <RoleRoute allow={esCompras || esAdmin || esSistemas}>
+    <RoleRoute allow={esCompras || esCalidad || esAdmin || esSistemas}>
       <RevisionComprasContenido />
     </RoleRoute>
   );

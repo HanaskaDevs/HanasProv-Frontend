@@ -3,6 +3,7 @@ import { descargarExcel, nombreArchivoConFecha } from '../utils/descargarExcel';
 import { useNavigate } from 'react-router-dom';
 import * as asistenteApi from '../api/asistenteApi';
 import { haySaludoPendiente, olvidarSaludoPendiente } from '../utils/saludoDeSesion';
+import { EVENTO_RECORDATORIO_HANA, type AccionHana, type RecordatorioHana } from '../utils/recordatorioHana';
 import type { MensajeChat } from '../api/asistenteApi';
 
 // Dentro de una clase de caracteres la barra no necesita escape, y con
@@ -89,10 +90,29 @@ export default function HanaBot() {
 
         window.addEventListener('hana:celebrar', alCelebrar);
 
+        /*
+         * Recordatorio pedido por una pantalla (ver recordatorioHana). Si
+         * el último mensaje ya es ese mismo recordatorio, no se repite:
+         * solo se vuelve a abrir el chat. Si no, entrar y salir de la
+         * pantalla iba apilando la misma burbuja.
+         */
+        function alRecordar(evento: Event) {
+            const { mensaje, accion } = (evento as CustomEvent<RecordatorioHana>).detail;
+
+            setMensajes((prev) =>
+                prev.at(-1)?.contenido === mensaje ? prev : [...prev, { rol: 'hana', contenido: mensaje, accion }]
+            );
+            setChatAbierto(true);
+            reproducirSegmento(SEGMENTOS.salto, { prioridad: true });
+        }
+
+        window.addEventListener(EVENTO_RECORDATORIO_HANA, alRecordar);
+
         return () => {
             clearTimeout(timeoutSaludo);
             clearInterval(intervaloGuino);
             window.removeEventListener('hana:celebrar', alCelebrar);
+            window.removeEventListener(EVENTO_RECORDATORIO_HANA, alRecordar);
         };
     }, []);
 
@@ -174,6 +194,10 @@ export default function HanaBot() {
         }
     }
 
+    function ejecutarAccion(accion: AccionHana) {
+        navigate(accion.ruta, { state: accion.estado });
+    }
+
     async function enviar() {
         const contenido = texto.trim();
         if (!contenido || enviando) return;
@@ -253,6 +277,21 @@ export default function HanaBot() {
                                     }`}
                                 >
                                     {m.contenido}
+
+                                    {m.accion && (
+                                        <button
+                                            type="button"
+                                            onClick={() => ejecutarAccion(m.accion!)}
+                                            className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-900
+                                                px-2.5 py-2 text-xs font-medium text-white hover:bg-brand-700 transition-colors
+                                                focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-700"
+                                        >
+                                            {m.accion.etiqueta}
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                                            </svg>
+                                        </button>
+                                    )}
 
                                     {/* Botón de descarga: solo aparece si ESA
                                         respuesta trajo filas de una consulta.

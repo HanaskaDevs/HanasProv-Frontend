@@ -144,3 +144,19 @@ export interface ResumenAuditoriasDashboard {
     porcentaje_cumplimiento: number;
   }[];
 }
+
+/**
+ * Una fila del mini reporte de Auditorías / Recepciones: la ÚLTIMA
+ * calificación finalizada de un proveedor y cuántas lleva en total.
+ */
+export interface FilaReporteCalificacion {
+  id_proveedor: number;
+  proveedor: string | null;
+  ruc: string | null;
+  /** Solo en Auditorías. */
+  tipo_auditoria?: string | null;
+  fecha: string | null;
+  auditor: string | null;
+  porcentaje: number;
+  cantidad: number;
+}

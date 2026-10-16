@@ -9,6 +9,7 @@ import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import ModalVisorPdf from '../../../shared/components/ModalVisorPdf';
 import { CORREO_LABORATORIO } from '../../../shared/config/contactos';
+import { mensajeDeError } from '../../miFicha/utils/mensajeDeError';
 
 const TAMANO_MAXIMO_MB = 4;
 
@@ -242,7 +243,8 @@ function CasillaDocumento({
       setNombreDocumento('');
       setFechaCaducidad('');
     },
-    onError: () => setError('No se pudo subir. Verifica que sea PDF y pese menos de 4MB.'),
+    // El motivo real del servidor, no siempre el mismo texto fijo.
+    onError: (e) => setError(mensajeDeError(e, 'No se pudo subir. Verifica que sea PDF y pese menos de 4MB.')),
   });
 
   function handleSeleccionar(e: ChangeEvent<HTMLInputElement>) {

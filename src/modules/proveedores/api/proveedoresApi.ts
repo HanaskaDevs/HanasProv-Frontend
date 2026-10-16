@@ -1,6 +1,6 @@
 // src/modules/proveedores/api/proveedoresApi.ts
 import apiClient from '../../../shared/api/apiClient';
-import type { FichaProveedor } from '../../miFicha/types';
+import type { FichaProveedor, Seccion1Data } from '../../miFicha/types';
 import type { ChecklistCalificacion, PayloadCalificar, ProductosCalificacion, ProveedorListado } from '../types';
 
 export async function listarProveedores(): Promise<ProveedorListado[]> {
@@ -10,6 +10,28 @@ export async function listarProveedores(): Promise<ProveedorListado[]> {
 
 export async function obtenerFichaCalificacion(idProveedor: number): Promise<FichaProveedor> {
   const { data } = await apiClient.get<FichaProveedor>(`/proveedores/${idProveedor}/ficha-calificacion`);
+  return data;
+}
+
+/*
+ * Edición interna de la ficha (Compras y quienes califican la ficha), solo
+ * mientras el proveedor no esté aprobado. Devuelven la ficha completa, igual
+ * que obtenerFichaCalificacion.
+ */
+export async function editarFichaSeccion1(idProveedor: number, payload: Partial<Seccion1Data>): Promise<FichaProveedor> {
+  const { data } = await apiClient.put<FichaProveedor>(`/proveedores/${idProveedor}/ficha/seccion-1`, payload);
+  return data;
+}
+
+export async function editarFichaSeccion2(idProveedor: number, idClases: number[]): Promise<FichaProveedor> {
+  const { data } = await apiClient.put<FichaProveedor>(`/proveedores/${idProveedor}/ficha/seccion-2`, { id_clases: idClases });
+  return data;
+}
+
+export async function editarFichaSeccion3(idProveedor: number, idCategorias: number[]): Promise<FichaProveedor> {
+  const { data } = await apiClient.put<FichaProveedor>(`/proveedores/${idProveedor}/ficha/seccion-3`, {
+    id_categorias: idCategorias,
+  });
   return data;
 }
 

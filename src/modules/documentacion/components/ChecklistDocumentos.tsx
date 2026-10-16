@@ -1,9 +1,11 @@
-import { useRef, useState, type ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import * as documentacionApi from '../api/documentacionApi';
-import type { DocumentoSubido, TipoDocumentoChecklist } from '../types';
+import { CODIGO_PLAN_CONTINGENCIA_NINO, type DocumentoSubido, type TipoDocumentoChecklist } from '../types';
+import { pedirRecordatorioHana } from '../../../shared/utils/recordatorioHana';
+import { mensajeDeError } from '../../miFicha/utils/mensajeDeError';
 import Card from '../../../shared/components/Card';
 import Spinner from '../../../shared/components/Spinner';
 import Button from '../../../shared/components/Button';
@@ -144,7 +146,9 @@ function ArchivoSubido({
       setNuevoNombre('');
       setError(null);
     },
-    onError: () => setError('No se pudo reemplazar. Verifica que sea PDF y pese menos de 4MB.'),
+    // El motivo real del servidor (ej. 'El archivo no es un PDF válido...'):
+    // antes siempre decía lo mismo y el proveedor no sabía qué corregir.
+    onError: (e) => setError(mensajeDeError(e, 'No se pudo reemplazar. Verifica que sea PDF y pese menos de 4MB.')),
   });
 
   // Solo documentos OPCIONALES se pueden borrar del todo -> los
@@ -200,7 +204,8 @@ function ArchivoSubido({
     !soloLectura ||
     (correccionesPendientes && doc.estado_calificacion !== 'Aprobado') ||
     doc.proximo_a_vencer ||
-    doc.vencido;
+    doc.vencido ||
+    tipo.informativo;
 
   return (
     <div className="py-1">
@@ -214,7 +219,13 @@ function ArchivoSubido({
               Fecha_Exp_{doc.fecha_caducidad}
             </span>
           )}
-          {doc.estado_calificacion === 'Aprobado' && <Badge tone="success">Aprobado</Badge>}
+          {/* El informativo no se califica: queda resuelto al subirlo, pero
+              decir "Aprobado" sería mentirle al proveedor. */}
+          {tipo.informativo ? (
+            <Badge tone="info">Recibido</Badge>
+          ) : (
+            doc.estado_calificacion === 'Aprobado' && <Badge tone="success">Aprobado</Badge>
+          )}
           {rechazado && (
             <Badge tone="danger" className="!bg-amber-100 !text-amber-800">
               Por corregir
@@ -414,7 +425,7 @@ function FilaDocumento({
       setNombreDocumento('');
       setError(null);
     },
-    onError: () => setError('No se pudo subir. Verifica que sea PDF y pese menos de 4MB.'),
+    onError: (e) => setError(mensajeDeError(e, 'No se pudo subir. Verifica que sea PDF y pese menos de 4MB.')),
   });
 
   function handleSeleccionar(e: ChangeEvent<HTMLInputElement>) {
@@ -452,7 +463,9 @@ function FilaDocumento({
   // borró el único que había, el que estaba rechazado), sigue sin
   // ningún "ArchivoSubido" que muestre el botón de editar, así que hace
   // falta este mismo permiso acá para poder volver a subir uno.
-  const puedeSubirNuevo = !soloLectura || correccionesPendientes;
+  // El informativo (Plan de contingencia Niño) se puede subir siempre: se
+  // les pide justamente a los proveedores que ya registraron.
+  const puedeSubirNuevo = !soloLectura || correccionesPendientes || tipo.informativo;
   const mostrarCuadroCarga = puedeSubirNuevo && (tipo.permite_multiples || !yaSubido) && reemplazandoId === null;
 
   return (
@@ -992,6 +1005,66 @@ export default function ChecklistDocumentos() {
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [pagina, setPagina] = useState(1);
 
+  /*
+   * IR DIRECTO A UN DOCUMENTO: llega como location.state.documento (el
+   * Codigo_Archivo, ej. 'PCNINO'), desde el botón de Hana. La pestaña y la
+   * página se DERIVAN de eso en vez de copiarse al estado: así no hace
+   * falta un setState dentro de un efecto. Apenas el proveedor toca una
+   * pestaña o el paginador, ese destino se da por atendido y manda lo que
+   * él elija.
+   */
+  const location = useLocation();
+  const destino = (location.state as { documento?: string } | null)?.documento ?? null;
+  const [destinoAtendido, setDestinoAtendido] = useState<string | null>(null);
+  const destinoVigente = destino && destinoAtendido !== location.key ? destino : null;
+  const checklistListo = !!data;
+
+  // Solo toca el DOM: llevar la tarjeta a la vista y sacudirla un momento.
+  useEffect(() => {
+    if (!destinoVigente || !checklistListo) return;
+
+    const timeout = setTimeout(() => {
+      const tarjeta = document.getElementById(`documento-${destinoVigente}`);
+      if (!tarjeta) return;
+
+      tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      tarjeta.classList.remove('animar-campo-faltante');
+      void tarjeta.offsetWidth; // reinicia la animación si ya estaba
+      tarjeta.classList.add('animar-campo-faltante');
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  }, [destinoVigente, checklistListo, location.key]);
+
+  /*
+   * Plan de contingencia contra el fenómeno del Niño: es opcional, pero la
+   * empresa lo pide a todos. Mientras falte, Hana lo recuerda cada vez que
+   * el proveedor entra a Documentación (HanaBot no repite la burbuja si ya
+   * es la última). El timeout deja asentar la pantalla primero y, en
+   * StrictMode, evita que el montaje descartado lo dispare dos veces.
+   */
+  const faltaPlanNino = !!data?.documentos.some(
+    (t) => t.codigo === CODIGO_PLAN_CONTINGENCIA_NINO && t.documentos.length === 0
+  );
+
+  useEffect(() => {
+    if (!faltaPlanNino) return;
+
+    const timeout = setTimeout(() => {
+      pedirRecordatorioHana({
+        mensaje:
+          '¡No te olvides de cargar tu Plan de contingencia contra el fenómeno del Niño! Es opcional, pero nos ayuda a prepararnos juntos. Puedes subirlo cuando quieras, aunque ya hayas registrado tu documentación.',
+        accion: {
+          etiqueta: 'Ir a cargarlo',
+          ruta: '/documentos',
+          estado: { documento: CODIGO_PLAN_CONTINGENCIA_NINO },
+        },
+      });
+    }, 1500);
+
+    return () => clearTimeout(timeout);
+  }, [faltaPlanNino]);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -1043,22 +1116,39 @@ export default function ChecklistDocumentos() {
     return { categoria, tiposCategoria, cargados, faltanObligatorios };
   });
 
-  const categoriaSeleccionada =
-    categoriaActiva && categorias.includes(categoriaActiva) ? categoriaActiva : categorias[0];
+  const tipoDestino = destinoVigente ? tipos.find((t) => t.codigo === destinoVigente) : undefined;
+
+  const categoriaSeleccionada = tipoDestino
+    ? tipoDestino.categoria
+    : categoriaActiva && categorias.includes(categoriaActiva)
+      ? categoriaActiva
+      : categorias[0];
   const statsActivos = statsPorCategoria.find((s) => s.categoria === categoriaSeleccionada)!;
 
   const totalPaginas = Math.max(1, Math.ceil(statsActivos.tiposCategoria.length / DOCUMENTOS_POR_PAGINA));
+  const paginaDestino = tipoDestino
+    ? Math.floor(statsActivos.tiposCategoria.indexOf(tipoDestino) / DOCUMENTOS_POR_PAGINA) + 1
+    : null;
   // Si la categoría tiene menos páginas que la actual (ej. venías en la
   // página 3 de "General" y cambiaste a "Certificaciones", que solo
   // tiene 1) o si la propia categoría cambió, ajustamos sin que se note
   // como un salto raro -> Math.min la deja quieta cuando sí es válida.
-  const paginaSegura = Math.min(pagina, totalPaginas);
+  const paginaSegura = Math.min(paginaDestino ?? pagina, totalPaginas);
   const inicio = (paginaSegura - 1) * DOCUMENTOS_POR_PAGINA;
   const tiposPagina = statsActivos.tiposCategoria.slice(inicio, inicio + DOCUMENTOS_POR_PAGINA);
 
   function cambiarCategoria(categoria: string) {
+    setDestinoAtendido(location.key);
     setCategoriaActiva(categoria);
     setPagina(1);
+  }
+
+  // Al paginar desde la página a la que llevó el destino, se fija primero
+  // esa pestaña: si no, al soltar el destino volvería a la anterior.
+  function irAPagina(nueva: number) {
+    setDestinoAtendido(location.key);
+    setCategoriaActiva(categoriaSeleccionada);
+    setPagina(nueva);
   }
 
   const totalObligatorios = tipos.filter((t) => t.obligatorio).length;
@@ -1102,7 +1192,7 @@ export default function ChecklistDocumentos() {
             <FlechaPaginador
               direccion="izquierda"
               deshabilitada={paginaSegura === 1}
-              onClick={() => setPagina(paginaSegura - 1)}
+              onClick={() => irAPagina(paginaSegura - 1)}
             />
           </div>
         )}
@@ -1139,7 +1229,14 @@ export default function ChecklistDocumentos() {
                   // alto natural y, cuando la de al lado es más alta (el
                   // Certificado bancario lleva el panel de la cuenta), los
                   // bordes terminan a distinta altura.
-                  <div key={tipo.id_tipo_documento} className="animar-fila h-full" style={{ animationDelay: `${indice * 40}ms` }}>
+                  <div
+                    key={tipo.id_tipo_documento}
+                    id={tipo.codigo ? `documento-${tipo.codigo}` : undefined}
+                    className={`animar-fila h-full rounded-2xl ${
+                      tipo === tipoDestino ? 'ring-2 ring-brand-700 ring-offset-2' : ''
+                    }`}
+                    style={{ animationDelay: `${indice * 40}ms` }}
+                  >
                     <FilaDocumento
                       tipo={tipo}
                       soloLectura={data?.registrado ?? false}
@@ -1152,7 +1249,7 @@ export default function ChecklistDocumentos() {
           </div>
 
           <div className="shrink-0 pb-2.5">
-            <PuntosPaginador pagina={paginaSegura} totalPaginas={totalPaginas} onCambiar={setPagina} />
+            <PuntosPaginador pagina={paginaSegura} totalPaginas={totalPaginas} onCambiar={irAPagina} />
 
             {/* En mobile no hay espacio a los costados -> ahí sí mostramos flechas normales, junto a los puntitos */}
             {totalPaginas > 1 && (
@@ -1160,12 +1257,12 @@ export default function ChecklistDocumentos() {
                 <FlechaPaginador
                   direccion="izquierda"
                   deshabilitada={paginaSegura === 1}
-                  onClick={() => setPagina(paginaSegura - 1)}
+                  onClick={() => irAPagina(paginaSegura - 1)}
                 />
                 <FlechaPaginador
                   direccion="derecha"
                   deshabilitada={paginaSegura === totalPaginas}
-                  onClick={() => setPagina(paginaSegura + 1)}
+                  onClick={() => irAPagina(paginaSegura + 1)}
                 />
               </div>
             )}
@@ -1177,7 +1274,7 @@ export default function ChecklistDocumentos() {
             <FlechaPaginador
               direccion="derecha"
               deshabilitada={paginaSegura === totalPaginas}
-              onClick={() => setPagina(paginaSegura + 1)}
+              onClick={() => irAPagina(paginaSegura + 1)}
             />
           </div>
         )}

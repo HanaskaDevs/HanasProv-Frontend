@@ -114,8 +114,8 @@ export default function ModalResultadoEnvio({
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-brand-900/70 [overflow-wrap:anywhere]">
                   {demorado
-                    ? 'El servidor de correo todavía no contestó. Podés cerrar esta ventana: el envío sigue en curso.'
-                    : `Para ${resultado.correo}. Podés cerrar esta ventana, el correo sale igual.`}
+                    ? 'El servidor de correo todavía no contestó. Puedes cerrar esta ventana: el envío sigue en curso.'
+                    : `Para ${resultado.correo}. Puedes cerrar esta ventana, el correo sale igual.`}
                 </p>
               </div>
             </div>

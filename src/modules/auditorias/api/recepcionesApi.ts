@@ -2,6 +2,7 @@ import apiClient from '../../../shared/api/apiClient';
 import type {
   CalificacionRecepcionDetalle,
   CalificacionRecepcionHistorial,
+  FilaReporteCalificacion,
   ProveedorParaRecepcion,
 } from '../types';
 
@@ -9,6 +10,12 @@ const BASE = '/calificacion-recepciones';
 
 export async function listarProveedores(): Promise<ProveedorParaRecepcion[]> {
   const { data } = await apiClient.get<ProveedorParaRecepcion[]>(`${BASE}/proveedores`);
+  return data;
+}
+
+/** Mini reporte: la última calificación de cada proveedor calificado. */
+export async function obtenerReporte(): Promise<FilaReporteCalificacion[]> {
+  const { data } = await apiClient.get<FilaReporteCalificacion[]>(`${BASE}/reporte`);
   return data;
 }
 

@@ -116,7 +116,7 @@ export default function TabResponsables() {
           <div>
             <h3 className="font-medium text-brand-900">Responsables</h3>
             <p className="text-sm text-brand-900/60 mt-0.5">
-              Las personas de Hanaska que atienden a los proveedores. Cargalas primero: el archivo
+              Las personas de Hanaska que atienden a los proveedores. Cárgalas primero: el archivo
               de asignaciones las referencia por su correo.
             </p>
           </div>
@@ -271,7 +271,7 @@ export default function TabResponsables() {
 
         {(asignaciones ?? []).length === 0 ? (
           <p className="text-sm text-brand-900/50 py-4 text-center">
-            Sin asignaciones todavía. Importá tu archivo para cargarlas.
+            Sin asignaciones todavía. Importa tu archivo para cargarlas.
           </p>
         ) : (
           <>

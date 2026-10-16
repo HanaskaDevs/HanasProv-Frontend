@@ -4,6 +4,7 @@ import Card from '../../../shared/components/Card';
 import Spinner from '../../../shared/components/Spinner';
 import * as auditoriasApi from '../../auditorias/api/auditoriasApi';
 import * as recepcionesApi from '../../auditorias/api/recepcionesApi';
+import TarjetaPlanContingencia from '../../reportes/components/TarjetaPlanContingencia';
 
 function IconoAuditoria({ className = '' }: { className?: string }) {
   return (
@@ -147,6 +148,8 @@ export default function PanelCalidad() {
           to="/auditorias/recepciones"
         />
       </div>
+
+      <TarjetaPlanContingencia />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-0 overflow-hidden">

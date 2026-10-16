@@ -1,5 +1,11 @@
 import apiClient from '../../../shared/api/apiClient';
-import type { AuditoriaDetalle, ProveedorParaAuditoria, ResumenAuditoriasDashboard, TipoAuditoria } from '../types';
+import type {
+  AuditoriaDetalle,
+  FilaReporteCalificacion,
+  ProveedorParaAuditoria,
+  ResumenAuditoriasDashboard,
+  TipoAuditoria,
+} from '../types';
 
 export async function listarTipos(): Promise<TipoAuditoria[]> {
   const { data } = await apiClient.get<TipoAuditoria[]>('/auditorias/tipos');
@@ -9,6 +15,12 @@ export async function listarTipos(): Promise<TipoAuditoria[]> {
 /** Resumen para el panel de bienvenida de Calidad. */
 export async function obtenerResumen(): Promise<ResumenAuditoriasDashboard> {
   const { data } = await apiClient.get<ResumenAuditoriasDashboard>('/auditorias/resumen');
+  return data;
+}
+
+/** Mini reporte: la última auditoría de cada proveedor auditado. */
+export async function obtenerReporte(): Promise<FilaReporteCalificacion[]> {
+  const { data } = await apiClient.get<FilaReporteCalificacion[]>('/auditorias/reporte');
   return data;
 }
 
