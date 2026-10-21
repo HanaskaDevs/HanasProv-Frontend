@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../auth/hooks/useAuth';
 import * as horariosEntregaApi from '../api/horariosEntregaApi';
@@ -10,6 +10,7 @@ import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import RoleRoute from '../../../routes/RoleRoute';
 import ModalGestionHorarios from '../components/ModalGestionHorarios';
+import ModalCargaMasivaHorarios from '../components/ModalCargaMasivaHorarios';
 
 function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }) {
   const delDia = horarios.filter((h) => h.dia_entrega === dia);
@@ -22,7 +23,8 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
         <h3 className="text-sm font-semibold text-brand-900">{dia}</h3>
       </div>
 
-      {/* Escritorio/tablet ancha (md+): tabla completa con las 7 columnas. */}
+      {/* Escritorio/tablet ancha (md+): tabla completa. Sin "Preparación":
+          el usuario no la usa (21-oct-2026). */}
       <div className="overflow-x-auto hidden md:block">
         <table className="w-full text-sm">
           <thead>
@@ -31,7 +33,6 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
               <th className="py-1.5 px-2">Código proveedor</th>
               <th className="py-1.5 px-2">Nombre proveedor</th>
               <th className="py-1.5 px-2">Llegada</th>
-              <th className="py-1.5 px-2">Preparación (min)</th>
               <th className="py-1.5 px-2">Permanencia (min)</th>
               <th className="py-1.5 px-2">Salida</th>
             </tr>
@@ -43,7 +44,6 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
                 <td className="py-1.5 px-2 text-brand-900/60">{h.codigo_proveedor ?? '—'}</td>
                 <td className="py-1.5 px-2">{h.nombre_proveedor}</td>
                 <td className="py-1.5 px-2">{h.hora_llegada}</td>
-                <td className="py-1.5 px-2">{h.tiempo_preparacion_min ?? '—'}</td>
                 <td className="py-1.5 px-2">{h.tiempo_permanencia_min ?? '—'}</td>
                 <td className="py-1.5 px-2">{h.hora_salida ?? '—'}</td>
               </tr>
@@ -71,8 +71,8 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
                 <p>{h.anden_puerta ?? '—'}</p>
               </div>
               <div>
-                <p className="text-[11px] uppercase text-brand-900/40">Preparación</p>
-                <p>{h.tiempo_preparacion_min ?? '—'} min</p>
+                <p className="text-[11px] uppercase text-brand-900/40">Permanencia</p>
+                <p>{h.tiempo_permanencia_min ?? '—'} min</p>
               </div>
               <div>
                 <p className="text-[11px] uppercase text-brand-900/40">Salida</p>
@@ -94,6 +94,8 @@ function CalendarioContenido() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<ClasificacionHorario>('Perecibles');
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [cargaMasivaAbierta, setCargaMasivaAbierta] = useState(false);
+  const queryClient = useQueryClient();
   const puedeGestionar = esSistemas || esAdmin || esCompras || esCalidad;
 
   const { data: horarios, isLoading } = useQuery({
@@ -133,6 +135,12 @@ function CalendarioContenido() {
           {!Capacitor.isNativePlatform() && (
             <Button variant="secondary" className="text-xs px-3 py-1.5" onClick={() => navigate('/calendario/modo-tv')}>
               Modo TV
+            </Button>
+          )}
+          {/* Carga masiva desde Excel: solo Sistemas (CargaMasivaHorariosService). */}
+          {esSistemas && (
+            <Button variant="secondary" className="text-xs px-3 py-1.5" onClick={() => setCargaMasivaAbierta(true)}>
+              Carga masiva
             </Button>
           )}
           {puedeGestionar && (
@@ -176,6 +184,12 @@ function CalendarioContenido() {
       )}
 
       {modalAbierto && <ModalGestionHorarios onClose={() => setModalAbierto(false)} />}
+      {cargaMasivaAbierta && (
+        <ModalCargaMasivaHorarios
+          onClose={() => setCargaMasivaAbierta(false)}
+          onCargado={() => queryClient.invalidateQueries({ queryKey: ['horarios-entrega'] })}
+        />
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import type { ClasificacionHorario, DatosHorarioForm, DiaSemana, HorarioEntrega 
 import { CLASIFICACIONES, DIAS_SEMANA } from '../types';
 import Modal from '../../../shared/components/Modal';
 import Button from '../../../shared/components/Button';
-import Input from '../../../shared/components/Input';
+import SelectorBuscable from '../../../shared/components/SelectorBuscable';
 import Spinner from '../../../shared/components/Spinner';
 
 const FORM_VACIO: DatosHorarioForm = {
@@ -19,12 +19,31 @@ const FORM_VACIO: DatosHorarioForm = {
   hora_salida: '',
 };
 
-const inputSelectClass =
-  'rounded-md border border-brand-900/15 px-3 py-2 text-sm text-brand-900 w-full focus:outline-none focus:ring-2 focus:ring-brand-700';
+// Misma altura (h-10) para inputs, selects y el selector de proveedor: antes
+// cada control tenía la suya y los campos quedaban a distinta altura.
+const claseControl =
+  'h-10 w-full rounded-md border border-brand-900/15 bg-white px-3 text-sm text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-700';
 
 /**
- * CRUD del calendario, solo para Sistemas/Admin (verificado también en el
- * backend). 3 pestañas, una por clasificación -> la clasificación de cada
+ * Rótulo de UN renglón y alto fijo sobre cada control. Antes, en pantallas
+ * medianas "Tiempo de permanencia (min)" ocupaba dos renglones y empujaba
+ * su campo más abajo que los de al lado: eso era lo "disparejo". El texto
+ * largo se corta con … y queda completo en el title.
+ */
+function Campo({ etiqueta, htmlFor, children, className = '' }: { etiqueta: string; htmlFor: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`flex min-w-0 flex-col gap-1 ${className}`}>
+      <label htmlFor={htmlFor} title={etiqueta} className="h-5 truncate text-[13px] font-medium text-brand-900">
+        {etiqueta}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * CRUD del calendario: Sistemas, Admin, Compras y Calidad (verificado también
+ * en el backend). 3 pestañas, una por clasificación -> la clasificación de cada
  * horario queda implícita en la pestaña usada para crearlo, sin que el
  * usuario tenga que elegirla en un campo aparte (pedido explícito).
  */
@@ -44,6 +63,23 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
     queryKey: ['horarios-entrega-proveedores'],
     queryFn: horariosEntregaApi.listarProveedores,
   });
+
+  // Fila de tiempos: llegada, permanencia y salida, a todo el ancho. La
+  // preparación ya no se pide (el usuario no la usa, 21-oct-2026).
+  const anchoTiempo = 'md:col-span-4';
+
+  // Código BC adelante y búsqueda por código, nombre o RUC: con ~150
+  // proveedores, el <select> nativo obligaba a recorrer toda la lista.
+  const opcionesProveedor = useMemo(
+    () =>
+      (proveedores ?? []).map((p) => ({
+        valor: p.id_proveedor,
+        etiqueta: p.nombre,
+        codigo: p.codigo_bc,
+        buscarTambien: [p.ruc],
+      })),
+    [proveedores]
+  );
 
   const horariosOrdenados = useMemo(() => {
     const orden: Record<string, number> = Object.fromEntries(DIAS_SEMANA.map((d, i) => [d, i]));
@@ -114,6 +150,8 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
       dia_entrega: form.dia_entrega as DiaSemana,
       anden_puerta: form.anden_puerta.trim() || null,
       hora_llegada: form.hora_llegada,
+      // Ya no se edita en pantalla: se manda el que tenía el horario (si lo
+      // tenía), para no borrarlo sin que nadie lo vea.
       tiempo_preparacion_min: form.tiempo_preparacion_min ? Number(form.tiempo_preparacion_min) : null,
       tiempo_permanencia_min: form.tiempo_permanencia_min ? Number(form.tiempo_permanencia_min) : null,
       hora_salida: form.hora_salida || null,
@@ -144,27 +182,24 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
             {editando ? `Editando horario de ${editando.nombre_proveedor}` : `Nuevo horario — ${CLASIFICACIONES.find((c) => c.valor === tab)?.etiqueta}`}
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium text-brand-900">Proveedor</label>
-              <select
-                className={inputSelectClass}
-                value={form.id_proveedor}
-                onChange={(e) => setForm((f) => ({ ...f, id_proveedor: e.target.value ? Number(e.target.value) : '' }))}
-              >
-                <option value="">Selecciona un proveedor...</option>
-                {(proveedores ?? []).map((p) => (
-                  <option key={p.id_proveedor} value={p.id_proveedor}>
-                    {p.codigo_bc ? `${p.codigo_bc} — ${p.nombre}` : p.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* 12 columnas: arriba proveedor (ancho) + día + andén; abajo los
+              tiempos, todos del mismo ancho. En celular, de a uno o de a dos. */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-3 md:grid-cols-12">
+            <Campo etiqueta="Proveedor" htmlFor="horario-proveedor" className="col-span-2 md:col-span-6">
+              <SelectorBuscable
+                id="horario-proveedor"
+                opciones={opcionesProveedor}
+                valor={form.id_proveedor}
+                onChange={(v) => setForm((f) => ({ ...f, id_proveedor: Number(v) }))}
+                placeholder="Selecciona un proveedor..."
+                placeholderBusqueda="Buscar por código BC, nombre o RUC..."
+              />
+            </Campo>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-brand-900">Día de entrega</label>
+            <Campo etiqueta="Día de entrega" htmlFor="horario-dia" className="col-span-1 md:col-span-3">
               <select
-                className={inputSelectClass}
+                id="horario-dia"
+                className={claseControl}
                 value={form.dia_entrega}
                 onChange={(e) => setForm((f) => ({ ...f, dia_entrega: e.target.value as DiaSemana }))}
               >
@@ -175,51 +210,58 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
                   </option>
                 ))}
               </select>
-            </div>
+            </Campo>
 
-            <Input
-              label={tab === 'Fruver' ? 'Puerta' : 'Andén'}
-              placeholder="A, B, C..."
-              value={form.anden_puerta}
-              onChange={(e) => setForm((f) => ({ ...f, anden_puerta: e.target.value }))}
-            />
+            <Campo etiqueta={tab === 'Fruver' ? 'Puerta' : 'Andén'} htmlFor="horario-anden" className="col-span-1 md:col-span-3">
+              <input
+                id="horario-anden"
+                className={claseControl}
+                placeholder="A, B, C..."
+                value={form.anden_puerta}
+                onChange={(e) => setForm((f) => ({ ...f, anden_puerta: e.target.value }))}
+              />
+            </Campo>
 
-            <Input
-              label="Hora de llegada"
-              type="time"
-              value={form.hora_llegada}
-              onChange={(e) => setForm((f) => ({ ...f, hora_llegada: e.target.value }))}
-            />
+            <Campo etiqueta="Hora de llegada" htmlFor="horario-llegada" className={`col-span-1 ${anchoTiempo}`}>
+              <input
+                id="horario-llegada"
+                type="time"
+                className={claseControl}
+                value={form.hora_llegada}
+                onChange={(e) => setForm((f) => ({ ...f, hora_llegada: e.target.value }))}
+              />
+            </Campo>
 
-            {tab === 'Fruver' && (
-              <Input
-                label="Tiempo de preparación (min)"
+
+            <Campo
+              etiqueta={tab === 'Fruver' ? 'En recepción (min)' : 'Permanencia (min)'}
+              htmlFor="horario-permanencia"
+              className={`col-span-1 ${anchoTiempo}`}
+            >
+              <input
+                id="horario-permanencia"
                 type="number"
                 min={0}
-                value={form.tiempo_preparacion_min}
-                onChange={(e) => setForm((f) => ({ ...f, tiempo_preparacion_min: e.target.value }))}
+                className={claseControl}
+                value={form.tiempo_permanencia_min}
+                onChange={(e) => setForm((f) => ({ ...f, tiempo_permanencia_min: e.target.value }))}
               />
-            )}
+            </Campo>
 
-            <Input
-              label={tab === 'Fruver' ? 'Tiempo en recepción (min)' : 'Tiempo de permanencia (min)'}
-              type="number"
-              min={0}
-              value={form.tiempo_permanencia_min}
-              onChange={(e) => setForm((f) => ({ ...f, tiempo_permanencia_min: e.target.value }))}
-            />
-
-            <Input
-              label="Hora de salida"
-              type="time"
-              value={form.hora_salida}
-              onChange={(e) => setForm((f) => ({ ...f, hora_salida: e.target.value }))}
-            />
+            <Campo etiqueta="Hora de salida" htmlFor="horario-salida" className={`col-span-1 ${anchoTiempo}`}>
+              <input
+                id="horario-salida"
+                type="time"
+                className={claseControl}
+                value={form.hora_salida}
+                onChange={(e) => setForm((f) => ({ ...f, hora_salida: e.target.value }))}
+              />
+            </Campo>
           </div>
 
           {error && <p className="text-xs text-brand-wine">{error}</p>}
 
-          <div className="flex gap-2">
+          <div className="flex justify-end gap-2">
             <Button className="text-xs px-3 py-1.5" onClick={enviar} isLoading={guardar.isPending}>
               {editando ? 'Guardar cambios' : 'Agregar horario'}
             </Button>
