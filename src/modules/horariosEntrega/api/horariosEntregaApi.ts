@@ -121,3 +121,61 @@ export async function eliminar(id: number): Promise<{ message: string }> {
   const { data } = await apiClient.delete<{ message: string }>(`/horarios-entrega/${id}`);
   return data;
 }
+
+// ---------------------------------------------------------------------------
+// Carga masiva desde Excel (solo Sistemas)
+// ---------------------------------------------------------------------------
+
+export type IdentificadorCarga = 'codigo_bc' | 'ruc';
+
+/** Una fila tal como se leyó del Excel (ver utils/excelCargaHorarios). */
+export interface FilaCargaHorario {
+  numero_fila: number;
+  clasificacion: string;
+  dia_entrega: string;
+  identificador: string;
+  anden_puerta: string;
+  hora_llegada: string;
+  tiempo_permanencia: string;
+  tiempo_preparacion: string;
+  hora_salida: string;
+}
+
+export interface ResultadoFilaCargaHorario {
+  numero_fila: number;
+  estado: 'crear' | 'actualizar' | 'error';
+  mensaje: string | null;
+  identificador: string | null;
+  clasificacion: string | null;
+  dia_entrega: string | null;
+  nombre_proveedor: string | null;
+  hora_llegada?: string;
+  hora_salida?: string | null;
+}
+
+export interface ReporteCargaHorarios {
+  aplicado: boolean;
+  identificador: IdentificadorCarga;
+  clasificaciones: string[];
+  resumen: { total: number; crear: number; actualizar: number; errores: number; dar_de_baja: number };
+  filas: ResultadoFilaCargaHorario[];
+  bajas: { nombre_proveedor: string | null; clasificacion: string; dia_entrega: string; hora_llegada: string }[];
+}
+
+/**
+ * confirmar = false: vista previa, no escribe nada. true: aplica. El archivo
+ * REEMPLAZA el calendario de las clasificaciones que trae (ver
+ * CargaMasivaHorariosService en el backend).
+ */
+export async function cargaMasiva(
+  identificador: IdentificadorCarga,
+  filas: FilaCargaHorario[],
+  confirmar: boolean
+): Promise<ReporteCargaHorarios> {
+  const { data } = await apiClient.post<ReporteCargaHorarios>('/horarios-entrega/carga-masiva', {
+    identificador,
+    filas,
+    confirmar,
+  });
+  return data;
+}

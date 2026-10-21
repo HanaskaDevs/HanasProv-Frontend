@@ -97,6 +97,8 @@ export interface ProveedorParaHorario {
   id_proveedor: number;
   nombre: string;
   codigo_bc: string | null;
+  /** Para buscar también por RUC en el selector. */
+  ruc: string | null;
 }
 
 export interface DatosHorarioForm {
