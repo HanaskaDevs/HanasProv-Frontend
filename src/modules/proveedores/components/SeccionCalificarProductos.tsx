@@ -11,6 +11,7 @@ import Button from '../../../shared/components/Button';
 import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
 import Modal from '../../../shared/components/Modal';
+import { etiquetaClasificacion } from '../../fichaProductos/types';
 
 function IconoCaja({ className = '' }: { className?: string }) {
   return (
@@ -127,7 +128,8 @@ function TarjetaProducto({
             {producto.nombre_producto}
           </p>
           <p className="text-[10.5px] text-brand-900/50">
-            {producto.unidad_presentacion ?? '—'}
+            {/* La categoría primero: en Fruver la Notificación sanitaria es opcional. */}
+            {etiquetaClasificacion(producto.clasificacion) ?? 'Sin categoría'} · {producto.unidad_presentacion ?? '—'}
             {producto.precio && ` · $${producto.precio}`}
             {producto.codigo_barras && ` · ${producto.codigo_barras}`}
           </p>

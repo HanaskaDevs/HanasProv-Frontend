@@ -20,6 +20,7 @@ import ModalDocumentosProducto, {
   BadgeCalificacion,
 } from './ModalDocumentosProducto';
 import Modal from '../../../shared/components/Modal';
+import { etiquetaClasificacion } from '../types';
 
 // Mismo molde de columnas para el encabezado y cada fila -> como cada
 // fila es su propio contenedor grid (no comparten una sola tabla), la
@@ -146,6 +147,17 @@ function FilaProducto({
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
           <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
+          {/* Categoría (22-oct-2026). Sin categoría se marca en ámbar: hay
+              que elegirla antes de poder enviar el producto a revisión. */}
+          {producto.clasificacion ? (
+            <span className="shrink-0 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800">
+              {etiquetaClasificacion(producto.clasificacion)}
+            </span>
+          ) : (
+            <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+              Sin categoría
+            </span>
+          )}
           {/* Grupos (EK, CD, PH, IM...) al lado del nombre: es una etiqueta
               de clasificación, se lee mejor pegada al producto que en una
               columna propia, y no ocupa lugar cuando el producto no tiene

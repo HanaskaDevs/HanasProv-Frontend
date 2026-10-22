@@ -1,5 +1,6 @@
 import apiClient from '../../../shared/api/apiClient';
 import type {
+  ClasificacionProducto,
   GrupoProducto,
   NuevoProducto,
   Producto,
@@ -77,6 +78,19 @@ export async function crearProducto(payload: NuevoProducto, idProveedor?: IdProv
  * aprobado). El precio de un producto ya aprobado NO pasa por acá: sigue
  * yendo por solicitarCambioPrecio, que lo aprueba Admin/Calidad.
  */
+/**
+ * Solo la categoría, para los productos cargados antes de que se pidiera:
+ * el modal de documentos la pide antes de mostrar los documentos.
+ */
+export async function asignarClasificacion(
+  idProducto: number,
+  clasificacion: ClasificacionProducto,
+  idProveedor?: IdProveedorObjetivo
+): Promise<Producto> {
+  const { data } = await apiClient.put<Producto>(`${base(idProveedor)}/${idProducto}/clasificacion`, { clasificacion });
+  return data;
+}
+
 export async function actualizarProducto(
   idProducto: number,
   payload: NuevoProducto,

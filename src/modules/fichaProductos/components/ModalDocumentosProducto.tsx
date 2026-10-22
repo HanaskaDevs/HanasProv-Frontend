@@ -3,7 +3,9 @@ import { fechaCaducidadMinima, textoVigenciaMinima } from '../../../shared/utils
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as productosApi from '../api/productosApi';
 import type { IdProveedorObjetivo } from '../api/productosApi';
-import type { DocumentoProducto, Producto, TipoDocumentoProducto } from '../types';
+import type { ClasificacionProducto, DocumentoProducto, Producto, TipoDocumentoProducto } from '../types';
+import { CLASIFICACIONES_PRODUCTO, etiquetaClasificacion } from '../types';
+import { tiposParaProducto } from '../utils/obligatoriedadDocumentos';
 import Modal from '../../../shared/components/Modal';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
@@ -29,7 +31,8 @@ export function useTiposDocumentoProducto() {
 }
 
 export function tieneDocumentosObligatoriosCompletos(producto: Producto, tipos: TipoDocumentoProducto[]): boolean {
-  const obligatorios = tipos.filter((t) => t.obligatorio);
+  if (!producto.clasificacion) return false;
+  const obligatorios = tiposParaProducto(producto, tipos).filter((t) => t.obligatorio);
   return obligatorios.every((tipo) => producto.documentos.some((d) => d.tipo === tipo.carpeta_slug));
 }
 
@@ -42,8 +45,9 @@ export function contarDocumentosPorObligatoriedad(
   opcionalesSubidos: number;
   opcionalesTotal: number;
 } {
-  const obligatorios = tipos.filter((t) => t.obligatorio);
-  const opcionales = tipos.filter((t) => !t.obligatorio);
+  const delProducto = tiposParaProducto(producto, tipos);
+  const obligatorios = delProducto.filter((t) => t.obligatorio);
+  const opcionales = delProducto.filter((t) => !t.obligatorio);
   return {
     obligatoriosSubidos: obligatorios.filter((tipo) => producto.documentos.some((d) => d.tipo === tipo.carpeta_slug))
       .length,
@@ -453,9 +457,32 @@ export default function ModalDocumentosProducto({
   /** Sin id = el propio proveedor. Con id = el comprador sobre ese proveedor. */
   idProveedor?: IdProveedorObjetivo;
 }) {
-  const { data: tipos = [], isLoading } = useTiposDocumentoProducto();
+  const queryClient = useQueryClient();
+  const { data: tiposCatalogo = [], isLoading } = useTiposDocumentoProducto();
+  // Obligatoriedad de ESTE producto (en Fruver la Notificación sanitaria es opcional).
+  const tipos = tiposParaProducto(producto, tiposCatalogo);
   const tiposObligatorios = tipos.filter((t) => t.obligatorio);
   const tiposOpcionales = tipos.filter((t) => !t.obligatorio);
+
+  /*
+   * PRIMERO LA CATEGORÍA (22-oct-2026). De ella depende qué documentos son
+   * obligatorios, así que a un producto cargado antes de que se pidiera se
+   * le pregunta antes de mostrarle los documentos. Solo si todavía se puede
+   * editar: uno que ya está en revisión se ve tal cual.
+   */
+  const puedeElegirCategoria =
+    !producto.bloqueado || (correccionesPendientes && producto.estado_calificacion === 'Rechazado');
+  const pideCategoria = !producto.clasificacion && puedeElegirCategoria;
+
+  const elegirCategoria = useMutation({
+    mutationFn: (clasificacion: ClasificacionProducto) =>
+      productosApi.asignarClasificacion(producto.id_producto, clasificacion, idProveedor),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
+      queryClient.invalidateQueries({ queryKey: ['productos-revision'] });
+    },
+  });
 
   const listoParaRegistrar = !producto.bloqueado && tieneDocumentosObligatoriosCompletos(producto, tipos);
   const listoParaReenviarCorreccion =
@@ -471,7 +498,8 @@ export default function ModalDocumentosProducto({
       maxWidth="max-w-lg"
     >
       <p className="text-xs text-brand-900/50 -mt-2 mb-3">
-        {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
+        {etiquetaClasificacion(producto.clasificacion) ?? 'Sin categoría'} · {producto.codigo_barras ?? 'Sin código de barras'} ·{' '}
+        {producto.unidad_presentacion}
         {producto.precio != null && ` · $${producto.precio}`}
         {producto.precio_en_revision && ' · 🔒 Precio en revisión'}
         {producto.contenido_paquete != null && ` · ${producto.contenido_paquete} u/paquete`}
@@ -509,7 +537,34 @@ export default function ModalDocumentosProducto({
         </div>
       )}
 
-      {isLoading ? (
+      {pideCategoria ? (
+        <div className="rounded-lg border border-brand-700/20 bg-brand-200/20 p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-brand-900">Antes de cargar los documentos, elige la categoría del producto</p>
+            <p className="text-xs text-brand-900/60 mt-0.5">
+              Según la categoría cambian los documentos obligatorios: en Fruver, la Notificación sanitaria o
+              Certificado de Inscripción de alimentos es opcional.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {CLASIFICACIONES_PRODUCTO.map((c) => (
+              <Button
+                key={c.valor}
+                variant="secondary"
+                className="text-sm"
+                onClick={() => elegirCategoria.mutate(c.valor)}
+                disabled={elegirCategoria.isPending}
+              >
+                {c.etiqueta}
+              </Button>
+            ))}
+          </div>
+          {elegirCategoria.isPending && <Spinner className="h-4 w-4" />}
+          {elegirCategoria.isError && (
+            <p className="text-xs text-brand-wine">{mensajeDeError(elegirCategoria.error, 'No se pudo guardar la categoría.')}</p>
+          )}
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center py-4">
           <Spinner className="h-5 w-5" />
         </div>
