@@ -208,9 +208,10 @@ const APROBACIONES_ARRIBO_ITEM: SubMenuItem = {
   descripcion: 'Solicitudes de arribo tardío pendientes',
 };
 
+// Reclamos ya no va en Operación: pasó al área Calidad (22-oct-2026).
 const AREA_OPERACION: MenuItem = {
   label: 'Operación',
-  children: [PEDIDOS_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
+  children: [PEDIDOS_ITEM, CAMBIOS_PRECIO_ITEM],
 };
 
 // Sistemas SÍ ve Seguimiento de hoy y resuelve aprobaciones de arribo (ver
@@ -218,21 +219,24 @@ const AREA_OPERACION: MenuItem = {
 // Operación lleva 2 ítems más que la de Admin.
 const AREA_OPERACION_SISTEMAS: MenuItem = {
   label: 'Operación',
-  children: [PEDIDOS_ITEM, SEGUIMIENTO_HOY_ITEM, APROBACIONES_ARRIBO_ITEM, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, CAMBIOS_PRECIO_ITEM],
+  children: [PEDIDOS_ITEM, SEGUIMIENTO_HOY_ITEM, APROBACIONES_ARRIBO_ITEM, CAMBIOS_PRECIO_ITEM],
 };
 
 // Auditorías y Calificación de Recepciones: Sistemas, Admin y Calidad
 // (AuditoriaService::verificarAcceso y CalificacionRecepcionService::
 // verificarAcceso). Admin había quedado fuera de las dos (26-ago y
 // 1-sep-2026) y vuelve con acceso completo el 16-oct-2026.
+//
+// Reclamos abiertos y cerrados viven acá y no en Operación (pedido del
+// usuario, 22-oct-2026).
 const AREA_CALIDAD_SISTEMAS: MenuItem = {
   label: 'Calidad',
-  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
+  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, POLITICAS_ITEM],
 };
 
 const AREA_CALIDAD_ADMIN: MenuItem = {
   label: 'Calidad',
-  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, POLITICAS_ITEM],
+  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS, POLITICAS_ITEM],
 };
 
 // Compras: Pedidos + Calendario de horarios (lo ve pero no lo gestiona,
@@ -247,9 +251,18 @@ const AREA_OPERACION_COMPRAS: MenuItem = {
 // Aprobaciones de arribo (esa la resuelve Valeria desde el link del correo
 // de notificación, no navegando el menú -> no hace falta que sea un ítem
 // visible para todo el rol Calidad) y SIN Cambios de Precio.
+// Reclamos pasó al área Calidad (22-oct-2026).
 const AREA_OPERACION_CALIDAD: MenuItem = {
   label: 'Operación',
-  children: [CALENDARIO_HORARIOS, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
+  children: [CALENDARIO_HORARIOS],
+};
+
+// El rol Calidad tiene su área "Calidad", igual que Sistemas y Admin: las
+// dos auditorías y los reclamos (22-oct-2026). Compras y Guardia no tienen
+// área Calidad: en Compras los reclamos siguen en Operación.
+const AREA_CALIDAD_ROL_CALIDAD: MenuItem = {
+  label: 'Calidad',
+  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
 };
 
 const AREA_ADMINISTRACION: MenuItem = {
@@ -457,7 +470,7 @@ const MENU_CALIDAD: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
   AREA_PROVEEDORES_CALIDAD,
   AREA_OPERACION_CALIDAD,
-  AUDITORIAS,
+  AREA_CALIDAD_ROL_CALIDAD,
   AREA_REPORTES_CALIDAD,
 ];
 

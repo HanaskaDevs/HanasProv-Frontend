@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as productosApi from '../api/productosApi';
 import type { IdProveedorObjetivo } from '../api/productosApi';
 import type { Producto } from '../types';
+import { CLASIFICACIONES_PRODUCTO } from '../types';
 import Modal from '../../../shared/components/Modal';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
@@ -40,6 +41,9 @@ const medidaCm = () =>
   );
 
 const schema = z.object({
+  // Categoría (22-oct-2026): obligatoria. Decide qué documentos se piden
+  // (en Fruver la Notificación sanitaria es opcional).
+  clasificacion: z.enum(['Perecibles', 'No_Perecibles', 'Fruver'], { message: 'Elige la categoría del producto' }),
   nombre_producto: z.string().min(1, 'El nombre es requerido'),
   codigo_barras: z.string().optional(),
   id_unidad_presentacion: z.coerce.number().min(1, 'Selecciona una unidad'),
@@ -214,6 +218,8 @@ export default function ModalProducto({
     resolver: zodResolver(schema),
     defaultValues: producto
       ? {
+          // Los productos viejos no tienen: el formulario la pide al editarlos.
+          clasificacion: producto.clasificacion ?? undefined,
           nombre_producto: producto.nombre_producto,
           codigo_barras: producto.codigo_barras ?? '',
           id_unidad_presentacion: producto.id_unidad_presentacion,
@@ -345,6 +351,32 @@ export default function ModalProducto({
         )}
 
         <Seccion titulo="Identificación">
+          <fieldset className="flex flex-col gap-1">
+            <legend className="text-sm font-medium text-brand-900 mb-1">Categoría</legend>
+            <div className="grid grid-cols-3 gap-2">
+              {CLASIFICACIONES_PRODUCTO.map((c) => (
+                <label key={c.valor} className="cursor-pointer">
+                  <input type="radio" value={c.valor} {...register('clasificacion')} className="peer sr-only" />
+                  <span
+                    className="flex h-10 items-center justify-center rounded-md border border-brand-900/15 text-sm text-brand-900
+                      transition-colors hover:bg-brand-200/30
+                      peer-checked:border-brand-700 peer-checked:bg-brand-700 peer-checked:text-white
+                      peer-focus-visible:ring-2 peer-focus-visible:ring-brand-700"
+                  >
+                    {c.etiqueta}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {errors.clasificacion ? (
+              <p className="text-xs text-brand-wine">{errors.clasificacion.message}</p>
+            ) : (
+              <p className="text-[12px] text-brand-900/50">
+                En Fruver, la Notificación sanitaria o Certificado de Inscripción de alimentos es opcional.
+              </p>
+            )}
+          </fieldset>
+
           <Input
             label="Nombre del producto"
             {...restNombre}

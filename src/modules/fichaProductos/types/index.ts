@@ -16,11 +16,31 @@ export interface DocumentoProducto {
  * (GET /mis-productos/tipos-documento), ya no está hardcodeado en el
  * frontend. Ver ModalDocumentosProducto.tsx.
  */
+/**
+ * Categoría del producto (22-oct-2026). Mismos valores que la clasificación
+ * del calendario de horarios. En Fruver, la Notificación sanitaria deja de
+ * ser obligatoria.
+ */
+export type ClasificacionProducto = 'Perecibles' | 'No_Perecibles' | 'Fruver';
+
+export const CLASIFICACIONES_PRODUCTO: { valor: ClasificacionProducto; etiqueta: string }[] = [
+  { valor: 'Perecibles', etiqueta: 'Perecible' },
+  { valor: 'No_Perecibles', etiqueta: 'No perecible' },
+  { valor: 'Fruver', etiqueta: 'Fruver' },
+];
+
+export function etiquetaClasificacion(valor: ClasificacionProducto | null | undefined): string | null {
+  return CLASIFICACIONES_PRODUCTO.find((c) => c.valor === valor)?.etiqueta ?? null;
+}
+
 export interface TipoDocumentoProducto {
   id_tipo_documento_producto: number;
   nombre_documento: string;
   carpeta_slug: string;
+  /** Obligatorio en general (Perecibles / No perecibles). */
   obligatorio: boolean;
+  /** Obligatorio en un producto Fruver: false en la Notificación sanitaria. */
+  obligatorio_en_fruver: boolean;
   permite_multiples: boolean;
   requiere_fecha_caducidad: boolean;
 }
@@ -40,6 +60,8 @@ export interface GrupoProducto {
 export interface Producto {
   id_producto: number;
   nombre_producto: string;
+  /** null en los productos cargados antes del 22-oct-2026: se pide al abrirlos. */
+  clasificacion: ClasificacionProducto | null;
   codigo_barras: string | null;
   unidad_presentacion: string;
   /** El id, además del nombre: es lo que necesita el <select> al editar. */
@@ -92,6 +114,7 @@ export interface Producto {
 
 export interface NuevoProducto {
   nombre_producto: string;
+  clasificacion: ClasificacionProducto;
   codigo_barras?: string;
   id_unidad_presentacion: number;
   precio?: number;

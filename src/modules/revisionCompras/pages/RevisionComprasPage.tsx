@@ -12,6 +12,7 @@ import * as productosApi from '../../fichaProductos/api/productosApi';
 import ModalDocumentosProducto from '../../fichaProductos/components/ModalDocumentosProducto';
 import ModalMotivoRevision from '../components/ModalMotivoRevision';
 import type { Producto } from '../../fichaProductos/types';
+import { etiquetaClasificacion } from '../../fichaProductos/types';
 
 function nombreProveedor(producto: Producto): string {
   return (
@@ -274,6 +275,11 @@ function RevisionComprasContenido() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
+                          {producto.clasificacion && (
+                            <span className="shrink-0 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800">
+                              {etiquetaClasificacion(producto.clasificacion)}
+                            </span>
+                          )}
                           {producto.grupos?.map((g) => (
                             <span
                               key={g.id_grupo_producto}

@@ -82,6 +82,8 @@ export interface DocumentoProductoCalificable {
 export interface ProductoCalificable {
   id_producto: number;
   nombre_producto: string;
+  /** Perecibles / No_Perecibles / Fruver; null en productos viejos. */
+  clasificacion: 'Perecibles' | 'No_Perecibles' | 'Fruver' | null;
   codigo_barras: string | null;
   unidad_presentacion: string | null;
   precio: string | null;
