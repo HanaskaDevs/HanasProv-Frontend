@@ -1,4 +1,5 @@
 import type { DocumentoPorCaducar } from '../api/reportesApi';
+import { nombreVisibleProveedor } from '../../proveedores/types';
 
 /**
  * Paleta por tramo. Las claves las define el backend
@@ -71,6 +72,7 @@ export function formatearFecha(fecha: string): string {
   return `${dia}/${mes}/${anio}`;
 }
 
+// Razón social, como en todo el portal (ver nombreVisibleProveedor).
 export function nombreProveedor(d: DocumentoPorCaducar): string {
-  return d.nombre_comercial?.trim() || d.razon_social?.trim() || 'Proveedor sin ficha completada';
+  return nombreVisibleProveedor(d);
 }

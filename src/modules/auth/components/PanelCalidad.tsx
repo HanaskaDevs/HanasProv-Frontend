@@ -5,6 +5,7 @@ import Spinner from '../../../shared/components/Spinner';
 import * as auditoriasApi from '../../auditorias/api/auditoriasApi';
 import * as recepcionesApi from '../../auditorias/api/recepcionesApi';
 import TarjetaPlanContingencia from '../../reportes/components/TarjetaPlanContingencia';
+import { nombreVisibleProveedor } from '../../proveedores/types';
 
 function IconoAuditoria({ className = '' }: { className?: string }) {
   return (
@@ -176,7 +177,7 @@ export default function PanelCalidad() {
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-brand-900 truncate">
-                      {p.nombre_comercial ?? p.razon_social}
+                      {nombreVisibleProveedor(p)}
                     </p>
                     <p className="text-[12px] text-brand-900/45">
                       {p.calificaciones_del_anio}/2 calificaciones este año

@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/hooks/useAuth';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import { useBackHandler } from '../../../shared/hooks/useBackHandler';
+import { nombreVisibleProveedor } from '../../proveedores/types';
 
 function formatearFechaHora(fecha: string): string {
     const d = new Date(fecha);
@@ -110,7 +111,10 @@ export default function ModalDetalleReclamo({
                                         <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${esMio ? 'bg-brand-900 text-white' : 'bg-white border border-brand-900/8 text-brand-900'
                                             }`}>
                                             <p className={`text-[12px] font-medium mb-1 ${esMio ? 'text-white/60' : 'text-brand-900/40'}`}>
-                                                {m.autor.nombre_completo} · {m.autor.tipo_usuario === 'Proveedor' ? 'Proveedor' : 'Interno'}
+                                                {/* Si escribió el proveedor, su razón social y no el nombre de la persona (23-oct-2026). */}
+                                                {m.autor.tipo_usuario === 'Proveedor'
+                                                    ? `${nombreVisibleProveedor(reclamo.proveedor)} · Proveedor`
+                                                    : `${m.autor.nombre_completo} · Interno`}
                                             </p>
                                             <p className="text-sm whitespace-pre-wrap">{m.mensaje}</p>
                                             {m.imagenes.length > 0 && (

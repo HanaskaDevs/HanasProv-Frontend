@@ -16,6 +16,7 @@ import ResumenPorSeccion from '../components/ResumenPorSeccion';
 import PasosSeccionesAuditoria from '../components/PasosSeccionesAuditoria';
 import ModalConfirmarFinalizar from '../components/ModalConfirmarFinalizar';
 import MiniReporteCalificaciones from '../components/MiniReporteCalificaciones';
+import { nombreVisibleProveedor } from '../../proveedores/types';
 
 function seccionCompleta(seccion: SeccionAuditoria): boolean {
     return seccion.preguntas.every((p) => p.no_aplica || p.puntaje_obtenido !== null);
@@ -185,7 +186,7 @@ export default function AuditoriasPage() {
                             {auditoria.tipo_auditoria.nombre}
                         </h1>
                         <p className="text-brand-900/50 text-xs mt-0.5">
-                            {auditoria.proveedor.nombre_comercial ?? auditoria.proveedor.razon_social} · {auditoria.proveedor.ruc}
+                            {nombreVisibleProveedor(auditoria.proveedor)} · {auditoria.proveedor.ruc}
                             {soloLectura && <span className="ml-2 text-emerald-700 font-medium">· Finalizada</span>}
                         </p>
                     </div>
@@ -356,7 +357,7 @@ export default function AuditoriasPage() {
                                 >
                                     <div>
                                         <p className="text-sm font-medium text-brand-900 flex items-center gap-1.5">
-                                            {p.nombre_comercial ?? p.razon_social}
+                                            {nombreVisibleProveedor(p)}
                                             {p.sugerido && (
                                                 <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                                                     Sugerido

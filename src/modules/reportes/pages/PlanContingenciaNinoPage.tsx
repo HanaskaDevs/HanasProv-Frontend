@@ -8,6 +8,7 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import ModalVisorPdf from '../../proveedores/components/ModalVisorPdf';
 import { obtenerUrlVisorDocumento } from '../../proveedores/api/proveedoresApi';
 import { obtenerPlanContingenciaNino, type ProveedorPlanContingencia } from '../api/reportesApi';
+import { nombreVisibleProveedor } from '../../proveedores/types';
 
 const COLOR_ESTADO: Record<string, string> = {
   Aspirante: 'bg-amber-50 text-amber-700',
@@ -119,7 +120,7 @@ function PlanContingenciaNinoContent() {
                 {filas.map((p) => (
                   <tr key={p.id_proveedor}>
                     <td className="px-4 py-2.5">
-                      <p className="font-medium text-brand-900">{p.nombre_comercial || p.razon_social}</p>
+                      <p className="font-medium text-brand-900">{nombreVisibleProveedor(p)}</p>
                       <p className="text-[12px] text-brand-900/50">{p.ruc ?? 'Sin RUC'}</p>
                     </td>
                     <td className="hidden md:table-cell px-4 py-2.5 text-brand-900/70">{p.email ?? '—'}</td>
@@ -156,7 +157,7 @@ function PlanContingenciaNinoContent() {
       {enVisor?.id_documento_proveedor && (
         <ModalVisorPdf
           idDocumento={enVisor.id_documento_proveedor}
-          nombre={`Plan de contingencia - ${enVisor.nombre_comercial || enVisor.razon_social}`}
+          nombre={`Plan de contingencia - ${nombreVisibleProveedor(enVisor)}`}
           obtenerUrl={obtenerUrlVisorDocumento}
           onClose={() => setEnVisor(null)}
         />

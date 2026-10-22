@@ -13,6 +13,8 @@ export interface AsignacionResponsable {
   nro_proveedor_bc: string;
   /** Razón social según BC, para que se reconozca de quién se habla. */
   nombre_en_bc: string | null;
+  /** Razón social del portal, o el nombre de BC si no está registrado (23-oct-2026). */
+  nombre_proveedor: string | null;
   responsable: {
     id_responsable: number | null;
     nombre: string | null;

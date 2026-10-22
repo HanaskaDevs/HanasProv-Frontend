@@ -7,9 +7,11 @@ import Spinner from '../../../shared/components/Spinner';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import Paginador from '../../../shared/components/Paginador';
+import { nombreVisibleProveedor } from '../../proveedores/types';
 
+// Razón social, como en todo el portal (ver nombreVisibleProveedor).
 export function nombreDe(proveedor: ProveedorConProductos): string {
-  return proveedor.nombre_comercial?.trim() || proveedor.razon_social?.trim() || 'Proveedor sin razón social';
+  return nombreVisibleProveedor(proveedor);
 }
 
 const POR_PAGINA = 15;

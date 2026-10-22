@@ -474,13 +474,26 @@ export default function ModalDocumentosProducto({
     !producto.bloqueado || (correccionesPendientes && producto.estado_calificacion === 'Rechazado');
   const pideCategoria = !producto.clasificacion && puedeElegirCategoria;
 
+  /*
+   * En revisión (Productos por revisar / Productos por proveedor), quien
+   * revisa también puede completarla (23-oct-2026): antes el producto decía
+   * "Sin categoría" y no había dónde ponérsela. Acá NO tapa los documentos,
+   * porque quien revisa los tiene que ver igual; es un aviso con los tres
+   * botones arriba. idProveedor presente = lo está viendo el personal interno.
+   */
+  const pideCategoriaEnRevision =
+    !producto.clasificacion && !pideCategoria && !!idProveedor && producto.estado_calificacion !== 'Aprobado';
+
   const elegirCategoria = useMutation({
     mutationFn: (clasificacion: ClasificacionProducto) =>
       productosApi.asignarClasificacion(producto.id_producto, clasificacion, idProveedor),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
-      queryClient.invalidateQueries({ queryKey: ['productos-revision'] });
+      // "Productos por revisar" (Compras / Calidad / Admin / Sistemas).
+      queryClient.invalidateQueries({ queryKey: ['productos-en-revision'] });
+      queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['calificacion-productos'] });
     },
   });
 
@@ -534,6 +547,32 @@ export default function ModalDocumentosProducto({
         <div className="mb-3 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1.5">
           <p className="text-[12px] font-medium text-amber-800">Motivo</p>
           <p className="text-[12px] text-brand-900/70 mt-0.5">{producto.comentario_calificacion}</p>
+        </div>
+      )}
+
+      {pideCategoriaEnRevision && (
+        <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
+          <p className="text-[12.5px] text-amber-900">
+            Este producto no tiene categoría. Elígela para saber qué documentos son obligatorios (en Fruver la
+            Notificación sanitaria es opcional).
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {CLASIFICACIONES_PRODUCTO.map((c) => (
+              <Button
+                key={c.valor}
+                variant="secondary"
+                className="text-xs px-3 py-1.5"
+                onClick={() => elegirCategoria.mutate(c.valor)}
+                disabled={elegirCategoria.isPending}
+              >
+                {c.etiqueta}
+              </Button>
+            ))}
+            {elegirCategoria.isPending && <Spinner className="h-4 w-4" />}
+          </div>
+          {elegirCategoria.isError && (
+            <p className="text-xs text-brand-wine">{mensajeDeError(elegirCategoria.error, 'No se pudo guardar la categoría.')}</p>
+          )}
         </div>
       )}
 

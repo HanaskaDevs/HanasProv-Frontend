@@ -65,8 +65,30 @@ export function fraseDeAnden(andenPuerta: string | null): string {
  * Los puntos de las siglas societarias también estorban: "S.A." se lee
  * "ese punto a punto". Se quitan solo los puntos entre letras sueltas.
  */
+/**
+ * Tipo de sociedad al FINAL de la razón social: "S.A.", "S.A.S.",
+ * "CIA. LTDA.", "C.A." y parecidos. Desde el 23-oct-2026 se anuncia la
+ * razón social (antes el nombre comercial), y leer "Pronaca ese a" o
+ * "Dipor cía limitada" en la puerta no le sirve a nadie: la pantalla la
+ * muestra completa, la voz la omite. Solo al final y como palabra
+ * aparte, así un nombre que termina en "...CA" no se toca.
+ */
+const TIPO_DE_SOCIEDAD =
+  /[\s,]+(S\.?\s?A\.?\s?S\.?|S\.?\s?A\.?|C[IÍ]A\.?\s*LTDA\.?|C[IÍ]A\.?|LTDA\.?|C\.\s?A\.?|S\.?\s?C\.?\s?C\.?|E\.\s?P\.?)\s*$/i;
+
+export function sinTipoDeSociedad(nombre: string): string {
+  let resultado = nombre.trim();
+  // Hasta dos vueltas: "... CIA. LTDA. S.A." existe.
+  for (let i = 0; i < 2; i++) {
+    const recortado = resultado.replace(TIPO_DE_SOCIEDAD, '').trim();
+    if (recortado === resultado || recortado === '') break;
+    resultado = recortado;
+  }
+  return resultado;
+}
+
 export function normalizarNombreParaVoz(nombre: string): string {
-  const limpio = nombre.replace(/\b([A-Za-zÁÉÍÓÚÑ])\.(?=[A-Za-zÁÉÍÓÚÑ]\b|\s|$)/g, '$1');
+  const limpio = sinTipoDeSociedad(nombre).replace(/\b([A-Za-zÁÉÍÓÚÑ])\.(?=[A-Za-zÁÉÍÓÚÑ]\b|\s|$)/g, '$1');
 
   const estaTodoEnMayusculas = limpio === limpio.toUpperCase();
   if (!estaTodoEnMayusculas) return limpio;
