@@ -63,7 +63,8 @@ export default function DashboardHomePage() {
         {!esAspirante && (
           <div>
             <h1 className="font-display text-2xl font-semibold text-brand-900">
-              Bienvenido, {usuario?.nombre_completo}
+              {/* Al proveedor, por su razón social (23-oct-2026). */}
+              Bienvenido, {(esProveedor ? ficha?.seccion_1?.razon_social?.trim() : null) || usuario?.nombre_completo}
             </h1>
             <p className="text-brand-900/60 text-sm mt-1">
               {empresaActiva?.razon_social ?? 'Sin empresa activa'}

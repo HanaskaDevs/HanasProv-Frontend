@@ -99,19 +99,15 @@ export interface ProductosCalificacion {
   productos: ProductoCalificable[];
 }
 /**
- * Nombre que se le muestra a un proveedor en listados y encabezados.
+ * EL nombre con que se muestra a un proveedor en todo el portal: su RAZÓN
+ * SOCIAL, no el nombre comercial ni el de la persona dueña del usuario
+ * (pedido explícito del usuario, 23-oct-2026). Es la misma regla que
+ * Proveedor::nombreVisible() en el backend.
  *
- * Un proveedor recién activado todavía no tiene Razón Social ni Nombre
- * Comercial (ver ProveedorListado.razon_social), así que sin este respaldo
- * la fila aparecía con la celda del nombre vacía y no se entendía qué era.
- * Vive acá, junto al tipo, para que las tres pantallas que listan
- * proveedores muestren exactamente lo mismo.
+ * La razón social se pide al activar la cuenta. El respaldo es para un
+ * proveedor que todavía no la tiene (un acceso a otra empresa que no llenó
+ * la ficha): sin él la celda del nombre quedaba vacía.
  */
-export function nombreVisibleProveedor(proveedor: {
-  nombre_comercial?: string | null;
-  razon_social?: string | null;
-}): string {
-  return proveedor.nombre_comercial?.trim()
-    || proveedor.razon_social?.trim()
-    || 'Proveedor sin ficha completada';
+export function nombreVisibleProveedor(proveedor: { razon_social?: string | null } | null | undefined): string {
+  return proveedor?.razon_social?.trim() || 'Proveedor sin ficha completada';
 }

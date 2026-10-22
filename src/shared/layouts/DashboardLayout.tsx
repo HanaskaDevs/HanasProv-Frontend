@@ -165,6 +165,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // para un proveedor que en realidad seguía siendo Aspirante.
   const esAspirante = !esProveedor ? false : cargandoFicha || ficha?.estado?.trim().toLowerCase() === 'aspirante';
 
+  // Un proveedor se ve por su RAZÓN SOCIAL, no por el nombre de la persona
+  // dueña del usuario (23-oct-2026). Mientras carga la ficha, o si todavía
+  // no la tiene, el nombre del usuario.
+  const nombreEnEncabezado =
+    (esProveedor ? ficha?.seccion_1?.razon_social?.trim() : null) || usuario?.nombre_completo || '?';
+
   useEffect(() => {
     // El tour se abre solo ÚNICAMENTE para el Aspirante, que es quien necesita
     // que le expliquen los pasos. Al proveedor ya Aprobado no se le interrumpe:
@@ -274,8 +280,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               onMouseLeave={() => setMenuUsuarioAbierto(false)}
             >
               <button className="flex items-center gap-2 px-1.5 sm:px-2 py-1.5 rounded-md hover:bg-white/5 transition-colors">
-                <Avatar nombre={usuario?.nombre_completo ?? '?'} />
-                <span className="text-sm text-white/80 hidden md:inline">{usuario?.nombre_completo}</span>
+                <Avatar nombre={nombreEnEncabezado} />
+                <span className="text-sm text-white/80 hidden md:inline">{nombreEnEncabezado}</span>
                 <span className="text-xs text-white/50">▾</span>
               </button>
 
@@ -487,9 +493,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-              <Avatar nombre={usuario?.nombre_completo ?? '?'} />
+              <Avatar nombre={nombreEnEncabezado} />
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{usuario?.nombre_completo}</p>
+                <p className="text-sm font-medium truncate">{nombreEnEncabezado}</p>
                 {rolActivo && <p className="text-xs text-white/50 truncate">{rolActivo}</p>}
               </div>
             </div>

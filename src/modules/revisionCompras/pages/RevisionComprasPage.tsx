@@ -13,13 +13,11 @@ import ModalDocumentosProducto from '../../fichaProductos/components/ModalDocume
 import ModalMotivoRevision from '../components/ModalMotivoRevision';
 import type { Producto } from '../../fichaProductos/types';
 import { etiquetaClasificacion } from '../../fichaProductos/types';
+import { nombreVisibleProveedor } from '../../proveedores/types';
 
+// Razón social, como en todo el portal (ver nombreVisibleProveedor).
 function nombreProveedor(producto: Producto): string {
-  return (
-    producto.proveedor?.nombre_comercial?.trim() ||
-    producto.proveedor?.razon_social?.trim() ||
-    'Proveedor sin razón social'
-  );
+  return nombreVisibleProveedor(producto.proveedor);
 }
 
 /**

@@ -104,7 +104,7 @@ export default function TabResponsables() {
     (a) =>
       termino === '' ||
       a.nro_proveedor_bc.toLowerCase().includes(termino) ||
-      (a.nombre_en_bc ?? '').toLowerCase().includes(termino) ||
+      (a.nombre_proveedor ?? a.nombre_en_bc ?? '').toLowerCase().includes(termino) ||
       (a.responsable.nombre ?? '').toLowerCase().includes(termino)
   );
 
@@ -288,8 +288,8 @@ export default function TabResponsables() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-brand-900 truncate">
                       <span className="font-medium">{a.nro_proveedor_bc}</span>
-                      {a.nombre_en_bc && (
-                        <span className="text-brand-900/55"> · {a.nombre_en_bc}</span>
+                      {(a.nombre_proveedor ?? a.nombre_en_bc) && (
+                        <span className="text-brand-900/55"> · {a.nombre_proveedor ?? a.nombre_en_bc}</span>
                       )}
                     </p>
                     <p className="text-xs text-brand-900/55 truncate">
