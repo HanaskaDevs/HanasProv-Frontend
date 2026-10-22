@@ -1,5 +1,18 @@
 apply plugin: 'com.android.application'
 
+// Firma de release. Las claves NO están en el repo: se buscan en
+// HANASPROV_FIRMA (variable de entorno) o en <carpeta del usuario>/hanasprov-firma
+// (en Windows: C:\Users\<usuario>\hanasprov-firma\keystore.properties).
+// Sin ese archivo el release sale sin firmar; el debug no lo necesita.
+// Siempre con LA MISMA clave: Android solo acepta instalar una versión nueva
+// encima de la vieja si las dos están firmadas igual.
+def carpetaFirma = new File(System.getenv('HANASPROV_FIRMA') ?: "${System.getProperty('user.home')}/hanasprov-firma")
+def archivoFirma = new File(carpetaFirma, 'keystore.properties')
+def firma = new Properties()
+if (archivoFirma.exists()) {
+    archivoFirma.withInputStream { firma.load(it) }
+}
+
 android {
     namespace "com.hanaska.hanasprov"
     compileSdk rootProject.ext.compileSdkVersion
@@ -16,8 +29,22 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (archivoFirma.exists()) {
+            release {
+                storeFile new File(carpetaFirma, firma['storeFile'])
+                storePassword firma['storePassword']
+                keyAlias firma['keyAlias']
+                keyPassword firma['keyPassword']
+                storeType 'pkcs12'
+            }
+        }
+    }
     buildTypes {
         release {
+            if (archivoFirma.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

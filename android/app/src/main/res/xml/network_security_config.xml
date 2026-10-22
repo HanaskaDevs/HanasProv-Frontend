@@ -4,6 +4,13 @@
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
+            <!-- Intermedio de GoGetSSL (emisor de *.hanaska.com, firmado por
+                 USERTrust RSA, vence 2028-09-05). El servidor HTTPS del
+                 dominio entrega solo su certificado, sin este intermedio:
+                 las PCs lo completan solas, Android no, y la app fallaba al
+                 conectar (no cargaban los videos ni el login). Se puede
+                 quitar cuando el servidor entregue la cadena completa. -->
+            <certificates src="@raw/gogetssl_rsa_dv_ca" />
         </trust-anchors>
     </base-config>
 
