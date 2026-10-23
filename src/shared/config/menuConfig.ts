@@ -1,4 +1,3 @@
-import { Capacitor } from '@capacitor/core';
 import { ROLES } from '../../modules/auth/types';
 import type { NombreIconoModulo } from '../components/IconoModulo';
 
@@ -504,14 +503,9 @@ export function obtenerMenu(
     case ROLES.ADMIN:
       return MENU_ADMIN;
     case ROLES.CALIDAD:
-      // En la app nativa (celular), Calidad solo necesita Calificación de
-      // auditorías y Calificación de Recepciones -> pedido explícito del
-      // usuario probando la app instalada: Calendario y Reclamos (que sí
-      // se quedan en el menú web, ver MENU_CALIDAD) se ocultan en la app.
-      // Pedidos, Aprobaciones de arribo y Cambios de Precio ya ni siquiera
-      // están en MENU_CALIDAD (pedido explícito, 27-ago-2026), así que no
-      // hace falta filtrarlos acá aparte.
-      return Capacitor.isNativePlatform() ? [AUDITORIAS] : MENU_CALIDAD;
+      // Mismo menú en la web y en la app (pedido explícito, 23-oct-2026).
+      // Antes la app solo mostraba AUDITORIAS y ocultaba el resto.
+      return MENU_CALIDAD;
     case ROLES.COMPRAS:
       return MENU_COMPRAS;
     case ROLES.GUARDIA:

@@ -7,6 +7,10 @@ import App from './App.tsx';
 import { AuthProvider } from './modules/auth/hooks/useAuth';
 import { ProcesandoProvider } from './shared/components/Procesando';
 import 'leaflet/dist/leaflet.css';
+import { iniciarActualizacionesApp } from './shared/utils/actualizacionApp';
+
+// Solo hace algo dentro de la app Android; en el navegador no hace nada.
+iniciarActualizacionesApp();
 
 const queryClient = new QueryClient({
   defaultOptions: {
