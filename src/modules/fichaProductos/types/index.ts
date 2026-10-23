@@ -62,6 +62,8 @@ export interface Producto {
   nombre_producto: string;
   /** null en los productos cargados antes del 22-oct-2026: se pide al abrirlos. */
   clasificacion: ClasificacionProducto | null;
+  /** true = el personal interno se lo ocultó al proveedor (23-oct-2026). Solo lo ven los internos. */
+  oculto_proveedor: boolean;
   codigo_barras: string | null;
   unidad_presentacion: string;
   /** El id, además del nombre: es lo que necesita el <select> al editar. */

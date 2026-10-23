@@ -128,3 +128,18 @@ export async function obtenerUrlVisorDocumentoProducto(idDocumentoProducto: numb
   const blobPdf = new Blob([data], { type: 'application/pdf' });
   return window.URL.createObjectURL(blobPdf);
 }
+
+/**
+ * Calidad completa la fecha de caducidad de un documento de producto que no
+ * la tiene (análisis cargados antes de que se pidiera): sin ella no se puede
+ * aprobar el producto.
+ */
+export async function asignarFechaCaducidadDocumentoProducto(
+  idDocumentoProducto: number,
+  fechaCaducidad: string
+): Promise<{ id_documento_producto: number; fecha_caducidad: string }> {
+  const { data } = await apiClient.put(`/proveedores/productos-calificacion/documento/${idDocumentoProducto}/fecha-caducidad`, {
+    fecha_caducidad: fechaCaducidad,
+  });
+  return data;
+}

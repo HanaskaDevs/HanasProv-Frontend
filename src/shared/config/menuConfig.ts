@@ -183,12 +183,10 @@ const AREA_PROVEEDORES: MenuItem = {
   ],
 };
 
-// Seguimiento de hoy: solo Sistemas y Guardia (pedido explícito del
-// usuario, 27-ago-2026: "para lo del seguimiento de hoy solo Sistemas y
-// el guardia") -> Admin, Compras y Calidad ya NO lo ven, mismo criterio
-// que Auditorías/Aprobaciones con Admin (no tiene sentido un ítem que el
-// backend le va a rechazar con acceso denegado). Por eso NO va en
-// AREA_OPERACION (compartida con Admin), solo en la de Sistemas.
+// Seguimiento de hoy: Sistemas, Guardia y Calidad (Calidad desde el
+// 23-oct-2026; antes solo Sistemas y Guardia, pedido del 27-ago-2026).
+// Admin y Compras no lo ven: por eso NO va en AREA_OPERACION (compartida
+// con Admin), sino en la de Sistemas y en la de Calidad.
 const SEGUIMIENTO_HOY_ITEM: SubMenuItem = {
   to: '/calendario/seguimiento',
   label: 'Seguimiento de hoy',
@@ -254,7 +252,8 @@ const AREA_OPERACION_COMPRAS: MenuItem = {
 // Reclamos pasó al área Calidad (22-oct-2026).
 const AREA_OPERACION_CALIDAD: MenuItem = {
   label: 'Operación',
-  children: [CALENDARIO_HORARIOS],
+  // Seguimiento de hoy para Calidad desde el 23-oct-2026.
+  children: [CALENDARIO_HORARIOS, SEGUIMIENTO_HOY_ITEM],
 };
 
 // El rol Calidad tiene su área "Calidad", igual que Sistemas y Admin: las
@@ -302,15 +301,17 @@ const REPORTE_CADUCIDAD: SubMenuItem = {
   descripcion: 'Qué vence y cuándo, por urgencia',
 };
 
+const REPORTE_CALIFICACION_PROVEEDORES: SubMenuItem = {
+  to: '/reportes/calificacion-proveedores',
+  label: 'Calificación de proveedores',
+  icono: 'reporte',
+  descripcion: 'Comparativa por componente de la nota',
+};
+
 const AREA_REPORTES: MenuItem = {
   label: 'Reportes',
   children: [
-    {
-      to: '/reportes/calificacion-proveedores',
-      label: 'Calificación de proveedores',
-      icono: 'reporte',
-      descripcion: 'Comparativa por componente de la nota',
-    },
+    REPORTE_CALIFICACION_PROVEEDORES,
     {
       to: '/reportes/cumplimiento-entregas',
       label: 'Cumplimiento de entregas',
@@ -383,8 +384,8 @@ const MENU_ADMIN: MenuItem[] = [
 // que Compras también audite, hay que habilitarlo en esos dos services
 // además de agregar AUDITORIAS a su área de Operación.
 //
-// Seguimiento de hoy: SOLO Sistemas y Guardia (pedido explícito del
-// usuario, 27-ago-2026) -> coincide con
+// Seguimiento de hoy: Sistemas, Guardia y Calidad (ver SEGUIMIENTO_HOY_ITEM)
+// -> coincide con
 // HorarioEntregaService::verificarAccesoOperativo del lado del backend
 // para estas 2 pantallas puntuales (el endpoint técnicamente deja pasar a
 // más roles porque también lo usa Modo TV, pero la pantalla de
@@ -434,7 +435,9 @@ const MENU_COMPRAS: MenuItem[] = [
 // perseguir la documentación vencida.
 const AREA_REPORTES_CALIDAD: MenuItem = {
   label: 'Reportes',
-  children: [REPORTE_CADUCIDAD],
+  // Calificación de proveedores para Calidad desde el 23-oct-2026 (el
+  // backend ya se la mostraba: CalificacionGlobalController incluye Calidad).
+  children: [REPORTE_CALIFICACION_PROVEEDORES, REPORTE_CADUCIDAD],
 };
 
 /**
@@ -463,6 +466,8 @@ const AREA_PROVEEDORES_CALIDAD: MenuItem = {
     },
     // Acceso total a la etapa de Compras (16-oct-2026).
     PRODUCTOS_POR_REVISAR,
+    // Mismos permisos que Compras (23-oct-2026).
+    PRODUCTOS_POR_PROVEEDOR,
   ],
 };
 

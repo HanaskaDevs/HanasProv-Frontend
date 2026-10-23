@@ -204,11 +204,11 @@ export async function descargarPlantillaHorarios(
   const idEjemplo = (identificador === 'ruc' ? ejemplo?.ruc : ejemplo?.codigo_bc) ?? (identificador === 'ruc' ? '1790000000001' : 'PROV-0000001');
 
   const hojaHorarios = XLSX.utils.aoa_to_sheet([
-    ['CLASIFICACION', 'DIA', columnaId, 'ANDEN / PUERTA', 'HORA LLEGADA', 'PERMANENCIA (MIN)', 'HORA SALIDA'],
-    ['Perecibles', 'Lunes', idEjemplo, 'A', '08:00', '30', '08:30'],
-    ['Perecibles', 'Lunes', idEjemplo, 'A', '14:00', '60', ''],
+    ['CLASIFICACION', 'DIA', columnaId, 'ANDEN / PUERTA', 'HORA LLEGADA', 'PERMANENCIA (MIN)'],
+    ['Perecibles', 'Lunes', idEjemplo, 'A', '08:00', '30'],
+    ['Perecibles', 'Lunes', idEjemplo, 'A', '14:00', '60'],
   ]);
-  hojaHorarios['!cols'] = [16, 12, 18, 16, 14, 18, 14].map((wch) => ({ wch }));
+  hojaHorarios['!cols'] = [16, 12, 18, 16, 14, 18].map((wch) => ({ wch }));
 
   const hojaInstrucciones = XLSX.utils.aoa_to_sheet([
     ['Carga masiva del calendario de horarios'],
@@ -217,7 +217,7 @@ export async function descargarPlantillaHorarios(
     [`El proveedor va por ${columnaId}, el mismo para todas las filas. Si prefieres el otro, descarga la otra plantilla.`],
     ['CLASIFICACION: Perecibles, No Perecibles o Fruver. Si la dejas vacía se usa la de la fila de arriba.'],
     ['DIA: Lunes a Domingo, con o sin tilde. Si lo dejas vacío se usa el de la fila de arriba.'],
-    ['HORA LLEGADA (obligatoria) y HORA SALIDA: formato 08:30. Si no pones la salida, se calcula con la permanencia.'],
+    ['HORA LLEGADA (obligatoria): formato 08:30. La hora de salida no se escribe: se calcula sola con la permanencia.'],
     ['PERMANENCIA: en minutos (30) o en horas y minutos (0:30).'],
     [''],
     ['IMPORTANTE: el archivo REEMPLAZA el calendario de las clasificaciones que trae.'],

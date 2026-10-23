@@ -12,6 +12,7 @@ import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
 import Modal from '../../../shared/components/Modal';
 import { etiquetaClasificacion } from '../../fichaProductos/types';
+import { mensajeDeError } from '../../miFicha/utils/mensajeDeError';
 
 function IconoCaja({ className = '' }: { className?: string }) {
   return (
@@ -61,6 +62,103 @@ function ModalDetalleRechazoProductos({
         </div>
       )}
     </Modal>
+  );
+}
+
+function formatearFechaCorta(fecha: string): string {
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+function yaVencio(fecha: string): boolean {
+  return fecha.slice(0, 10) < new Date().toLocaleDateString('en-CA');
+}
+
+/**
+ * Un documento del producto con su vencimiento (23-oct-2026). Si el tipo
+ * exige fecha y no la tiene (los análisis de producto cargados antes de que
+ * se pidiera), Calidad la escribe acá: el backend no deja aprobar sin ella.
+ */
+function FilaDocumentoProducto({
+  doc,
+  idProveedor,
+  soloLectura,
+  onVer,
+}: {
+  doc: DocumentoProductoCalificable;
+  idProveedor: number;
+  soloLectura: boolean;
+  onVer: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [fecha, setFecha] = useState('');
+  const faltaFecha = doc.requiere_fecha_caducidad && !doc.fecha_caducidad;
+
+  const guardarFecha = useMutation({
+    mutationFn: () => proveedoresApi.asignarFechaCaducidadDocumentoProducto(doc.id_documento_producto, fecha),
+    onSuccess: (resultado) => {
+      queryClient.setQueryData<ProductosCalificacion | undefined>(['calificacion-productos', idProveedor], (actual) =>
+        actual
+          ? {
+              ...actual,
+              productos: actual.productos.map((p) => ({
+                ...p,
+                documentos: p.documentos.map((d) =>
+                  d.id_documento_producto === resultado.id_documento_producto
+                    ? { ...d, fecha_caducidad: resultado.fecha_caducidad }
+                    : d
+                ),
+              })),
+            }
+          : actual
+      );
+    },
+  });
+
+  return (
+    <div className={`rounded-md px-2 py-1 ${faltaFecha ? 'bg-amber-50 border border-amber-200' : 'bg-brand-700/[0.04]'}`}>
+      <button
+        onClick={onVer}
+        className="w-full flex items-center justify-between gap-2 text-left hover:opacity-80 transition-opacity"
+      >
+        <span className="min-w-0 text-[12px] text-brand-900/70 truncate">{doc.nombre_documento}</span>
+        <span className="shrink-0 inline-flex items-center gap-1 text-[10.5px] font-medium text-brand-700">
+          <IconoOjo /> Ver
+        </span>
+      </button>
+
+      {doc.fecha_caducidad && (
+        <p className={`text-[10.5px] ${yaVencio(doc.fecha_caducidad) ? 'text-brand-wine font-medium' : 'text-brand-900/50'}`}>
+          {yaVencio(doc.fecha_caducidad) ? 'Venció' : 'Vence'}: {formatearFechaCorta(doc.fecha_caducidad)}
+        </p>
+      )}
+
+      {faltaFecha && (
+        <div className="mt-1 space-y-1">
+          <p className="text-[10.5px] text-amber-800">Falta la fecha de caducidad: tómala del documento.</p>
+          {!soloLectura && (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-0.5 text-[11.5px] text-brand-900"
+              />
+              <button
+                onClick={() => guardarFecha.mutate()}
+                disabled={!fecha || guardarFecha.isPending}
+                className="shrink-0 rounded bg-brand-900 px-2 py-0.5 text-[11px] font-medium text-white disabled:opacity-40"
+              >
+                {guardarFecha.isPending ? '...' : 'Guardar'}
+              </button>
+            </div>
+          )}
+          {guardarFecha.isError && (
+            <p className="text-[10.5px] text-brand-wine">{mensajeDeError(guardarFecha.error, 'No se pudo guardar la fecha.')}</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -118,7 +216,12 @@ function TarjetaProducto({
         : 'bg-brand-900/6 text-brand-900/40';
 
   return (
-    <div className="h-full flex flex-col rounded-xl border border-brand-900/20 bg-white shadow-sm p-3 space-y-2">
+    <div
+      className={`h-full flex flex-col rounded-xl border border-brand-900/20 bg-white shadow-sm p-3 space-y-2 ${
+        producto.oculto_proveedor ? 'opacity-60' : ''
+      }`}
+      title={producto.oculto_proveedor ? 'Oculto al proveedor: él no ve este producto' : undefined}
+    >
       <div className="flex items-start gap-2.5">
         <span className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${chip}`}>
           <IconoCaja />
@@ -129,6 +232,7 @@ function TarjetaProducto({
           </p>
           <p className="text-[10.5px] text-brand-900/50">
             {/* La categoría primero: en Fruver la Notificación sanitaria es opcional. */}
+            {producto.oculto_proveedor && 'Oculto al proveedor · '}
             {etiquetaClasificacion(producto.clasificacion) ?? 'Sin categoría'} · {producto.unidad_presentacion ?? '—'}
             {producto.precio && ` · $${producto.precio}`}
             {producto.codigo_barras && ` · ${producto.codigo_barras}`}
@@ -141,17 +245,13 @@ function TarjetaProducto({
       ) : (
         <div className="space-y-1">
           {producto.documentos.map((doc) => (
-            <button
+            <FilaDocumentoProducto
               key={doc.id_documento_producto}
-              onClick={() => onVerDocumento(doc)}
-              className="w-full flex items-center justify-between gap-2 rounded-md bg-brand-700/[0.04] px-2 py-1
-                text-left hover:bg-brand-700/10 transition-colors"
-            >
-              <span className="min-w-0 text-[12px] text-brand-900/70 truncate">{doc.nombre_documento}</span>
-              <span className="shrink-0 inline-flex items-center gap-1 text-[10.5px] font-medium text-brand-700">
-                <IconoOjo /> Ver
-              </span>
-            </button>
+              doc={doc}
+              idProveedor={idProveedor}
+              soloLectura={soloLectura}
+              onVer={() => onVerDocumento(doc)}
+            />
           ))}
         </div>
       )}
@@ -160,6 +260,9 @@ function TarjetaProducto({
           (o ninguno), esto siempre queda pegado al fondo de la tarjeta,
           alineado con las tarjetas vecinas de la misma fila. */}
       <div className="pt-1 border-t border-brand-900/6 mt-auto">
+        {!soloLectura && producto.documentos.some((d) => d.requiere_fecha_caducidad && !d.fecha_caducidad) && (
+          <p className="text-[10.5px] text-amber-800 mb-1">Completa las fechas de caducidad que faltan para poder aprobar.</p>
+        )}
         <ControlesCalificacion
           estado={producto.estado_calificacion}
           observacion={producto.comentario_calificacion}

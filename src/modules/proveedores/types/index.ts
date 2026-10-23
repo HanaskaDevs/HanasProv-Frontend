@@ -77,6 +77,10 @@ export interface DocumentoProductoCalificable {
   id_documento_producto: number;
   nombre_documento: string;
   nombre_original: string;
+  /** 'YYYY-MM-DD' o null. */
+  fecha_caducidad: string | null;
+  /** El tipo exige fecha (Notificación sanitaria, Análisis de producto). */
+  requiere_fecha_caducidad: boolean;
 }
 
 export interface ProductoCalificable {
@@ -84,6 +88,8 @@ export interface ProductoCalificable {
   nombre_producto: string;
   /** Perecibles / No_Perecibles / Fruver; null en productos viejos. */
   clasificacion: 'Perecibles' | 'No_Perecibles' | 'Fruver' | null;
+  /** El personal interno se lo ocultó al proveedor: se ve en gris. */
+  oculto_proveedor: boolean;
   codigo_barras: string | null;
   unidad_presentacion: string | null;
   precio: string | null;

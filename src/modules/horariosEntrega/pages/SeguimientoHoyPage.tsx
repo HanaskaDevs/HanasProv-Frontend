@@ -392,17 +392,16 @@ function SeguimientoContenido() {
 }
 
 /**
- * Pantalla del Guardia y Sistemas ÚNICAMENTE (pedido explícito del
- * usuario, 27-ago-2026: "seguimiento de hoy solo Sistemas y el guardia").
- * Admin, Compras y Calidad ya NO entran acá -> Calidad sigue resolviendo
- * solicitudes de arribo tardío desde /calendario/aprobaciones, que es una
- * pantalla aparte y no se ve afectada por este cambio.
+ * Pantalla del Guardia, Sistemas y Calidad (Calidad desde el 23-oct-2026;
+ * antes solo Guardia y Sistemas). Admin y Compras no entran. El backend ya
+ * le dejaba a Calidad leer el día y marcar arribos
+ * (HorarioEntregaService::verificarAccesoOperativo / CambiarEstado).
  */
 export default function SeguimientoHoyPage() {
-  const { esSistemas, esGuardia } = useAuth();
+  const { esSistemas, esGuardia, esCalidad } = useAuth();
 
   return (
-    <RoleRoute allow={esSistemas || esGuardia}>
+    <RoleRoute allow={esSistemas || esGuardia || esCalidad}>
       <SeguimientoContenido />
     </RoleRoute>
   );
