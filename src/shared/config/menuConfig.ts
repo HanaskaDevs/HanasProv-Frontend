@@ -141,11 +141,6 @@ const RECLAMOS: MenuItem = {
   children: [RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
 };
 
-const AUDITORIAS: MenuItem = {
-  label: 'Auditorías',
-  children: [AUDITORIAS_CALIFICACION, AUDITORIAS_RECEPCIONES],
-};
-
 // ---------------------------------------------------------------------------
 // Áreas agrupadas (Sistemas y Admin)
 // ---------------------------------------------------------------------------
@@ -381,7 +376,7 @@ const MENU_ADMIN: MenuItem[] = [
 // CalificacionRecepcionService::verificarAcceso), así que tenerlo en el menú
 // solo lo llevaba a una pantalla que responde 403. Si algún día se decide
 // que Compras también audite, hay que habilitarlo en esos dos services
-// además de agregar AUDITORIAS a su área de Operación.
+// además de agregar AUDITORIAS_CALIFICACION y AUDITORIAS_RECEPCIONES a su menú.
 //
 // Seguimiento de hoy: Sistemas, Guardia y Calidad (ver SEGUIMIENTO_HOY_ITEM)
 // -> coincide con
@@ -504,7 +499,7 @@ export function obtenerMenu(
       return MENU_ADMIN;
     case ROLES.CALIDAD:
       // Mismo menú en la web y en la app (pedido explícito, 23-oct-2026).
-      // Antes la app solo mostraba AUDITORIAS y ocultaba el resto.
+      // Antes la app solo mostraba Auditorías y ocultaba el resto.
       return MENU_CALIDAD;
     case ROLES.COMPRAS:
       return MENU_COMPRAS;
