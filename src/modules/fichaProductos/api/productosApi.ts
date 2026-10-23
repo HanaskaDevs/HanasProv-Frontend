@@ -184,6 +184,15 @@ export async function registrarProductos(
   return data;
 }
 
+/**
+ * Oculta (o vuelve a mostrar) un producto AL PROVEEDOR. Solo personal interno
+ * desde Productos por proveedor: el proveedor deja de verlo; no se borra.
+ */
+export async function cambiarVisibilidadProducto(idProveedor: number, idProducto: number, oculto: boolean): Promise<Producto> {
+  const { data } = await apiClient.put<Producto>(`/productos-proveedor/${idProveedor}/${idProducto}/visibilidad`, { oculto });
+  return data;
+}
+
 export async function eliminarProducto(idProducto: number, idProveedor?: IdProveedorObjetivo): Promise<{ message: string }> {
   const url = idProveedor ? `/productos-proveedor/${idProveedor}/${idProducto}` : `/mis-productos/${idProducto}`;
   const { data } = await apiClient.delete(url);

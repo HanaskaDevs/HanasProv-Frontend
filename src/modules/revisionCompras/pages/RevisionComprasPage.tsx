@@ -270,9 +270,15 @@ function RevisionComprasContenido() {
                         className="h-4 w-4 shrink-0 cursor-pointer accent-brand-900"
                         aria-label={`Seleccionar ${producto.nombre_producto}`}
                       />
-                      <div className="min-w-0 flex-1">
+                      {/* Oculto al proveedor (23-oct-2026): sigue en revisión, pero en gris. */}
+                      <div className={`min-w-0 flex-1 ${producto.oculto_proveedor ? 'opacity-50' : ''}`}>
                         <div className="flex items-center gap-1.5 min-w-0">
                           <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
+                          {producto.oculto_proveedor && (
+                            <span className="shrink-0 rounded bg-brand-900/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-900/70">
+                              Oculto al proveedor
+                            </span>
+                          )}
                           {producto.clasificacion && (
                             <span className="shrink-0 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800">
                               {etiquetaClasificacion(producto.clasificacion)}

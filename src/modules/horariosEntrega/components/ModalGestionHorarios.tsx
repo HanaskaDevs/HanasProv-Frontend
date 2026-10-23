@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as horariosEntregaApi from '../api/horariosEntregaApi';
 import type { ClasificacionHorario, DatosHorarioForm, DiaSemana, HorarioEntrega } from '../types';
@@ -18,6 +18,14 @@ const FORM_VACIO: DatosHorarioForm = {
   tiempo_permanencia_min: '',
   hora_salida: '',
 };
+
+/** "08:00" + "30" = "08:30"; igual que HorarioEntregaService::horaDeSalida. */
+function calcularSalida(llegada: string, permanencia: string): string | null {
+  if (!llegada || permanencia === '' || Number.isNaN(Number(permanencia))) return null;
+  const [h, m] = llegada.split(':').map(Number);
+  const total = (h * 60 + m + Number(permanencia)) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
 
 // Misma altura (h-10) para inputs, selects y el selector de proveedor: antes
 // cada control tenía la suya y los campos quedaban a distinta altura.
@@ -63,6 +71,8 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
     queryKey: ['horarios-entrega-proveedores'],
     queryFn: horariosEntregaApi.listarProveedores,
   });
+
+  const horaSalidaCalculada = calcularSalida(form.hora_llegada, form.tiempo_permanencia_min);
 
   // Fila de tiempos: llegada, permanencia y salida, a todo el ancho. La
   // preparación ya no se pide (el usuario no la usa, 21-oct-2026).
@@ -121,8 +131,20 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
     setError(null);
   }
 
+  /*
+   * Al tocar "Editar" en una fila de abajo, antes no pasaba nada visible: el
+   * formulario se llenaba arriba, fuera de la pantalla (23-oct-2026). Ahora
+   * se sube hasta el formulario, se lo resalta y queda el cursor en el
+   * primer campo.
+   */
+  const formularioRef = useRef<HTMLDivElement>(null);
+
   function editar(h: HorarioEntrega) {
     setEditando(h);
+    requestAnimationFrame(() => {
+      formularioRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('horario-proveedor')?.focus({ preventScroll: true });
+    });
     setForm({
       id_proveedor: h.id_proveedor,
       clasificacion: h.clasificacion,
@@ -154,7 +176,8 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
       // tenía), para no borrarlo sin que nadie lo vea.
       tiempo_preparacion_min: form.tiempo_preparacion_min ? Number(form.tiempo_preparacion_min) : null,
       tiempo_permanencia_min: form.tiempo_permanencia_min ? Number(form.tiempo_permanencia_min) : null,
-      hora_salida: form.hora_salida || null,
+      // La calcula el backend; se manda la misma cuenta por compatibilidad.
+      hora_salida: horaSalidaCalculada,
     });
   }
 
@@ -177,9 +200,20 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
         </div>
 
         {/* Formulario de alta/edición */}
-        <div className="rounded-md border border-brand-900/10 p-3 space-y-3">
-          <p className="text-xs font-medium text-brand-900/60">
-            {editando ? `Editando horario de ${editando.nombre_proveedor}` : `Nuevo horario — ${CLASIFICACIONES.find((c) => c.valor === tab)?.etiqueta}`}
+        <div
+          ref={formularioRef}
+          className={`scroll-mt-2 rounded-md border p-3 space-y-3 transition-colors ${
+            editando ? 'border-amber-300 bg-amber-50/60 ring-2 ring-amber-200' : 'border-brand-900/10'
+          }`}
+        >
+          <p className={`text-xs font-medium ${editando ? 'text-amber-900' : 'text-brand-900/60'}`}>
+            {editando ? (
+              <>
+                Editando: <strong>{editando.nombre_proveedor}</strong> · {editando.dia_entrega} {editando.hora_llegada}
+              </>
+            ) : (
+              `Nuevo horario — ${CLASIFICACIONES.find((c) => c.valor === tab)?.etiqueta}`
+            )}
           </p>
 
           {/* 12 columnas: arriba proveedor (ancho) + día + andén; abajo los
@@ -248,14 +282,17 @@ export default function ModalGestionHorarios({ onClose }: { onClose: () => void 
               />
             </Campo>
 
+            {/* La salida ya no se escribe (23-oct-2026): es la llegada más la
+                permanencia, y la calcula el backend al guardar. Acá solo se
+                muestra cómo va a quedar. */}
             <Campo etiqueta="Hora de salida" htmlFor="horario-salida" className={`col-span-1 ${anchoTiempo}`}>
-              <input
+              <div
                 id="horario-salida"
-                type="time"
-                className={claseControl}
-                value={form.hora_salida}
-                onChange={(e) => setForm((f) => ({ ...f, hora_salida: e.target.value }))}
-              />
+                className={`${claseControl} flex items-center bg-brand-900/[0.03] text-brand-900/70`}
+                title="Se calcula: hora de llegada + tiempo de permanencia"
+              >
+                {horaSalidaCalculada ?? <span className="text-brand-900/35">Llegada + permanencia</span>}
+              </div>
             </Campo>
           </div>
 

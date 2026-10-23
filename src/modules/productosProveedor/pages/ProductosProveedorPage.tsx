@@ -87,10 +87,10 @@ function ProductosProveedorContenido() {
  * no dibujar una pantalla que después responde 403 en cada consulta.
  */
 export default function ProductosProveedorPage() {
-  const { esCompras, esAdmin, esSistemas } = useAuth();
+  const { esCompras, esCalidad, esAdmin, esSistemas } = useAuth();
 
   return (
-    <RoleRoute allow={esCompras || esAdmin || esSistemas}>
+    <RoleRoute allow={esCompras || esCalidad || esAdmin || esSistemas}>
       <ProductosProveedorContenido />
     </RoleRoute>
   );

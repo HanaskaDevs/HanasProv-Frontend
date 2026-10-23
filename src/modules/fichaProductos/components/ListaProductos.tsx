@@ -35,7 +35,8 @@ import { etiquetaClasificacion } from '../types';
 // lista quedaba desparejo. El botón además lleva ancho fijo (ver
 // ANCHO_BOTON_REGISTRO), así se ve idéntico en todas las filas, tengan o no
 // el "Editar" al lado.
-const PLANTILLA_COLUMNAS_LISTA = '24px 1fr 150px 130px 198px 28px';
+// Última columna: eliminar y, para el personal interno, ocultar al proveedor.
+const PLANTILLA_COLUMNAS_LISTA = '24px 1fr 150px 130px 198px 60px';
 
 /** Mismo ancho en todas las filas, haya o no botón de editar al lado. */
 const ANCHO_BOTON_REGISTRO = '!w-[138px] !whitespace-nowrap';
@@ -94,6 +95,8 @@ function FilaProducto({
   onEditarProducto,
   puedeEditar,
   indice,
+  onCambiarVisibilidad,
+  cambiandoVisibilidad = false,
 }: {
   producto: Producto;
   seleccionado: boolean;
@@ -104,6 +107,9 @@ function FilaProducto({
   onEditarProducto: () => void;
   puedeEditar: boolean;
   indice: number;
+  /** Solo para el personal interno (Productos por proveedor): ocultar / mostrar al proveedor. */
+  onCambiarVisibilidad?: () => void;
+  cambiandoVisibilidad?: boolean;
 }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const { data: tiposDocumento = [] } = useTiposDocumentoProducto();
@@ -130,7 +136,9 @@ function FilaProducto({
       style={{ gridTemplateColumns: PLANTILLA_COLUMNAS_LISTA, animationDelay: `${Math.min(indice * 25, 150)}ms` }}
       className={`animar-fila group grid gap-3 items-center px-3 py-2.5 border-b border-brand-900/8 last:border-b-0 hover:bg-brand-900/[0.05] transition-colors duration-150 cursor-pointer ${
         indice % 2 === 0 ? 'bg-white' : 'bg-brand-900/[0.015]'
-      }`}
+      } ${producto.oculto_proveedor ? 'opacity-50' : ''}`}
+      // Oculto al proveedor (23-oct-2026): el personal interno lo ve en gris.
+      title={producto.oculto_proveedor ? 'Oculto al proveedor: él no ve este producto' : undefined}
     >
       {!producto.bloqueado ? (
         <input
@@ -149,6 +157,11 @@ function FilaProducto({
           <p className="text-sm font-medium text-brand-900 truncate">{producto.nombre_producto}</p>
           {/* Categoría (22-oct-2026). Sin categoría se marca en ámbar: hay
               que elegirla antes de poder enviar el producto a revisión. */}
+          {producto.oculto_proveedor && (
+            <span className="shrink-0 rounded bg-brand-900/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-900/70">
+              Oculto al proveedor
+            </span>
+          )}
           {producto.clasificacion ? (
             <span className="shrink-0 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800">
               {etiquetaClasificacion(producto.clasificacion)}
@@ -253,7 +266,30 @@ function FilaProducto({
         )}
       </div>
 
-      <div onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+        {onCambiarVisibilidad && !confirmandoEliminar && (
+          <button
+            onClick={onCambiarVisibilidad}
+            disabled={cambiandoVisibilidad}
+            className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 transition-colors hover:bg-brand-200/50 ${
+              producto.oculto_proveedor ? 'text-brand-700' : 'text-brand-900/0 group-hover:text-brand-900/30 hover:!text-brand-700'
+            }`}
+            title={producto.oculto_proveedor ? 'Volver a mostrar al proveedor' : 'Ocultar al proveedor'}
+            aria-label={producto.oculto_proveedor ? 'Volver a mostrar al proveedor' : 'Ocultar al proveedor'}
+          >
+            {producto.oculto_proveedor ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            )}
+          </button>
+        )}
         {!producto.bloqueado && !confirmandoEliminar && (
           <button
             onClick={() => setConfirmandoEliminar(true)}
@@ -346,6 +382,17 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
       queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
       queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
+    },
+  });
+
+  // Ocultar / mostrar al proveedor (23-oct-2026). Solo con idProveedor
+  // (personal interno en Productos por proveedor).
+  const cambiarVisibilidad = useMutation({
+    mutationFn: ({ idProducto, oculto }: { idProducto: number; oculto: boolean }) =>
+      productosApi.cambiarVisibilidadProducto(Number(idProveedor), idProducto, oculto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
     },
   });
 
@@ -528,6 +575,12 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
                 onAbrirDocumentos={() => setIdProductoAbierto(producto.id_producto)}
                 onEditarProducto={() => setIdProductoEditando(producto.id_producto)}
                 puedeEditar={sePuedeEditar(producto, correccionesPendientes)}
+                onCambiarVisibilidad={
+                  esComprador
+                    ? () => cambiarVisibilidad.mutate({ idProducto: producto.id_producto, oculto: !producto.oculto_proveedor })
+                    : undefined
+                }
+                cambiandoVisibilidad={cambiarVisibilidad.isPending}
               />
             ))}
           </div>
