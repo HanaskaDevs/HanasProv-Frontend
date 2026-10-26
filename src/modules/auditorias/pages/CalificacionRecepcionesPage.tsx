@@ -16,6 +16,7 @@ import AroProgreso from '../../../shared/components/AroProgreso';
 import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import FilaParametroRecepcion from '../components/FilaParametroRecepcion';
 import MiniReporteCalificaciones from '../components/MiniReporteCalificaciones';
+import { formatearFecha } from '../../reportes/utils/caducidad';
 
 
 /** Paso 1: a quién calificar. Los que tocan hoy vienen primero del backend. */
@@ -62,7 +63,7 @@ function SeleccionProveedor({
             >
                 <p className="text-sm text-brand-900">
                     {tocanHoy === 0 ? (
-                        <>Hoy no le toca la auditoría de recepción a ningún proveedor. Puedes calificar a cualquiera igual.</>
+                        <>Hoy no le toca la auditoría de recepción a ningún proveedor.</>
                     ) : (
                         <>
                             Hoy le toca la auditoría de recepción a{' '}
@@ -72,6 +73,10 @@ function SeleccionProveedor({
                             . Aparecen primeros en la lista.
                         </>
                     )}
+                </p>
+                <p className="text-[12px] text-brand-900/55 mt-1">
+                    Máximo 3 por día, entre los que entregan hoy (calendario y pedido), con ficha y un producto
+                    aprobados.
                 </p>
             </div>
 
@@ -108,6 +113,27 @@ function SeleccionProveedor({
                                         {p.ruc ?? 'Sin RUC'} ·{' '}
                                         {p.calificaciones_del_anio} de 2 este año
                                     </p>
+                                    {/* El aviso solo muestra lo que está por vencer (30 días). Lo que falta o
+                                        ya venció solo se dice cuando frena, desde 2027. */}
+                                    {p.documentacion && p.documentacion.por_vencer.length > 0 && (
+                                        <p className="text-[11.5px] mt-0.5 text-amber-700">
+                                            Por vencer:{' '}
+                                            {p.documentacion.por_vencer
+                                                .map((d) => `${d.documento} (${formatearFecha(d.fecha_caducidad)})`)
+                                                .join(', ')}
+                                        </p>
+                                    )}
+                                    {p.documentacion && p.exige_documentacion && !p.documentacion.al_dia && (
+                                        <p className="text-[11.5px] mt-0.5 text-brand-wine">
+                                            {[
+                                                p.documentacion.faltantes.length > 0 && `Le falta subir: ${p.documentacion.faltantes.join(', ')}`,
+                                                p.documentacion.vencidos.length > 0 && `Vencido: ${p.documentacion.vencidos.join(', ')}`,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' · ')}
+                                            . No se puede calificar hasta que se ponga al día.
+                                        </p>
+                                    )}
                                 </div>
 
                                 {p.ultima_calificacion?.porcentaje_obtenido != null && (

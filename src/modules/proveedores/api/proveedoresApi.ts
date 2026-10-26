@@ -76,6 +76,17 @@ export async function calificarDocumento(
   return data;
 }
 
+/** Quien califica escribe la fecha de caducidad de un documento que no la tiene (LUAE, 26-oct-2026). */
+export async function asignarFechaCaducidadDocumento(
+  idDocumentoProveedor: number,
+  fechaCaducidad: string
+): Promise<{ id_documento_proveedor: number; fecha_caducidad: string }> {
+  const { data } = await apiClient.put(`/proveedores/documentos-calificacion/${idDocumentoProveedor}/fecha-caducidad`, {
+    fecha_caducidad: fechaCaducidad,
+  });
+  return data;
+}
+
 export async function registrarCalificacionDocumentos(idProveedor: number): Promise<void> {
   await apiClient.post(`/proveedores/${idProveedor}/documentos-calificacion/registrar`);
 }
