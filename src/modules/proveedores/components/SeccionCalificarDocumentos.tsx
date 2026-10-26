@@ -11,6 +11,7 @@ import Button from '../../../shared/components/Button';
 import Badge from '../../../shared/components/Badge';
 import Spinner from '../../../shared/components/Spinner';
 import Modal from '../../../shared/components/Modal';
+import { mensajeDeError } from '../../miFicha/utils/mensajeDeError';
 
 function IconoDocumento({ className = '' }: { className?: string }) {
   return (
@@ -32,6 +33,71 @@ function IconoOjo({ className = '' }: { className?: string }) {
 
 function formateaFecha(iso: string): string {
   return new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+/**
+ * Fecha de caducidad que falta (26-oct-2026): las LUAE cargadas antes de que
+ * se pidiera la fecha no la tienen. Quien califica la toma del documento y la
+ * guarda acá; sin ella el backend no deja aprobar. Se muestra también con la
+ * calificación ya registrada, para completar las LUAE que ya estaban aprobadas.
+ */
+function FechaCaducidadFaltante({
+  doc,
+  idProveedor,
+}: {
+  doc: DocumentoCalificable;
+  idProveedor: number;
+}) {
+  const queryClient = useQueryClient();
+  const [fecha, setFecha] = useState('');
+
+  const guardarFecha = useMutation({
+    mutationFn: () => proveedoresApi.asignarFechaCaducidadDocumento(doc.id_documento_proveedor, fecha),
+    onSuccess: (resultado) => {
+      queryClient.setQueryData<ChecklistCalificacion | undefined>(['calificacion-documentos', idProveedor], (actual) =>
+        actual
+          ? {
+              ...actual,
+              documentos: actual.documentos.map((t) => ({
+                ...t,
+                documentos: t.documentos.map((d) =>
+                  d.id_documento_proveedor === resultado.id_documento_proveedor
+                    ? { ...d, fecha_caducidad: resultado.fecha_caducidad }
+                    : d
+                ),
+              })),
+            }
+          : actual
+      );
+    },
+  });
+
+  return (
+    <div className="rounded-md bg-amber-50 border border-amber-200 px-2 py-1.5 space-y-1">
+      <p className="text-[10.5px] text-amber-800">
+        Falta la fecha de caducidad: tómala del documento.
+        {doc.estado_calificacion !== 'Aprobado' && ' Sin ella no se puede aprobar.'}
+      </p>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="min-w-0 flex-1 rounded-sm border border-brand-900/20 bg-white px-1.5 py-0.5 text-[11.5px] text-brand-900"
+        />
+        <button
+          onClick={() => guardarFecha.mutate()}
+          disabled={!fecha || guardarFecha.isPending}
+          className="shrink-0 rounded bg-brand-900 px-2 py-0.5 text-[11px] font-medium text-white disabled:opacity-40"
+        >
+          {guardarFecha.isPending ? '...' : 'Guardar'}
+        </button>
+      </div>
+      {guardarFecha.isError && (
+        <p className="text-[10.5px] text-brand-wine">{mensajeDeError(guardarFecha.error, 'No se pudo guardar la fecha.')}</p>
+      )}
+    </div>
+  );
 }
 
 /** Detalle organizado de los documentos rechazados -> lo que se ve al pulsar "Más información". */
@@ -149,6 +215,10 @@ function FilaDocumento({
         <IconoOjo /> Ver documento
       </button>
 
+      {tipo.requiere_fecha_caducidad && !doc.fecha_caducidad && (
+        <FechaCaducidadFaltante doc={doc} idProveedor={idProveedor} />
+      )}
+
       {/* Certificado bancario: los datos que el proveedor declaró son los
           que se postean a Business Central, así que hay que poder
           contrastarlos con lo que dice el PDF ANTES de aprobarlo. */}
@@ -197,6 +267,9 @@ function FilaDocumento({
             soloLectura={soloLectura}
             onCalificar={(aprobado, observacion) => calificar.mutate({ aprobado, observacion })}
           />
+        )}
+        {calificar.isError && (
+          <p className="text-[10.5px] text-brand-wine mt-1">{mensajeDeError(calificar.error, 'No se pudo calificar.')}</p>
         )}
       </div>
     </div>

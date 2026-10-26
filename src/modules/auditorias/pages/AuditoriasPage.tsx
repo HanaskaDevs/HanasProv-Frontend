@@ -338,6 +338,21 @@ export default function AuditoriasPage() {
 
                 <BarraBusqueda valor={busquedaProveedor} onCambiar={setBusquedaProveedor} placeholder="Buscar proveedor o RUC..." />
 
+                <p className="text-[12px] text-brand-900/55">
+                    Solo se empieza una auditoría el día que el proveedor entrega: tiene que estar en el calendario de
+                    horarios con el día de hoy y tener un pedido con recepción hoy. Los que entregan hoy aparecen primero.
+                </p>
+
+                {iniciarMutation.isError && (
+                    <Card className="!p-3 border-brand-wine/30 bg-brand-wine/[0.04]">
+                        <p className="text-xs text-brand-wine">
+                            {axios.isAxiosError(iniciarMutation.error) && iniciarMutation.error.response?.data?.errors
+                                ? Object.values(iniciarMutation.error.response.data.errors).flat().join(' ')
+                                : 'No se pudo iniciar la auditoría.'}
+                        </p>
+                    </Card>
+                )}
+
                 {cargandoProveedores || iniciarMutation.isPending ? (
                     <div className="flex justify-center py-12">
                         <Spinner className="h-6 w-6" />
@@ -361,6 +376,15 @@ export default function AuditoriasPage() {
                                             {p.sugerido && (
                                                 <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                                                     Sugerido
+                                                </span>
+                                            )}
+                                            {p.tiene_entrega_hoy ? (
+                                                <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-700/10 text-brand-700">
+                                                    Entrega hoy
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10.5px] font-medium px-1.5 py-0.5 rounded-full bg-brand-900/6 text-brand-900/45">
+                                                    Sin entrega hoy
                                                 </span>
                                             )}
                                         </p>

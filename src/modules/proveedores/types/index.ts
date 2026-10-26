@@ -54,6 +54,8 @@ export interface TipoDocumentoCalificable {
   categoria: string;
   nombre_documento: string;
   obligatorio: boolean;
+  /** true = el documento vence (ej. LUAE desde el 26-oct-2026): sin fecha no se aprueba. */
+  requiere_fecha_caducidad: boolean;
   /** true = informativo (Plan de contingencia Niño): se ve, no se califica. */
   informativo: boolean;
   /** Solo viene en el Certificado bancario; null si aún no los registró. */

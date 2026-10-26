@@ -14,6 +14,9 @@ export interface ProveedorParaAuditoria {
    *  Tipo_Auditoria elegido (ver Tipo_Auditoria_Clase en el backend) ->
    *  el front lo usa para sugerirlo primero en la lista. */
   sugerido: boolean;
+  /** true = hoy entrega: calendario de horarios con el día de hoy Y pedido
+   *  con recepción esperada hoy. Solo a esos se les empieza una auditoría. */
+  tiene_entrega_hoy: boolean;
 }
 
 export interface PreguntaAuditoria {
@@ -69,11 +72,21 @@ export interface ProveedorParaRecepcion {
   nombre_comercial: string | null;
   ruc: string | null;
   estado: string | null;
-  /** Fecha que el sistema le asignó este año (reparto estable por Id). */
+  /** Propuesto hoy: calendario Y pedido hoy, sin la calificación del año. Como máximo 3 por día. */
   le_toca_hoy: boolean;
   calificaciones_del_anio: number;
-  /** false = ya llegó al máximo de 2 calificaciones en el año. */
+  /** false = ya llegó al máximo de 2 en el año, o (desde 2027) le faltan documentos. */
   puede_calificar: boolean;
+  /** Solo en los propuestos del día; null en el resto. */
+  documentacion: {
+    faltantes: string[];
+    vencidos: string[];
+    /** Vigentes que vencen en los próximos 30 días: lo único que muestra el aviso. */
+    por_vencer: { documento: string; fecha_caducidad: string }[];
+    al_dia: boolean;
+  } | null;
+  /** false en 2026: la documentación incompleta solo se informa; desde 2027 frena. */
+  exige_documentacion: boolean;
   ultima_calificacion: {
     id_calificacion_recepcion: number;
     fecha_recepcion: string | null;
