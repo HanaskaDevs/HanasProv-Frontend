@@ -36,6 +36,14 @@ export interface HorarioEntrega {
   hora_salida: string | null;
 }
 
+/** Horario del propio proveedor (GET /horarios-entrega/mios), con los pedidos de ese día. */
+export interface HorarioPropio extends HorarioEntrega {
+  /** Próxima fecha de ese día de la semana, desde hoy ("YYYY-MM-DD"). */
+  proxima_fecha: string | null;
+  /** Números de pedido abiertos con recepción esperada esa fecha. */
+  pedidos: string[];
+}
+
 /**
  * Seguimiento en vivo de HOY (pedido explícito: "como funcionaría un
  * aeropuerto", revisión 26-ago-2026 con aprobación de arribos tardíos).
