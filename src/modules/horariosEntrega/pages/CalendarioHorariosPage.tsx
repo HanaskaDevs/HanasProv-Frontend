@@ -137,8 +137,8 @@ function CalendarioContenido() {
               Modo TV
             </Button>
           )}
-          {/* Carga masiva desde Excel: solo Sistemas (CargaMasivaHorariosService). */}
-          {esSistemas && (
+          {/* Carga masiva desde Excel: Sistemas y Admin (CargaMasivaHorariosService). */}
+          {(esSistemas || esAdmin) && (
             <Button variant="secondary" className="text-xs px-3 py-1.5" onClick={() => setCargaMasivaAbierta(true)}>
               Carga masiva
             </Button>

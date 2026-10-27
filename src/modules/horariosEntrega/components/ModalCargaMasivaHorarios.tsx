@@ -47,7 +47,7 @@ function mensajeError(e: unknown, porDefecto: string): string {
 }
 
 /**
- * Carga masiva del calendario desde Excel. Solo Sistemas (21-oct-2026).
+ * Carga masiva del calendario desde Excel. Sistemas y Admin (21-oct-2026; Admin desde el 27-oct-2026).
  *
  * Tres pasos a propósito, igual que la carga de cuentas: elegir el archivo,
  * REVISAR y recién ahí aplicar. La revisión no la calcula esta pantalla: es

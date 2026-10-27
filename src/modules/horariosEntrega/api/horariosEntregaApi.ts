@@ -3,6 +3,7 @@ import type {
   ClasificacionHorario,
   HorarioEntrega,
   HorarioHoy,
+  HorarioPropio,
   PedidoDelDia,
   ProveedorParaHorario,
   SolicitudAprobacionArribo,
@@ -15,9 +16,9 @@ export async function listar(clasificacion?: ClasificacionHorario): Promise<Hora
   return data;
 }
 
-/** Calendario propio del proveedor logueado (sección Pedidos). */
-export async function misHorarios(): Promise<HorarioEntrega[]> {
-  const { data } = await apiClient.get<HorarioEntrega[]>('/horarios-entrega/mios');
+/** Calendario propio del proveedor logueado (sección Pedidos), con los pedidos de cada día. */
+export async function misHorarios(): Promise<HorarioPropio[]> {
+  const { data } = await apiClient.get<HorarioPropio[]>('/horarios-entrega/mios');
   return data;
 }
 
@@ -123,7 +124,7 @@ export async function eliminar(id: number): Promise<{ message: string }> {
 }
 
 // ---------------------------------------------------------------------------
-// Carga masiva desde Excel (solo Sistemas)
+// Carga masiva desde Excel (Sistemas y Admin)
 // ---------------------------------------------------------------------------
 
 export type IdentificadorCarga = 'codigo_bc' | 'ruc';
