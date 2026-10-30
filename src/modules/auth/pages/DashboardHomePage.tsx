@@ -13,7 +13,7 @@ import PanelCalidad from '../components/PanelCalidad';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 
 export default function DashboardHomePage() {
-  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esCalidad, esGuardia } = useAuth();
+  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esCalidad, esGuardia, esCatalogo } = useAuth();
 
   // Comparte queryKey con DashboardLayout/MiFichaPage -> React Query lo
   // sirve de caché en vez de duplicar la llamada. Mismo criterio
@@ -105,10 +105,21 @@ export default function DashboardHomePage() {
         <PanelSistemas />
       ) : esCalidad ? (
         <PanelCalidad />
-      ) : (
+      ) : esCatalogo ? (
+        // Rol Catálogo (29-oct-2026): sin panel propio, solo qué hace cada pantalla.
         <Card>
           <p className="text-sm text-brand-900/70">
-            Portal de Proveedores — usa el menú lateral para navegar según tu rol.
+            Desde <strong>Productos</strong>, en el menú de arriba: el <strong>Catálogo de productos</strong> para
+            cargar los códigos de BC, <strong>Productos por proveedor</strong> para corregir los datos de cualquier
+            producto (aprobado o no; su estado no cambia) y <strong>Productos por revisar</strong> para ver lo que
+            los proveedores enviaron a aprobación.
+          </p>
+        </Card>
+      ) : (
+        <Card>
+          {/* "Menú de arriba": el portal no tiene menú lateral. */}
+          <p className="text-sm text-brand-900/70">
+            Portal de Proveedores — usa el menú de arriba para navegar según tu rol.
           </p>
         </Card>
       )}

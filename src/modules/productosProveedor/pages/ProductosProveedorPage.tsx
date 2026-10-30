@@ -26,6 +26,8 @@ import type { ProveedorConProductos } from '../../fichaProductos/types';
  */
 function ProductosProveedorContenido() {
   const [proveedor, setProveedor] = useState<ProveedorConProductos | null>(null);
+  // Catálogo (29-oct-2026): solo edita los datos de los productos.
+  const { esCatalogo } = useAuth();
 
   if (!proveedor) {
     return (
@@ -40,7 +42,9 @@ function ProductosProveedorContenido() {
             Productos por proveedor
           </h1>
           <p className="text-brand-900/50 text-xs mt-0.5">
-            Elige un proveedor para ver, editar y cargar su ficha de productos.
+            {esCatalogo
+              ? 'Elige un proveedor para ver y corregir los datos de sus productos.'
+              : 'Elige un proveedor para ver, editar y cargar su ficha de productos.'}
           </p>
         </div>
 
@@ -67,7 +71,9 @@ function ProductosProveedorContenido() {
           {proveedor.ruc ?? 'Sin RUC'}
           {proveedor.estado && ` · ${proveedor.estado}`}
           {' · '}
-          Los productos que cargues aquí quedan a nombre de este proveedor y pasan por la misma calificación.
+          {esCatalogo
+            ? 'Puedes editar los datos de sus productos, estén o no aprobados; el estado de cada producto no cambia.'
+            : 'Los productos que cargues aquí quedan a nombre de este proveedor y pasan por la misma calificación.'}
         </p>
       </div>
 
@@ -76,7 +82,7 @@ function ProductosProveedorContenido() {
           el término de búsqueda y la página del proveedor anterior, y la
           primera pantalla que se vería sería el catálogo de otro filtrado
           por un texto que ya no viene al caso. */}
-      <ListaProductos key={proveedor.id_proveedor} idProveedor={proveedor.id_proveedor} />
+      <ListaProductos key={proveedor.id_proveedor} idProveedor={proveedor.id_proveedor} soloDatos={esCatalogo} />
     </div>
   );
 }
@@ -87,10 +93,10 @@ function ProductosProveedorContenido() {
  * no dibujar una pantalla que después responde 403 en cada consulta.
  */
 export default function ProductosProveedorPage() {
-  const { esCompras, esCalidad, esAdmin, esSistemas } = useAuth();
+  const { esCompras, esCalidad, esAdmin, esSistemas, esCatalogo } = useAuth();
 
   return (
-    <RoleRoute allow={esCompras || esCalidad || esAdmin || esSistemas}>
+    <RoleRoute allow={esCompras || esCalidad || esAdmin || esSistemas || esCatalogo}>
       <ProductosProveedorContenido />
     </RoleRoute>
   );

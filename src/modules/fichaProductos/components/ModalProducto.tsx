@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -187,12 +187,18 @@ export default function ModalProducto({
   onClose,
   producto,
   idProveedor,
+  sinCambioDeEstado = false,
 }: {
   onClose: () => void;
   /** Sin producto = alta. Con producto = edición. */
   producto?: Producto;
   /** Sin id = el propio proveedor. Con id = el comprador sobre ese proveedor. */
   idProveedor?: IdProveedorObjetivo;
+  /**
+   * Rol Catálogo (29-oct-2026): su edición no devuelve el producto a
+   * calificación (ver ProductoService::actualizar), así que no se avisa.
+   */
+  sinCambioDeEstado?: boolean;
 }) {
   const queryClient = useQueryClient();
   const esEdicion = !!producto;
@@ -243,6 +249,20 @@ export default function ModalProducto({
    * un id escrito a mano: las unidades se administran desde Catálogos y
    * sus ids pueden ser otros en otro entorno.
    */
+  /*
+   * Si el catálogo de unidades llega DESPUÉS de montar el formulario (primera
+   * vez que se abre, sin caché), el <select> se dibujó sin opciones y quedó
+   * en blanco aunque el valor esté en defaultValues: el navegador no lo
+   * vuelve a elegir cuando aparecen las opciones (visto el 30-oct-2026 al
+   * probar el rol Catálogo). Se repone el valor apenas hay opciones.
+   */
+  const idUnidadDelProducto = producto?.id_unidad_presentacion;
+  useEffect(() => {
+    if (unidades?.length && idUnidadDelProducto) {
+      setValue('id_unidad_presentacion', idUnidadDelProducto);
+    }
+  }, [unidades, idUnidadDelProducto, setValue]);
+
   const idUnidadElegida = Number(watch('id_unidad_presentacion')) || 0;
   const esPaquete =
     unidades?.find((u) => u.Id_Unidad_Presentacion === idUnidadElegida)?.Nombre_Unidad === 'Paquete';
@@ -331,7 +351,7 @@ export default function ModalProducto({
   }
 
   const precioBloqueado = !!producto?.precio_en_revision;
-  const reenviaACalificacion = volveraCalificacion(producto);
+  const reenviaACalificacion = !sinCambioDeEstado && volveraCalificacion(producto);
 
   return (
     <Modal onClose={onClose} title={esEdicion ? 'Editar producto' : 'Nuevo producto'} maxWidth="max-w-xl">
