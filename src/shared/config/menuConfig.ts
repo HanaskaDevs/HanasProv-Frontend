@@ -473,6 +473,25 @@ const MENU_CALIDAD: MenuItem[] = [
   AREA_REPORTES_CALIDAD,
 ];
 
+// Catálogo (29-oct-2026, pedido del usuario): mantiene los datos de los
+// productos. Catálogo de productos (códigos BC), Productos por revisar (solo
+// consulta) y Productos por proveedor (editar datos).
+const AREA_PRODUCTOS_CATALOGO: MenuItem = {
+  label: 'Productos',
+  children: [
+    {
+      to: '/catalogo-productos',
+      label: 'Catálogo de productos',
+      icono: 'caja',
+      descripcion: 'Todos los productos con su código BC',
+    },
+    PRODUCTOS_POR_REVISAR,
+    PRODUCTOS_POR_PROVEEDOR,
+  ],
+};
+
+const MENU_CATALOGO: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_PRODUCTOS_CATALOGO];
+
 // El Guardia es un rol de un solo propósito: marcar que un proveedor
 // arribó en el seguimiento de hoy -> no necesita nada más del portal.
 const MENU_GUARDIA: MenuItem[] = [SEGUIMIENTO_HOY_PLANO];
@@ -505,6 +524,8 @@ export function obtenerMenu(
       return MENU_COMPRAS;
     case ROLES.GUARDIA:
       return MENU_GUARDIA;
+    case ROLES.CATALOGO:
+      return MENU_CATALOGO;
     default:
       return [];
   }

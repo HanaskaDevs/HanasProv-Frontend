@@ -212,11 +212,13 @@ function CasillaDocumento({
   tipo,
   correccionesPendientes,
   idProveedor,
+  soloLectura = false,
 }: {
   producto: Producto;
   tipo: TipoDocumentoProducto;
   correccionesPendientes: boolean;
   idProveedor?: IdProveedorObjetivo;
+  soloLectura?: boolean;
 }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -277,13 +279,16 @@ function CasillaDocumento({
     subir.mutate(archivo);
   }
 
-  const bloqueado = producto.bloqueado;
+  // soloLectura (rol Catálogo, 29-oct-2026): ve los documentos pero no los
+  // carga ni los borra -> se dibuja igual que un producto bloqueado.
+  const bloqueado = producto.bloqueado || soloLectura;
   // A diferencia de Documentos, acá NO alcanza con "no está Aprobado":
   // un producto recién enviado y nunca revisado también queda en
   // "Pendiente" (mismo valor que un producto que ya se corrigió una vez
   // pero el proveedor todavía no confirmó) -> por eso se exige
   // específicamente "Rechazado".
-  const puedeEditar = !bloqueado || (correccionesPendientes && producto.estado_calificacion === 'Rechazado');
+  const puedeEditar =
+    !soloLectura && (!bloqueado || (correccionesPendientes && producto.estado_calificacion === 'Rechazado'));
   const mostrarTooltipAnalisis = esAnalisisProducto && !yaSubido && mostrarPublicidad;
 
   const camposAntesDeSubir = (puedeEditar || !bloqueado) && (tipo.requiere_fecha_caducidad || tipo.permite_multiples) && (tipo.permite_multiples || !yaSubido);
@@ -349,7 +354,11 @@ function CasillaDocumento({
               {tipo.obligatorio && <span> *</span>}
             </p>
             <p className="text-[10.5px] text-brand-900/30">
-              {producto.estado_calificacion === 'Aprobado' ? 'No se subió (no aplica)' : 'Bloqueado durante revisión'}
+              {soloLectura
+                ? 'Sin cargar'
+                : producto.estado_calificacion === 'Aprobado'
+                  ? 'No se subió (no aplica)'
+                  : 'Bloqueado durante revisión'}
             </p>
           </div>
         ) : (
@@ -447,6 +456,7 @@ export default function ModalDocumentosProducto({
   onConfirmarCorreccion,
   confirmandoCorreccion,
   idProveedor,
+  soloLectura = false,
 }: {
   producto: Producto;
   correccionesPendientes: boolean;
@@ -456,6 +466,8 @@ export default function ModalDocumentosProducto({
   confirmandoCorreccion: boolean;
   /** Sin id = el propio proveedor. Con id = el comprador sobre ese proveedor. */
   idProveedor?: IdProveedorObjetivo;
+  /** Rol Catálogo (29-oct-2026): ve los documentos, no los carga ni registra. */
+  soloLectura?: boolean;
 }) {
   const queryClient = useQueryClient();
   const { data: tiposCatalogo = [], isLoading } = useTiposDocumentoProducto();
@@ -497,8 +509,9 @@ export default function ModalDocumentosProducto({
     },
   });
 
-  const listoParaRegistrar = !producto.bloqueado && tieneDocumentosObligatoriosCompletos(producto, tipos);
+  const listoParaRegistrar = !soloLectura && !producto.bloqueado && tieneDocumentosObligatoriosCompletos(producto, tipos);
   const listoParaReenviarCorreccion =
+    !soloLectura &&
     correccionesPendientes &&
     producto.estado_calificacion === 'Rechazado' &&
     tieneDocumentosObligatoriosCompletos(producto, tipos);
@@ -619,6 +632,7 @@ export default function ModalDocumentosProducto({
                   tipo={tipo}
                   correccionesPendientes={correccionesPendientes}
                   idProveedor={idProveedor}
+                  soloLectura={soloLectura}
                 />
               ))}
             </div>
@@ -634,6 +648,7 @@ export default function ModalDocumentosProducto({
                   tipo={tipo}
                   correccionesPendientes={correccionesPendientes}
                   idProveedor={idProveedor}
+                  soloLectura={soloLectura}
                 />
               ))}
             </div>
