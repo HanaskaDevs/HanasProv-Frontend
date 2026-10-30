@@ -40,4 +40,7 @@ export const ROLES = {
   // Guardia de recepción: solo marca "el proveedor arribó" en el
   // seguimiento en vivo del calendario de horarios de entrega.
   GUARDIA: 'Guardia',
+  // Catálogo (29-oct-2026): datos y códigos BC de los productos. Edita datos
+  // de productos (estén o no aprobados), no documentos; no aprueba.
+  CATALOGO: 'Catálogo',
 } as const;

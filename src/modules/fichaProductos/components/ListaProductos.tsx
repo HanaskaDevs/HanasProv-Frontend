@@ -97,6 +97,7 @@ function FilaProducto({
   indice,
   onCambiarVisibilidad,
   cambiandoVisibilidad = false,
+  soloDatos = false,
 }: {
   producto: Producto;
   seleccionado: boolean;
@@ -110,6 +111,8 @@ function FilaProducto({
   /** Solo para el personal interno (Productos por proveedor): ocultar / mostrar al proveedor. */
   onCambiarVisibilidad?: () => void;
   cambiandoVisibilidad?: boolean;
+  /** Rol Catálogo: solo edita datos (sin selección, sin eliminar, sin cargar documentos). */
+  soloDatos?: boolean;
 }) {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
   const { data: tiposDocumento = [] } = useTiposDocumentoProducto();
@@ -140,7 +143,7 @@ function FilaProducto({
       // Oculto al proveedor (23-oct-2026): el personal interno lo ve en gris.
       title={producto.oculto_proveedor ? 'Oculto al proveedor: él no ve este producto' : undefined}
     >
-      {!producto.bloqueado ? (
+      {!producto.bloqueado && !soloDatos ? (
         <input
           type="checkbox"
           checked={seleccionado}
@@ -247,14 +250,14 @@ function FilaProducto({
               className={`!text-[12px] !px-2 !py-1 ${ANCHO_BOTON_REGISTRO}`}
               onClick={onAbrirDocumentos}
             >
-              {textoBotonDocumentos(obligatoriosSubidos, obligatoriosTotal, !producto.bloqueado || puedeEditar)}
+              {textoBotonDocumentos(obligatoriosSubidos, obligatoriosTotal, !soloDatos && (!producto.bloqueado || puedeEditar))}
             </Button>
             {puedeEditar && (
               <button
                 onClick={onEditarProducto}
                 className="text-[12px] font-medium text-brand-700 hover:text-brand-900 transition-colors whitespace-nowrap"
                 title={
-                  producto.estado_calificacion === 'Aprobado'
+                  producto.estado_calificacion === 'Aprobado' && !soloDatos
                     ? 'Editar los datos del producto (volverá a calificación)'
                     : 'Editar los datos del producto'
                 }
@@ -290,7 +293,7 @@ function FilaProducto({
             )}
           </button>
         )}
-        {!producto.bloqueado && !confirmandoEliminar && (
+        {!producto.bloqueado && !confirmandoEliminar && !soloDatos && (
           <button
             onClick={() => setConfirmandoEliminar(true)}
             className="h-7 w-7 rounded-full flex items-center justify-center text-brand-900/0 group-hover:text-brand-900/30 hover:!bg-brand-wine/10 hover:!text-brand-wine transition-colors shrink-0"
@@ -331,7 +334,17 @@ function FilaProducto({
  * efecto correría DESPUÉS del primer render con el proveedor nuevo: por un
  * frame se vería el catálogo nuevo con la selección vieja todavía marcada.
  */
-export default function ListaProductos({ idProveedor }: { idProveedor?: IdProveedorObjetivo } = {}) {
+/*
+ * soloDatos (rol Catálogo, 29-oct-2026): edita los datos de cualquier
+ * producto, esté o no aprobado, y nada más. Sin alta, sin eliminar, sin
+ * registrar, sin ocultar y con los documentos en solo lectura. El backend lo
+ * vuelve a frenar (ProductoService::proveedorDeTrabajo); esto es para no
+ * mostrar botones que responderían 403.
+ */
+export default function ListaProductos({
+  idProveedor,
+  soloDatos = false,
+}: { idProveedor?: IdProveedorObjetivo; soloDatos?: boolean } = {}) {
   const queryClient = useQueryClient();
   const esComprador = !!idProveedor;
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -452,7 +465,7 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
   // Solo los que se pueden seleccionar (los bloqueados ni siquiera
   // muestran el checkbox) -> "seleccionar todo" tiene que ignorarlos,
   // si no quedaría marcando productos que no se pueden tocar.
-  const idsSeleccionables = productos.filter((p) => !p.bloqueado).map((p) => p.id_producto);
+  const idsSeleccionables = soloDatos ? [] : productos.filter((p) => !p.bloqueado).map((p) => p.id_producto);
   const todosSeleccionados =
     idsSeleccionables.length > 0 && idsSeleccionables.every((id) => seleccionados.has(id));
   const algunoSeleccionado = idsSeleccionables.some((id) => seleccionados.has(id));
@@ -533,9 +546,11 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
               Eliminar {seleccionados.size} seleccionado{seleccionados.size > 1 ? 's' : ''}
             </Button>
           )}
-          <Button className="!text-xs !px-3 !py-1.5" onClick={() => setModalAbierto(true)}>
-            + Agregar producto
-          </Button>
+          {!soloDatos && (
+            <Button className="!text-xs !px-3 !py-1.5" onClick={() => setModalAbierto(true)}>
+              + Agregar producto
+            </Button>
+          )}
           {seleccionados.size > 0 && (
             <Button
               variant="secondary"
@@ -554,7 +569,9 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
           <p className="text-sm text-brand-900/60 text-center py-10">
             {!busquedaConDemora && filtroEstado.length === 0
               ? esComprador
-                ? 'Este proveedor todavía no tiene productos cargados. Puedes agregar el primero con "+ Agregar producto".'
+                ? soloDatos
+                  ? 'Este proveedor todavía no tiene productos cargados.'
+                  : 'Este proveedor todavía no tiene productos cargados. Puedes agregar el primero con "+ Agregar producto".'
                 : 'Todavía no has agregado ningún producto.'
               : 'Sin resultados para tu búsqueda/filtro.'}
           </p>
@@ -574,13 +591,14 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
                 eliminando={eliminarUno.isPending}
                 onAbrirDocumentos={() => setIdProductoAbierto(producto.id_producto)}
                 onEditarProducto={() => setIdProductoEditando(producto.id_producto)}
-                puedeEditar={sePuedeEditar(producto, correccionesPendientes)}
+                puedeEditar={soloDatos || sePuedeEditar(producto, correccionesPendientes)}
                 onCambiarVisibilidad={
-                  esComprador
+                  esComprador && !soloDatos
                     ? () => cambiarVisibilidad.mutate({ idProducto: producto.id_producto, oculto: !producto.oculto_proveedor })
                     : undefined
                 }
                 cambiandoVisibilidad={cambiarVisibilidad.isPending}
+                soloDatos={soloDatos}
               />
             ))}
           </div>
@@ -601,6 +619,7 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
         <ModalProducto
           producto={productoEditando}
           idProveedor={idProveedor}
+          sinCambioDeEstado={soloDatos}
           onClose={() => setIdProductoEditando(null)}
         />
       )}
@@ -610,6 +629,7 @@ export default function ListaProductos({ idProveedor }: { idProveedor?: IdProvee
           producto={productoAbierto}
           correccionesPendientes={correccionesPendientes}
           idProveedor={idProveedor}
+          soloLectura={soloDatos}
           onClose={() => setIdProductoAbierto(null)}
           onRegistrarUno={() => {
             setIdsParaRegistrar([productoAbierto.id_producto]);

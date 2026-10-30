@@ -187,12 +187,18 @@ export default function ModalProducto({
   onClose,
   producto,
   idProveedor,
+  sinCambioDeEstado = false,
 }: {
   onClose: () => void;
   /** Sin producto = alta. Con producto = edición. */
   producto?: Producto;
   /** Sin id = el propio proveedor. Con id = el comprador sobre ese proveedor. */
   idProveedor?: IdProveedorObjetivo;
+  /**
+   * Rol Catálogo (29-oct-2026): su edición no devuelve el producto a
+   * calificación (ver ProductoService::actualizar), así que no se avisa.
+   */
+  sinCambioDeEstado?: boolean;
 }) {
   const queryClient = useQueryClient();
   const esEdicion = !!producto;
@@ -331,7 +337,7 @@ export default function ModalProducto({
   }
 
   const precioBloqueado = !!producto?.precio_en_revision;
-  const reenviaACalificacion = volveraCalificacion(producto);
+  const reenviaACalificacion = !sinCambioDeEstado && volveraCalificacion(producto);
 
   return (
     <Modal onClose={onClose} title={esEdicion ? 'Editar producto' : 'Nuevo producto'} maxWidth="max-w-xl">

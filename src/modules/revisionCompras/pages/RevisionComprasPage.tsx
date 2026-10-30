@@ -45,6 +45,9 @@ function nombreProveedor(producto: Producto): string {
  */
 function RevisionComprasContenido() {
   const queryClient = useQueryClient();
+  // Catálogo (29-oct-2026) ve la bandeja pero no aprueba, devuelve ni
+  // retira: eso es de Compras y Calidad (el backend lo frena igual).
+  const { esCatalogo: soloVer } = useAuth();
   const [busqueda, setBusqueda] = useState('');
   const [idAbierto, setIdAbierto] = useState<number | null>(null);
   const [motivoPara, setMotivoPara] = useState<{ producto: Producto; accion: 'rechazar' | 'eliminar' } | null>(null);
@@ -229,17 +232,19 @@ function RevisionComprasContenido() {
             <Card key={proveedor} className="overflow-hidden p-0">
               <div className="flex items-center justify-between gap-2 border-b border-brand-900/8 bg-brand-900/[0.015] px-4 py-2.5">
                 <label className="flex min-w-0 cursor-pointer items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={todos}
-                    ref={(el) => {
-                      if (el) el.indeterminate = marcados > 0 && !todos;
-                    }}
-                    onChange={() => alternar(idsDelProveedor, !todos)}
-                    disabled={ocupadoEnLote}
-                    className="h-4 w-4 shrink-0 cursor-pointer accent-brand-900"
-                    aria-label={`Seleccionar todos los productos de ${proveedor}`}
-                  />
+                  {!soloVer && (
+                    <input
+                      type="checkbox"
+                      checked={todos}
+                      ref={(el) => {
+                        if (el) el.indeterminate = marcados > 0 && !todos;
+                      }}
+                      onChange={() => alternar(idsDelProveedor, !todos)}
+                      disabled={ocupadoEnLote}
+                      className="h-4 w-4 shrink-0 cursor-pointer accent-brand-900"
+                      aria-label={`Seleccionar todos los productos de ${proveedor}`}
+                    />
+                  )}
                   <h2 className="truncate font-display text-sm font-semibold text-brand-900">{proveedor}</h2>
                 </label>
                 <span className="shrink-0 text-[12px] text-brand-900/45">
@@ -262,14 +267,16 @@ function RevisionComprasContenido() {
                         marcado ? 'bg-brand-yellow/[0.12]' : ''
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={marcado}
-                        onChange={() => alternar([producto.id_producto], !marcado)}
-                        disabled={ocupado}
-                        className="h-4 w-4 shrink-0 cursor-pointer accent-brand-900"
-                        aria-label={`Seleccionar ${producto.nombre_producto}`}
-                      />
+                      {!soloVer && (
+                        <input
+                          type="checkbox"
+                          checked={marcado}
+                          onChange={() => alternar([producto.id_producto], !marcado)}
+                          disabled={ocupado}
+                          className="h-4 w-4 shrink-0 cursor-pointer accent-brand-900"
+                          aria-label={`Seleccionar ${producto.nombre_producto}`}
+                        />
+                      )}
                       {/* Oculto al proveedor (23-oct-2026): sigue en revisión, pero en gris. */}
                       <div className={`min-w-0 flex-1 ${producto.oculto_proveedor ? 'opacity-50' : ''}`}>
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -309,6 +316,8 @@ function RevisionComprasContenido() {
                         >
                           Ver documentos
                         </button>
+                        {!soloVer && (
+                        <>
                         <Button
                           className="!text-[12px] !px-2.5 !py-1"
                           isLoading={ocupado && aprobar.isPending}
@@ -331,6 +340,8 @@ function RevisionComprasContenido() {
                         >
                           Retirar
                         </button>
+                        </>
+                        )}
                       </div>
                     </li>
                   );
@@ -350,6 +361,7 @@ function RevisionComprasContenido() {
           onConfirmarCorreccion={() => setIdAbierto(null)}
           confirmandoCorreccion={false}
           idProveedor={productoAbierto.proveedor?.id_proveedor}
+          soloLectura={soloVer}
         />
       )}
 
@@ -379,10 +391,11 @@ function RevisionComprasContenido() {
  * dibujar una pantalla que después responde 403-.
  */
 export default function RevisionComprasPage() {
-  const { esCompras, esCalidad, esAdmin, esSistemas } = useAuth();
+  const { esCompras, esCalidad, esAdmin, esSistemas, esCatalogo } = useAuth();
 
   return (
-    <RoleRoute allow={esCompras || esCalidad || esAdmin || esSistemas}>
+    // Catálogo entra solo a mirar (29-oct-2026).
+    <RoleRoute allow={esCompras || esCalidad || esAdmin || esSistemas || esCatalogo}>
       <RevisionComprasContenido />
     </RoleRoute>
   );

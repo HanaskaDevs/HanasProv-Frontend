@@ -266,10 +266,10 @@ function CatalogoProductosContent() {
 }
 
 export default function CatalogoProductosPage() {
-  const { esSistemas, esAdmin, esCompras } = useAuth();
+  const { esSistemas, esAdmin, esCompras, esCatalogo } = useAuth();
 
   return (
-    <RoleRoute allow={esSistemas || esAdmin || esCompras}>
+    <RoleRoute allow={esSistemas || esAdmin || esCompras || esCatalogo}>
       <CatalogoProductosContent />
     </RoleRoute>
   );
