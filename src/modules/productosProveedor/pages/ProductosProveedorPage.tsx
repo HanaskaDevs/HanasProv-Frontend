@@ -42,7 +42,9 @@ function ProductosProveedorContenido() {
             Productos por proveedor
           </h1>
           <p className="text-brand-900/50 text-xs mt-0.5">
-            Elige un proveedor para ver, editar y cargar su ficha de productos.
+            {esCatalogo
+              ? 'Elige un proveedor para ver y corregir los datos de sus productos.'
+              : 'Elige un proveedor para ver, editar y cargar su ficha de productos.'}
           </p>
         </div>
 
