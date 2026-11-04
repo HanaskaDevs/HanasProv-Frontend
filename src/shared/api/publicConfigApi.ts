@@ -42,3 +42,8 @@ export async function obtenerGuiaPasos(): Promise<GuiaPasoPublico[]> {
   const { data } = await publicClient.get<GuiaPasoPublico[]>('/public-config/guia-pasos');
   return data;
 }
+/** Modo navideño (04-nov-2026): lo enciende Sistemas desde Configuraciones. */
+export async function obtenerModoNavideno(): Promise<boolean> {
+  const { data } = await publicClient.get<{ activo: boolean }>('/public-config/modo-navideno');
+  return !!data.activo;
+}

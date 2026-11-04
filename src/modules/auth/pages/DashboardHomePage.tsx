@@ -11,9 +11,11 @@ import PanelAspirante from '../components/PanelAspirante';
 import PanelSistemas from '../components/PanelSistemas';
 import PanelCalidad from '../components/PanelCalidad';
 import * as fichaApi from '../../miFicha/api/fichaApi';
+import { useModoNavideno } from '../../../shared/hooks/useModoNavideno';
 
 export default function DashboardHomePage() {
   const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esCalidad, esGuardia, esCatalogo } = useAuth();
+  const navidad = useModoNavideno();
 
   // Comparte queryKey con DashboardLayout/MiFichaPage -> React Query lo
   // sirve de caché en vez de duplicar la llamada. Mismo criterio
@@ -69,6 +71,15 @@ export default function DashboardHomePage() {
             <p className="text-brand-900/60 text-sm mt-1">
               {empresaActiva?.razon_social ?? 'Sin empresa activa'}
             </p>
+            {/* Modo navideño (04-nov-2026): un saludo discreto, en el vino de la marca. */}
+            {navidad && (
+              <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-brand-wine/15 bg-brand-wine/[0.06] px-3 py-1 text-xs font-medium text-brand-wine">
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 2.5l2.1 5.1 5.4.4-4.1 3.6 1.3 5.3L12 14l-4.7 2.9 1.3-5.3L4.5 8l5.4-.4z" fill="#d9b92a" />
+                </svg>
+                Hanaska te desea felices fiestas
+              </p>
+            )}
           </div>
         )}
 

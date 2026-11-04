@@ -15,6 +15,8 @@ import HanaBot from '../components/HanaBot';
 import Footer from '../components/Footer';
 import TarjetaMiResponsable from '../../modules/responsables/components/TarjetaMiResponsable';
 import ModalBannerInformativo from '../../modules/banner/components/ModalBannerInformativo';
+import GuirnaldaLuces from '../components/navidad/GuirnaldaLuces';
+import { useModoNavideno } from '../hooks/useModoNavideno';
 
 function IconoFicha({ className = '' }: { className?: string }) {
   return (
@@ -116,6 +118,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const navidad = useModoNavideno();
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
@@ -466,6 +469,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
         </nav>
       </header>
+
+      {/* Modo navideño (04-nov-2026): luces colgando del borde de la barra. */}
+      {navidad && <GuirnaldaLuces />}
 
       {/* Panel hamburguesa (solo celular/tablet angosta): junta lo que en
        *  escritorio está repartido entre la píldora de empresa, el

@@ -5,6 +5,8 @@ import * as asistenteApi from '../api/asistenteApi';
 import { haySaludoPendiente, olvidarSaludoPendiente } from '../utils/saludoDeSesion';
 import { EVENTO_RECORDATORIO_HANA, type AccionHana, type RecordatorioHana } from '../utils/recordatorioHana';
 import type { MensajeChat } from '../api/asistenteApi';
+import { useModoNavideno } from '../hooks/useModoNavideno';
+import GorroNavideno from './navidad/GorroNavideno';
 
 // Dentro de una clase de caracteres la barra no necesita escape, y con
 // escape eslint la marca como innecesaria. El guion va al final para que
@@ -28,8 +30,15 @@ const BIENVENIDA: MensajeChat = {
     contenido: '¡Hola! Soy Hana, tu asistente virtual de Hanaska. ¿En qué puedo ayudarte hoy?',
 };
 
+// La misma bienvenida en modo navideño (04-nov-2026). Se elige al dibujar, no
+// al guardar el mensaje: si Sistemas enciende o apaga el modo con el chat
+// abierto, el saludo cambia solo.
+const BIENVENIDA_NAVIDENA =
+    '¡Hola y felices fiestas! 🎄 Soy Hana, tu asistente virtual de Hanaska. ¿En qué puedo ayudarte hoy?';
+
 export default function HanaBot() {
     const navigate = useNavigate();
+    const navidad = useModoNavideno();
     const videoRef = useRef<HTMLVideoElement>(null);
     const animandoRef = useRef(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -254,8 +263,13 @@ export default function HanaBot() {
                 <div className="w-80 h-96 rounded-xl bg-white shadow-2xl border border-brand-900/10 flex flex-col overflow-hidden">
                     <div className="bg-brand-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full overflow-hidden bg-white/10">
-                                <video src="/hana-bot.mp4" muted playsInline className="h-full w-full object-cover" />
+                            <div className="relative h-8 w-8 shrink-0">
+                                <div className="h-8 w-8 rounded-full overflow-hidden bg-white/10">
+                                    <video src="/hana-bot.mp4" muted playsInline className="h-full w-full object-cover" />
+                                </div>
+                                {navidad && (
+                                    <GorroNavideno className="gorro-navideno absolute -top-3 -left-2 w-7 pointer-events-none" />
+                                )}
                             </div>
                             <span className="text-sm font-medium">Hana · Asistente virtual</span>
                         </div>
@@ -276,7 +290,7 @@ export default function HanaBot() {
                                             : 'bg-white border border-brand-900/8 text-brand-900'
                                     }`}
                                 >
-                                    {m.contenido}
+                                    {navidad && m.rol === 'hana' && m.contenido === BIENVENIDA.contenido ? BIENVENIDA_NAVIDENA : m.contenido}
 
                                     {m.accion && (
                                         <button
@@ -355,20 +369,33 @@ export default function HanaBot() {
                 </div>
             )}
 
-            <button
-                onClick={() => setChatAbierto((v) => !v)}
-                onMouseEnter={() => reproducirSegmento(SEGMENTOS.guino, { velocidad: 0.5 })}
-                className="h-20 w-20 rounded-full overflow-hidden shadow-lg border-2 border-white hover:scale-105 transition-transform bg-brand-200/20"
-                title="Hana, tu asistente virtual"
-            >
-                <video
-                    ref={videoRef}
-                    src="/hana-bot.mp4"
-                    muted
-                    playsInline
-                    className="h-full w-full object-cover pointer-events-none"
-                />
-            </button>
+            {/* El zoom al pasar el mouse va en el contenedor y no en el botón:
+                así el gorro navideño crece junto con Hana y no queda flotando.
+                Con gorro se deja más aire arriba (mt-7): sin eso, con el chat
+                abierto la punta del gorro tapaba el botón de enviar. */}
+            <div className={`relative hover:scale-105 transition-transform ${navidad ? 'mt-7' : ''}`}>
+                <button
+                    onClick={() => setChatAbierto((v) => !v)}
+                    onMouseEnter={() => reproducirSegmento(SEGMENTOS.guino, { velocidad: 0.5 })}
+                    className={`block h-20 w-20 rounded-full overflow-hidden shadow-lg border-2 bg-brand-200/20 ${
+                        navidad ? 'border-[#f3d9da] ring-2 ring-brand-wine/30' : 'border-white'
+                    }`}
+                    title={navidad ? 'Hana, tu asistente virtual · ¡Felices fiestas!' : 'Hana, tu asistente virtual'}
+                >
+                    <video
+                        ref={videoRef}
+                        src="/hana-bot.mp4"
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover pointer-events-none"
+                    />
+                </button>
+                {/* Modo navideño: el gorro va FUERA del botón (que recorta lo
+                    que sobresale del círculo) y no recibe clics. */}
+                {navidad && (
+                    <GorroNavideno className="gorro-navideno absolute -top-[33px] -left-1 w-[76px] pointer-events-none drop-shadow-md" />
+                )}
+            </div>
         </div>
     );
 }
