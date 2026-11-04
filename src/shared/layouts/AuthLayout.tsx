@@ -1,6 +1,17 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import LogoLink from '../components/LogoLink';
 import { obtenerImagenLoginPublica } from '../api/publicConfigApi';
+import GorroNavideno from '../components/navidad/GorroNavideno';
+import { useModoNavideno } from '../hooks/useModoNavideno';
+
+/*
+ * Gorro navideño sobre la PUNTA de la estrella del logo (04-nov-2026, modo
+ * navideño). La punta está medida sobre la imagen (assets/logo-hanaska.png,
+ * 829 x 561): x = 415 (el centro) e y = 20. Las posiciones van en % del logo
+ * para que el gorro siga calzando si el logo cambia de tamaño. El ribete del
+ * gorro queda a la altura de la punta, que queda "dentro" del gorro.
+ */
+const GORRO_SOBRE_LOGO = { left: '33.7%', top: '-16%', width: '32%' } as const;
 
 const IMAGEN_RESPALDO = '/hanaska.jpg';
 const CACHE_KEY = 'hanaska_login_imagen_url';
@@ -10,6 +21,7 @@ export default function AuthLayout({ title, subtitle, children }: {
   subtitle?: string;
   children: ReactNode;
 }) {
+  const navidad = useModoNavideno();
   const [imagenActual, setImagenActual] = useState(
     () => localStorage.getItem(CACHE_KEY) || IMAGEN_RESPALDO
   );
@@ -64,7 +76,15 @@ export default function AuthLayout({ title, subtitle, children }: {
             sin importar qué tan clara u oscura sea justo ahí. */}
 
         <div className="flex justify-center mb-6">
-          <LogoLink className="h-24" variant="light" />
+          <div className="relative">
+            <LogoLink className="h-24" variant="light" />
+            {navidad && (
+              <GorroNavideno
+                className="gorro-navideno absolute pointer-events-none drop-shadow-lg"
+                style={GORRO_SOBRE_LOGO}
+              />
+            )}
+          </div>
         </div>
         <h1
           className="font-display text-xl font-semibold text-white mb-1 text-center"

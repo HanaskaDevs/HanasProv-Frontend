@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type CSSProperties } from 'react';
 
 /**
  * Gorro de Papá Noel dibujado a mano en SVG (04-nov-2026, modo navideño).
@@ -14,14 +14,21 @@ import { useId } from 'react';
  * `useId`: cada gorro necesita ids de degradado propios; con ids fijos, dos
  * gorros en pantalla (botón y avatar del chat) se pisarían los degradados.
  */
-export default function GorroNavideno({ className = '' }: { className?: string }) {
+export default function GorroNavideno({
+  className = '',
+  style,
+}: {
+  className?: string;
+  /** Para posicionarlo en % sobre otra imagen (el logo del login). */
+  style?: CSSProperties;
+}) {
   const id = useId().replace(/:/g, '');
   const rojo = `gorro-rojo-${id}`;
   const brillo = `gorro-brillo-${id}`;
   const piel = `gorro-piel-${id}`;
 
   return (
-    <svg viewBox="0 0 100 82" className={className} aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 100 82" className={className} style={style} aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={rojo} x1="0" y1="0" x2="0.35" y2="1">
           <stop offset="0" stopColor="#d4474d" />
