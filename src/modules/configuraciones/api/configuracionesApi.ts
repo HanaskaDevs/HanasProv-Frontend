@@ -230,6 +230,21 @@ export async function definirAnunciosVoz(activa: boolean): Promise<ConfigAnuncio
 }
 
 // ---------------------------------------------------------------------------
+// Modo navideño (04-nov-2026). La LECTURA para decorar el portal es pública
+// (shared/api/publicConfigApi); acá va el interruptor de Sistemas.
+// ---------------------------------------------------------------------------
+
+export async function obtenerModoNavideno(): Promise<{ activo: boolean }> {
+  const { data } = await apiClient.get<{ activo: boolean }>('/configuraciones/modo-navideno');
+  return data;
+}
+
+export async function definirModoNavideno(activo: boolean): Promise<{ activo: boolean }> {
+  const { data } = await apiClient.put<{ activo: boolean }>('/configuraciones/modo-navideno', { activo });
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // IP bloqueadas por fuerza bruta
 // ---------------------------------------------------------------------------
 
