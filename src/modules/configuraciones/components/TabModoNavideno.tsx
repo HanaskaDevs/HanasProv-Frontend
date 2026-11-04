@@ -33,7 +33,7 @@ const QUE_CAMBIA = [
   {
     titulo: 'Nieve',
     texto:
-      'Copos discretos en todo el portal, también en el login. No tapan nada ni reciben clics, quedan detrás de las ventanas y no aparecen en el Modo TV.',
+      'En el login cae en toda la pantalla; dentro del portal, solo sobre la barra azul. No tapa nada, no recibe clics y no aparece en el Modo TV.',
   },
 ];
 
@@ -62,7 +62,7 @@ function VistaPreviaNavidad() {
           ))}
         </div>
       </div>
-      <Nevada enCaja />
+      <Nevada alto={256} cantidad={16} />
       <div className="absolute bottom-3 right-3 z-50">
         <div className="relative">
           <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-[#f3d9da] ring-2 ring-brand-wine/30 shadow-md bg-brand-200/20">

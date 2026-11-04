@@ -59,6 +59,8 @@ export default function PedidosInternosPage() {
     }, [bodegasDisponibles]);
 
     const pedidosBodega = bodega ? data?.[bodega]?.pedidos ?? [] : [];
+    // Los entregados al 100% no se listan (04-nov-2026); se dice cuántos son.
+    const completosOcultos = bodega ? data?.[bodega]?.pedidos_completos_ocultos ?? 0 : 0;
 
     const totalPaginas = Math.max(1, Math.ceil(pedidosBodega.length / PEDIDOS_POR_PAGINA));
     const pedidosPagina = useMemo(() => {
@@ -186,11 +188,25 @@ export default function PedidosInternosPage() {
                         })}
                     </div>
 
+                    {completosOcultos > 0 && (
+                        <p className="flex items-center gap-1.5 text-xs text-brand-900/55">
+                            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#3B6D11]/15 text-[#3B6D11]">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            {completosOcultos} pedido{completosOcultos === 1 ? '' : 's'} ya entregado{completosOcultos === 1 ? '' : 's'} al 100% no se
+                            muestra{completosOcultos === 1 ? '' : 'n'} (sí cuentan en el % de la bodega).
+                        </p>
+                    )}
+
                     {/* Contenido */}
                     {pedidosBodega.length === 0 ? (
                         <Card>
                             <p className="text-sm text-brand-900/60 text-center py-10">
-                                No hay pedidos en {bodega} con los filtros actuales.
+                                {completosOcultos > 0
+                                    ? `Todos los pedidos de ${bodega} de hoy ya están entregados al 100%.`
+                                    : `No hay pedidos en ${bodega} con los filtros actuales.`}
                             </p>
                         </Card>
                     ) : (

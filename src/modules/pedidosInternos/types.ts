@@ -20,8 +20,11 @@ export interface PedidoInterno {
 }
 
 export interface BodegaPedidos {
+  /** Calculado con TODOS los pedidos de la bodega, también los completos que no se muestran. */
   porcentaje_entrega: number;
   pedidos: PedidoInterno[];
+  /** Cuántos pedidos entregados al 100% se ocultaron (04-nov-2026). */
+  pedidos_completos_ocultos?: number;
 }
 
 /** Llave = código de bodega. */

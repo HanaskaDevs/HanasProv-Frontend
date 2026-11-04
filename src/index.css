@@ -285,6 +285,13 @@ h1, h2, h3, h4, .font-display {
   to { transform: translateX(14px) rotate(20deg); }
 }
 .copo-caer { animation: copo-caer linear infinite; will-change: transform; }
+/* Nieve dentro de una caja (la barra azul del portal, la vista previa): cae
+   lo que mide la caja (--caida-copo, en px) y no la pantalla entera. */
+@keyframes copo-caer-caja {
+  from { transform: translate3d(0, -14px, 0); }
+  to { transform: translate3d(0, var(--caida-copo, 140px), 0); }
+}
+.copo-caer-caja { animation: copo-caer-caja linear infinite; will-change: transform; }
 .copo-vaiven { animation: copo-vaiven ease-in-out infinite alternate; }
 /* Los copos tienen que verse sobre el fondo CLARO y sobre la barra azul: un
    centro blanco con borde celeste más marcado y una sombra azulada mínima. Sin
@@ -317,6 +324,7 @@ h1, h2, h3, h4, .font-display {
 
 @media (prefers-reduced-motion: reduce) {
   .copo-caer,
+  .copo-caer-caja,
   .copo-vaiven,
   .foco-titilar,
   .gorro-pompon { animation: none; }

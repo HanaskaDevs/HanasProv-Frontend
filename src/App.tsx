@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
 import { useAndroidBackButton } from './shared/hooks/useAndroidBackButton';
 import { useModoNavideno } from './shared/hooks/useModoNavideno';
+import { useAuth } from './modules/auth/hooks/useAuth';
 import Nevada from './shared/components/navidad/Nevada';
 
 function App() {
@@ -12,12 +13,14 @@ function App() {
   // se desmontaría/remontaría con cada cambio de pantalla).
   useAndroidBackButton();
 
-  // Modo navideño (04-nov-2026): la nieve va acá para cubrir TODO el portal,
-  // también el login y la portada. Menos en el Modo TV del calendario: esa
-  // pantalla se mira de lejos en recepción y tiene que leerse limpia.
+  // Modo navideño: nieve en TODA la pantalla solo sin sesión (login, portada,
+  // activar cuenta...). Ya dentro del portal cae solo sobre la barra azul
+  // (04-nov-2026, pedido del usuario; ver DashboardLayout). Nunca en el Modo
+  // TV: se mira de lejos en recepción y tiene que leerse limpio.
   const navidad = useModoNavideno();
+  const { isAuthenticated } = useAuth();
   const { pathname } = useLocation();
-  const conNieve = navidad && !pathname.startsWith('/calendario/modo-tv');
+  const conNieve = navidad && !isAuthenticated && !pathname.startsWith('/calendario/modo-tv');
 
   return (
     <>
