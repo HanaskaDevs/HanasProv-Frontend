@@ -58,12 +58,17 @@ function ConfiguracionesPageContenido() {
         </p>
       </div>
 
-      <div className="flex items-center gap-1 border-b border-brand-900/10">
+      {/* Con 11 pestañas la fila ya no cabe en pantallas de ~1024 px: se
+          partían los nombres en 2-3 líneas y la PÁGINA entera se desplazaba de
+          lado (04-nov-2026). Ahora, si no caben, bajan a una segunda línea sin
+          partir nombres: todas quedan a la vista (una barra de desplazamiento
+          escondía justo la pestaña elegida). */}
+      <div className="flex flex-wrap items-center gap-x-1 border-b border-brand-900/10">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === t.id
                 ? 'border-brand-700 text-brand-900'
                 : 'border-transparent text-brand-900/40 hover:text-brand-900/70'
