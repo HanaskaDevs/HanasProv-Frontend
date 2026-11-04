@@ -16,6 +16,7 @@ import Footer from '../components/Footer';
 import TarjetaMiResponsable from '../../modules/responsables/components/TarjetaMiResponsable';
 import ModalBannerInformativo from '../../modules/banner/components/ModalBannerInformativo';
 import GuirnaldaLuces from '../components/navidad/GuirnaldaLuces';
+import Nevada from '../components/navidad/Nevada';
 import { useModoNavideno } from '../hooks/useModoNavideno';
 
 function IconoFicha({ className = '' }: { className?: string }) {
@@ -233,7 +234,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-brand-200/10">
-      <header className="bg-brand-900 text-white shrink-0 transition-all duration-300">
+      <header className="relative bg-brand-900 text-white shrink-0 transition-all duration-300">
+        {/* Modo navideño: dentro del portal la nieve cae SOLO sobre la barra
+            azul (04-nov-2026, pedido del usuario); en el login cae en toda la
+            pantalla (ver App.tsx). La capa recorta a la barra y no recibe clics. */}
+        {navidad && <Nevada alto={150} />}
         {/* Header pensado para escritorio (pl-10, logo h-20 = 80px) se veía
          *  aplastado en celular: el logo gigante empujaba la píldora de
          *  empresa a partirse en 2 líneas contra el avatar, todo apretado
