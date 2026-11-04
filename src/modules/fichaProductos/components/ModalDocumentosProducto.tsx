@@ -499,14 +499,21 @@ export default function ModalDocumentosProducto({
   const elegirCategoria = useMutation({
     mutationFn: (clasificacion: ClasificacionProducto) =>
       productosApi.asignarClasificacion(producto.id_producto, clasificacion, idProveedor),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
-      queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
-      // "Productos por revisar" (Compras / Calidad / Admin / Sistemas).
-      queryClient.invalidateQueries({ queryKey: ['productos-en-revision'] });
-      queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
-      queryClient.invalidateQueries({ queryKey: ['calificacion-productos'] });
-    },
+    // Se DEVUELVE la promesa de las recargas: así la mutación sigue "en curso"
+    // (botones deshabilitados, spinner) hasta que la lista trae el producto con
+    // su categoría. Antes terminaba al guardar y, mientras la lista se
+    // recargaba (unos segundos, porque en la página 1 sincroniza con BC), el
+    // modal volvía a mostrar "Sin categoría" con los botones activos: parecía
+    // que no se había guardado (visto el 04-nov-2026, FROZENTROPIC).
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['mis-productos'] }),
+        queryClient.invalidateQueries({ queryKey: ['resumen-registro'] }),
+        // "Productos por revisar" (Compras / Calidad / Admin / Sistemas).
+        queryClient.invalidateQueries({ queryKey: ['productos-en-revision'] }),
+        queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] }),
+        queryClient.invalidateQueries({ queryKey: ['calificacion-productos'] }),
+      ]),
   });
 
   const listoParaRegistrar = !soloLectura && !producto.bloqueado && tieneDocumentosObligatoriosCompletos(producto, tipos);
