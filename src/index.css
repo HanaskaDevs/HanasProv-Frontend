@@ -269,3 +269,57 @@ h1, h2, h3, h4, .font-display {
   .procesando-halo,
   .procesando-punto { animation: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Modo navideño (04-nov-2026). Solo transform/opacity: no recalcula el layout.
+   Con "reducir movimiento" todo queda quieto (y la nieve ni se dibuja).
+   --------------------------------------------------------------------------- */
+
+/* Nieve: cae de arriba abajo y, por dentro, se mece de lado. */
+@keyframes copo-caer {
+  from { transform: translate3d(0, -6vh, 0); }
+  to { transform: translate3d(0, 106vh, 0); }
+}
+@keyframes copo-vaiven {
+  from { transform: translateX(-14px) rotate(-20deg); }
+  to { transform: translateX(14px) rotate(20deg); }
+}
+.copo-caer { animation: copo-caer linear infinite; will-change: transform; }
+.copo-vaiven { animation: copo-vaiven ease-in-out infinite alternate; }
+/* Los copos tienen que verse sobre el fondo CLARO y sobre la barra azul: un
+   centro blanco con borde celeste más marcado y una sombra azulada mínima. Sin
+   eso, sobre blanco eran casi invisibles. */
+.copo-punto {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #dcedf5 40%, #9cc8dc 100%);
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 2px rgba(39, 78, 97, 0.35);
+}
+.copo-estrella { color: #8fc0d6; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 1px rgba(39, 78, 97, 0.45)); }
+
+/* Luces de la guirnalda: cada foco titila a su ritmo (el retraso va inline). */
+@keyframes foco-titilar {
+  0%, 100% { opacity: 0.55; filter: drop-shadow(0 0 1px currentColor); }
+  50% { opacity: 1; filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 2px currentColor); }
+}
+.foco-titilar { animation: foco-titilar 2.6s ease-in-out infinite; }
+
+/* Gorro de Hana: se mece apenas, como si Hana moviera la cabeza; el pompón,
+   a otro ritmo. */
+@keyframes gorro-mecer {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(-10deg); }
+}
+@keyframes gorro-pompon {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(9deg); }
+}
+.gorro-navideno { animation: gorro-mecer 3.8s ease-in-out infinite; transform-origin: 45% 85%; }
+.gorro-pompon { animation: gorro-pompon 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .copo-caer,
+  .copo-vaiven,
+  .foco-titilar,
+  .gorro-pompon { animation: none; }
+  .gorro-navideno { animation: none; transform: rotate(-13deg); }
+  .foco-titilar { opacity: 1; }
+}

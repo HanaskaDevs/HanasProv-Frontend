@@ -9,11 +9,12 @@ import TabGuiaPasos from '../components/TabGuiaPasos';
 import TabPoliticas from '../components/TabPoliticas';
 import TabDocumentos from '../components/TabDocumentos';
 import TabModoTv from '../components/TabModoTv';
+import TabModoNavideno from '../components/TabModoNavideno';
 import TabSeguridad from '../components/TabSeguridad';
 import TabResponsables from '../../responsables/components/TabResponsables';
 import TabBannerInformativo from '../../banner/components/TabBannerInformativo';
 
-type Tab = 'home' | 'login' | 'banner' | 'bot' | 'guia' | 'responsables' | 'politicas' | 'documentos' | 'modo-tv' | 'seguridad';
+type Tab = 'home' | 'login' | 'banner' | 'bot' | 'guia' | 'responsables' | 'politicas' | 'documentos' | 'modo-tv' | 'navidad' | 'seguridad';
 
 function ConfiguracionesPageContenido() {
   const { esSistemas } = useAuth();
@@ -39,6 +40,7 @@ function ConfiguracionesPageContenido() {
     { id: 'politicas', label: 'Políticas' },
     { id: 'documentos', label: 'Documentos' },
     { id: 'modo-tv', label: 'Modo TV' },
+    { id: 'navidad', label: 'Modo navideño' },
     { id: 'seguridad', label: 'Seguridad' },
   ];
 
@@ -81,6 +83,7 @@ function ConfiguracionesPageContenido() {
       {tab === 'politicas' && <TabPoliticas />}
       {tab === 'documentos' && <TabDocumentos />}
       {tab === 'modo-tv' && <TabModoTv />}
+      {tab === 'navidad' && <TabModoNavideno />}
       {tab === 'seguridad' && <TabSeguridad />}
     </div>
   );
