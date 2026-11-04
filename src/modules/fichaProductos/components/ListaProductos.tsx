@@ -360,6 +360,7 @@ export default function ListaProductos({
   const [pagina, setPagina] = useState(1);
   const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
   const [errorCorreccion, setErrorCorreccion] = useState<string | null>(null);
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
   // La búsqueda pega directo al servidor (ver productosApi.listarProductos)
   // -> con debounce para no mandar una consulta en cada tecla, solo
@@ -389,6 +390,17 @@ export default function ListaProductos({
     queryFn: () => productosApi.obtenerResumenRegistro(undefined, idProveedor),
   });
 
+  // Antes no tenía onError: si el servidor rechazaba el borrado, el producto
+  // simplemente seguía en la lista y parecía que "volvía a aparecer"
+  // (04-nov-2026). Ahora se dice por qué.
+  const avisarErrorAlEliminar = (error: unknown) => {
+    const mensaje =
+      axios.isAxiosError(error) && error.response?.data?.message
+        ? String(error.response.data.message)
+        : 'No se pudo eliminar. Intenta de nuevo.';
+    setErrorEliminar(mensaje);
+  };
+
   const eliminarUno = useMutation({
     mutationFn: (idProducto: number) => productosApi.eliminarProducto(idProducto, idProveedor),
     onSuccess: () => {
@@ -396,6 +408,7 @@ export default function ListaProductos({
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
       queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
     },
+    onError: avisarErrorAlEliminar,
   });
 
   // Ocultar / mostrar al proveedor (23-oct-2026). Solo con idProveedor
@@ -417,6 +430,7 @@ export default function ListaProductos({
       queryClient.invalidateQueries({ queryKey: ['resumen-registro'] });
       queryClient.invalidateQueries({ queryKey: ['proveedores-con-productos'] });
     },
+    onError: avisarErrorAlEliminar,
   });
 
   // Confirma la corrección de UN producto puntual (ver
@@ -656,6 +670,17 @@ export default function ListaProductos({
           onClose={() => setIdsParaRegistrar(null)}
           onRegistrado={() => setSeleccionados(new Set())}
         />
+      )}
+
+      {errorEliminar && (
+        <Modal title="No se pudo eliminar" onClose={() => setErrorEliminar(null)}>
+          <p className="text-sm text-brand-900/80">{errorEliminar}</p>
+          <div className="flex justify-end mt-4">
+            <Button variant="ghost" onClick={() => setErrorEliminar(null)}>
+              Entendido
+            </Button>
+          </div>
+        </Modal>
       )}
 
       {errorCorreccion && (
