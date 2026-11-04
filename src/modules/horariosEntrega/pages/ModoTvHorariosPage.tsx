@@ -162,11 +162,13 @@ function useHorariosDeHoyPorClasificacion(habilitado: boolean) {
       // la lista SIN los recibidos. Con la clave compartida, entrar al Modo
       // TV y salir a Seguimiento le mostraba a esa pantalla los recibidos
       // cacheados acá, que es justo lo que ahí se oculta a propósito.
-      queryKey: ['horarios-entrega-hoy', c.valor, 'con-recibidos'],
+      queryKey: ['horarios-entrega-hoy', c.valor, 'con-recibidos', 'solo-con-pedidos'],
       // Con los recibidos incluidos (ver listarHoy): el Modo TV necesita ver
       // la fila cambiar a "Recibido" para poder anunciar que el proveedor
       // entregó, y de paso la muestra atenuada hasta que se le pase la franja.
-      queryFn: () => horariosEntregaApi.listarHoy(c.valor, true),
+      // Y solo los proveedores con pedidos registrados en los últimos 7 días
+      // (04-nov-2026): uno sin pedidos no tiene nada que entregar.
+      queryFn: () => horariosEntregaApi.listarHoy(c.valor, true, true),
       enabled: habilitado,
       refetchInterval: MS_REFRESCO_DATOS,
     })

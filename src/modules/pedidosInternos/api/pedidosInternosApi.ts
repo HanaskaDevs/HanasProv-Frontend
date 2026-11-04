@@ -7,6 +7,8 @@ export async function listarPedidosPorBodega(filtros: FiltrosPedidosInternos): P
       fecha_recepcion_esperada: filtros.fecha_recepcion_esperada || undefined,
       proveedor: filtros.proveedor || undefined,
       producto: filtros.producto || undefined,
+      // Esta pantalla no muestra los pedidos entregados al 100% (04-nov-2026).
+      ocultar_completos: 1,
     },
   });
   return data;

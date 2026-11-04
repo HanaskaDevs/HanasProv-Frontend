@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { prefiereMenosMovimiento } from '../../hooks/useModoNavideno';
 
 /**
@@ -55,23 +55,44 @@ function Estrella({ tamano }: { tamano: number }) {
   );
 }
 
-export default function Nevada({ enCaja = false }: { enCaja?: boolean }) {
+/**
+ * Sin `alto`: pantalla completa (el login y las páginas sin sesión).
+ *
+ * Con `alto` (px): nieva solo dentro de una caja de esa altura, recortada por
+ * su contenedor. Así va dentro del portal: solo en la barra azul (04-nov-2026,
+ * pedido del usuario: "ya dentro, la nieve solo en el header") y en la vista
+ * previa de Configuraciones. La caída se mide en px de la caja y el tiempo se
+ * acorta en proporción: con la caída de pantalla completa, en una caja baja
+ * casi todos los copos estaban siempre fuera de la vista.
+ */
+export default function Nevada({ alto, cantidad }: { alto?: number; cantidad?: number }) {
+  const enCaja = alto !== undefined;
+
   const copos = useMemo(() => {
     const angosto = typeof window !== 'undefined' && window.innerWidth < 640;
-    return armarCopos(enCaja ? 14 : angosto ? COPOS_CELULAR : COPOS_ESCRITORIO);
-  }, [enCaja]);
+    const total = cantidad ?? (enCaja ? 18 : angosto ? COPOS_CELULAR : COPOS_ESCRITORIO);
+    const lista = armarCopos(total);
+    if (!enCaja) return lista;
+    // En una caja baja los copos tienen poco recorrido: se acorta el tiempo en
+    // proporción, con un mínimo para que no "llueva" de golpe.
+    const factor = Math.max(0.28, alto / 700);
+    return lista.map((c) => ({ ...c, duracion: c.duracion * factor, retraso: c.retraso * factor }));
+  }, [enCaja, alto, cantidad]);
 
   if (prefiereMenosMovimiento()) return null;
 
   return (
     <div
       aria-hidden="true"
-      className={`${enCaja ? 'absolute' : 'fixed'} inset-0 overflow-hidden pointer-events-none z-40`}
+      // En caja: z-[1] -> por encima del fondo de su contenedor pero por debajo
+      // de menús desplegables y modales, que tienen z mayor.
+      className={`${enCaja ? 'absolute z-[1]' : 'fixed z-40'} inset-0 overflow-hidden pointer-events-none`}
+      style={enCaja ? ({ '--caida-copo': `${alto + 16}px` } as CSSProperties) : undefined}
     >
       {copos.map((c, i) => (
         <span
           key={i}
-          className="copo-caer absolute top-0"
+          className={`${enCaja ? 'copo-caer-caja' : 'copo-caer'} absolute top-0`}
           style={{ left: `${c.izquierda}%`, animationDuration: `${c.duracion}s`, animationDelay: `${c.retraso}s` }}
         >
           <span

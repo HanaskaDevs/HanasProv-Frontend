@@ -33,12 +33,16 @@ export async function misHorarios(): Promise<HorarioPropio[]> {
  */
 export async function listarHoy(
   clasificacion?: ClasificacionHorario,
-  incluirRecibidos = false
+  incluirRecibidos = false,
+  // Solo el Modo TV (04-nov-2026): sin los proveedores que no tienen pedidos
+  // registrados en los últimos 7 días.
+  soloConPedidos = false
 ): Promise<HorarioHoy[]> {
   const { data } = await apiClient.get<HorarioHoy[]>('/horarios-entrega/hoy', {
     params: {
       ...(clasificacion ? { clasificacion } : {}),
       ...(incluirRecibidos ? { incluir_recibidos: 1 } : {}),
+      ...(soloConPedidos ? { solo_con_pedidos: 1 } : {}),
     },
   });
   return data;
