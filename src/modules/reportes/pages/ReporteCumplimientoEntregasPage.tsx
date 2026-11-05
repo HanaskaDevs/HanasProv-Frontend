@@ -1,81 +1,245 @@
 // src/modules/reportes/pages/ReporteCumplimientoEntregasPage.tsx
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../auth/hooks/useAuth';
 import RoleRoute from '../../../routes/RoleRoute';
 import Card from '../../../shared/components/Card';
 import Spinner from '../../../shared/components/Spinner';
-import * as calificacionGlobalApi from '../../../shared/api/calificacionGlobalApi';
+import Button from '../../../shared/components/Button';
+import * as reportesApi from '../api/reportesApi';
+import type { FiltrosFillRate } from '../api/reportesApi';
 import GraficoBarras, { type BarraDato } from '../components/GraficoBarras';
 
 /** Meta de fill rate contra la que se compara. */
 const META_FILL_RATE = 95;
 
 /**
- * Reporte de Cumplimiento de Entregas: el fill rate de todos los proveedores,
- * en barras y ordenado.
+ * Hasta cuántos días atrás se puede filtrar por fecha de recepción (05-nov-2026,
+ * pedido del usuario). El servidor aplica el mismo límite
+ * (CalificacionGlobalController::DIAS_ATRAS_FILTRO_FILL_RATE).
+ */
+const DIAS_ATRAS = 5;
+
+const CLASE_CAMPO =
+  'w-full rounded-md border border-brand-900/15 bg-white px-3 py-1.5 text-sm text-brand-900 ' +
+  'focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/15';
+
+/** AAAA-MM-DD de una fecha LOCAL (toISOString pasaría a UTC y correría el día). */
+function aIso(fecha: Date): string {
+  const m = String(fecha.getMonth() + 1).padStart(2, '0');
+  const d = String(fecha.getDate()).padStart(2, '0');
+  return `${fecha.getFullYear()}-${m}-${d}`;
+}
+
+/** dd/mm/aaaa a partir de AAAA-MM-DD, sin pasar por Date (evita el corrimiento por zona horaria). */
+function aTexto(iso: string | null): string {
+  if (!iso) return '—';
+  const [a, m, d] = iso.split('-');
+  return `${d}/${m}/${a}`;
+}
+
+interface Semana {
+  desde: string;
+  hasta: string;
+  etiqueta: string;
+}
+
+/** Rango permitido para filtrar: de hoy menos DIAS_ATRAS a hoy (AAAA-MM-DD). */
+function rangoPermitido(): { minimo: string; maximo: string } {
+  const hoy = new Date();
+  const minimo = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - DIAS_ATRAS);
+  return { minimo: aIso(minimo), maximo: aIso(hoy) };
+}
+
+/**
+ * Esta semana y la anterior (lunes a domingo), recortadas al rango permitido:
+ * con el límite de días, una semana más vieja ya no tendría ningún día
+ * elegible. Si la semana anterior queda fuera del todo, no se ofrece.
+ */
+function semanasRecientes(minimo: string, maximo: string): Semana[] {
+  const hoy = new Date();
+  const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  // getDay(): 0 = domingo. Se lleva al lunes de esta semana.
+  lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7));
+
+  return [0, 1]
+    .map((i) => {
+      const inicio = new Date(lunes);
+      inicio.setDate(lunes.getDate() - 7 * i);
+      const fin = new Date(inicio);
+      fin.setDate(inicio.getDate() + 6);
+      // Las fechas AAAA-MM-DD se comparan bien como texto.
+      const desde = aIso(inicio) < minimo ? minimo : aIso(inicio);
+      const hasta = aIso(fin) > maximo ? maximo : aIso(fin);
+      const rango = `${aTexto(desde).slice(0, 5)} al ${aTexto(hasta)}`;
+      return { desde, hasta, etiqueta: i === 0 ? `Esta semana (${rango})` : `Semana anterior (${rango})` };
+    })
+    .filter((s) => s.desde <= s.hasta);
+}
+
+/** Lleva una fecha escrita a mano dentro del rango permitido. */
+function acotar(fecha: string, minimo: string, maximo: string): string {
+  if (fecha < minimo) return minimo;
+  if (fecha > maximo) return maximo;
+  return fecha;
+}
+
+/** Color del porcentaje, con los mismos cortes que los indicadores. */
+function colorPorcentaje(valor: number): string {
+  if (valor >= META_FILL_RATE) return 'text-[#3B6D11]';
+  if (valor < 75) return 'text-brand-wine';
+  return 'text-brand-900';
+}
+
+/**
+ * Reporte de Cumplimiento de entregas: el fill rate de los proveedores, en
+ * barras y ordenado.
  *
  * POR QUÉ BARRAS Y NO RADAR: acá se compara UN indicador entre MUCHOS
  * proveedores. Un radar sirve para lo contrario (varios ejes de pocos
  * proveedores). Con un solo indicador, la longitud de una barra es la
- * codificación más precisa que existe para comparar magnitudes, y no tiene
- * tope de series: entran todos los proveedores que haya.
+ * codificación más precisa que existe para comparar magnitudes.
  *
- * Va ordenado de mayor a menor, no alfabético: la pregunta es "quién cumple y
- * quién no", y ordenado se responde con mirar los extremos.
+ * Filtros (05-nov-2026, pedido de Calidad para el seguimiento): semana,
+ * fecha de recepción desde/hasta y proveedor. La semana solo rellena el
+ * rango de fechas (lunes a domingo); el rango manda. "Fecha de recepción" es
+ * la fecha de recepción esperada del pedido, la que trae BC. Las fechas solo
+ * pueden ir hasta DIAS_ATRAS días atrás (pedido del usuario, mismo día). Sin
+ * filtros se ve lo mismo que antes: todos los pedidos cerrados, igual que la nota.
  *
- * Los proveedores SIN pedidos cerrados no se grafican: no tienen fill rate
- * (no es 0, es que no hay nada que medir). Se listan aparte para que no
- * parezca que se perdieron del reporte.
+ * Con un proveedor elegido se listan sus pedidos del rango con el % de cada
+ * uno, que es lo que hace falta para hablar con él de un pedido concreto.
  */
 function Contenido() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['calificaciones-globales'],
-    queryFn: calificacionGlobalApi.obtenerCalificacionesGlobales,
+  const [filtros, setFiltros] = useState<FiltrosFillRate>({});
+  const { minimo, maximo } = useMemo(() => rangoPermitido(), []);
+  const semanas = useMemo(() => semanasRecientes(minimo, maximo), [minimo, maximo]);
+  const rangoInvalido = !!(filtros.desde && filtros.hasta && filtros.hasta < filtros.desde);
+
+  const { data, isLoading, isFetching, isError } = useQuery({
+    queryKey: ['reporte-fill-rate', filtros],
+    queryFn: () => reportesApi.obtenerReporteFillRate(filtros),
+    placeholderData: keepPreviousData,
+    // Con "hasta" antes de "desde" no se pregunta: se avisa debajo de los filtros.
+    enabled: !rangoInvalido,
   });
 
-  const { conDatos, sinDatos, promedio } = useMemo(() => {
-    const proveedores = data ?? [];
+  const semanaElegida = semanas.find((s) => s.desde === filtros.desde && s.hasta === filtros.hasta);
+  const hayFiltros = !!(filtros.desde || filtros.hasta || filtros.id_proveedor);
 
-    const conDatos: BarraDato[] = [];
-    const sinDatos: string[] = [];
-
-    proveedores.forEach((p) => {
-      const fillRate = p.componentes.find((c) => c.clave === 'fill_rate');
-      const nombre = p.razon_social ?? 'Sin razón social';
-
-      if (!fillRate) {
-        sinDatos.push(nombre);
-        return;
-      }
-
-      conDatos.push({
-        etiqueta: nombre,
-        valor: fillRate.porcentaje,
-        detalle: fillRate.detalle.replace('Promedio de ', '').replace(' cerrado(s)', ' cerrados'),
-      });
-    });
-
+  const { conDatos, promedio } = useMemo(() => {
+    const conDatos: BarraDato[] = (data?.proveedores ?? []).map((p) => ({
+      etiqueta: p.razon_social ?? 'Sin razón social',
+      valor: p.porcentaje,
+      detalle: `${p.pedidos} pedido${p.pedidos === 1 ? '' : 's'} cerrado${p.pedidos === 1 ? '' : 's'}`,
+    }));
     conDatos.sort((a, b) => b.valor - a.valor);
 
     const promedio =
-      conDatos.length > 0
-        ? conDatos.reduce((suma, d) => suma + d.valor, 0) / conDatos.length
-        : null;
+      conDatos.length > 0 ? conDatos.reduce((suma, d) => suma + d.valor, 0) / conDatos.length : null;
 
-    return { conDatos, sinDatos, promedio };
+    return { conDatos, promedio };
   }, [data]);
+
+  const sinDatos = data?.sin_pedidos ?? [];
+  const detalle = data?.detalle ?? [];
+  const nombreProveedor = data?.opciones_proveedor.find((p) => p.id_proveedor === filtros.id_proveedor)?.razon_social;
+
+  function cambiarSemana(valor: string) {
+    const semana = semanas.find((s) => s.desde === valor);
+    setFiltros((f) => ({ ...f, desde: semana?.desde, hasta: semana?.hasta }));
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-brand-900">
-          Cumplimiento de entregas
-        </h1>
+        <h1 className="font-display text-2xl font-semibold text-brand-900">Cumplimiento de entregas</h1>
         <p className="text-sm text-brand-900/60 mt-1">
           Fill rate de cada proveedor: el promedio de lo entregado en sus pedidos ya cerrados.
         </p>
       </div>
+
+      {/* Filtros */}
+      <Card className="p-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1.6fr_auto] lg:items-end">
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-brand-900/70">Semana</span>
+            <select
+              className={CLASE_CAMPO}
+              value={semanaElegida?.desde ?? ''}
+              onChange={(e) => cambiarSemana(e.target.value)}
+            >
+              <option value="">{filtros.desde || filtros.hasta ? 'Rango personalizado' : 'Todas las fechas'}</option>
+              {semanas.map((s) => (
+                <option key={s.desde} value={s.desde}>
+                  {s.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-brand-900/70">Recepción desde</span>
+            <input
+              type="date"
+              className={CLASE_CAMPO}
+              value={filtros.desde ?? ''}
+              min={minimo}
+              max={maximo}
+              onChange={(e) =>
+                setFiltros((f) => ({ ...f, desde: e.target.value ? acotar(e.target.value, minimo, maximo) : undefined }))
+              }
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-brand-900/70">Recepción hasta</span>
+            <input
+              type="date"
+              className={CLASE_CAMPO}
+              value={filtros.hasta ?? ''}
+              min={filtros.desde ?? minimo}
+              max={maximo}
+              onChange={(e) =>
+                setFiltros((f) => ({ ...f, hasta: e.target.value ? acotar(e.target.value, minimo, maximo) : undefined }))
+              }
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-brand-900/70">Proveedor</span>
+            <select
+              className={CLASE_CAMPO}
+              value={filtros.id_proveedor ?? ''}
+              onChange={(e) =>
+                setFiltros((f) => ({ ...f, id_proveedor: e.target.value ? Number(e.target.value) : undefined }))
+              }
+            >
+              <option value="">Todos los proveedores</option>
+              {(data?.opciones_proveedor ?? []).map((p) => (
+                <option key={p.id_proveedor} value={p.id_proveedor}>
+                  {p.razon_social ?? 'Sin razón social'}
+                  {p.ruc ? ` · ${p.ruc}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex items-center gap-2 lg:pb-0.5">
+            {hayFiltros && (
+              <Button variant="ghost" className="text-xs px-3 py-2" onClick={() => setFiltros({})}>
+                Limpiar
+              </Button>
+            )}
+            {isFetching && !isLoading && <Spinner className="h-4 w-4" />}
+          </div>
+        </div>
+        <p className="mt-2.5 text-[11.5px] text-brand-900/45">
+          La fecha de recepción es la fecha de recepción esperada de cada pedido en Business Central. Se puede
+          filtrar hasta {DIAS_ATRAS} días atrás (desde el {aTexto(minimo)}).
+          {rangoInvalido && <span className="ml-1 text-brand-wine">La fecha "hasta" es anterior a "desde".</span>}
+        </p>
+      </Card>
 
       {isLoading ? (
         <Card>
@@ -83,55 +247,129 @@ function Contenido() {
             <Spinner />
           </div>
         </Card>
+      ) : isError ? (
+        <Card>
+          <p className="py-10 text-center text-sm text-brand-wine">No se pudo cargar el reporte. Intenta de nuevo.</p>
+        </Card>
       ) : (
         <>
           {promedio !== null && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Indicador
                 valor={`${promedio.toFixed(1)}%`}
-                etiqueta="Fill rate promedio"
-                detalle={`${conDatos.length} proveedor${conDatos.length === 1 ? '' : 'es'} con pedidos cerrados`}
+                etiqueta={filtros.id_proveedor ? 'Fill rate del proveedor' : 'Fill rate promedio'}
+                detalle={
+                  filtros.id_proveedor
+                    ? `${detalle.length} pedido${detalle.length === 1 ? '' : 's'} cerrado${detalle.length === 1 ? '' : 's'}`
+                    : `${conDatos.length} proveedor${conDatos.length === 1 ? '' : 'es'} con pedidos cerrados`
+                }
               />
+              {/* Con un proveedor elegido se cuentan SUS PEDIDOS; sin él, proveedores. */}
               <Indicador
-                valor={String(conDatos.filter((d) => d.valor >= META_FILL_RATE).length)}
+                valor={String(
+                  filtros.id_proveedor
+                    ? detalle.filter((p) => p.porcentaje >= META_FILL_RATE).length
+                    : conDatos.filter((d) => d.valor >= META_FILL_RATE).length
+                )}
                 etiqueta={`En meta (${META_FILL_RATE}% o más)`}
-                detalle="Cumplen lo esperado"
+                detalle={filtros.id_proveedor ? 'Pedidos que cumplen lo esperado' : 'Proveedores que cumplen lo esperado'}
               />
               <Indicador
-                valor={String(conDatos.filter((d) => d.valor < 75).length)}
+                valor={String(
+                  filtros.id_proveedor
+                    ? detalle.filter((p) => p.porcentaje < 75).length
+                    : conDatos.filter((d) => d.valor < 75).length
+                )}
                 etiqueta="Por debajo del 75%"
-                detalle="Necesitan seguimiento"
+                detalle={filtros.id_proveedor ? 'Pedidos para revisar con el proveedor' : 'Proveedores que necesitan seguimiento'}
                 alerta
               />
             </div>
           )}
 
-          <Card>
-            <p className="font-display text-base font-semibold text-brand-900 mb-1">
-              Fill rate por proveedor
-            </p>
-            <p className="text-[12.5px] text-brand-900/55 mb-5">
-              Ordenado de mayor a menor. La línea punteada es la meta del {META_FILL_RATE}%.
-            </p>
-
-            <GraficoBarras
-              datos={conDatos}
-              referencia={META_FILL_RATE}
-              etiquetaReferencia={`Meta: ${META_FILL_RATE}% de cumplimiento`}
-            />
-          </Card>
-
-          {sinDatos.length > 0 && (
+          {!filtros.id_proveedor && (
             <Card>
-              <p className="text-sm font-medium text-brand-900">Sin pedidos cerrados todavía</p>
+              <p className="font-display text-base font-semibold text-brand-900 mb-1">Fill rate por proveedor</p>
+              <p className="text-[12.5px] text-brand-900/55 mb-5">
+                Ordenado de mayor a menor. La línea punteada es la meta del {META_FILL_RATE}%.
+              </p>
+              {conDatos.length === 0 ? (
+                <p className="py-8 text-center text-sm text-brand-900/50">
+                  No hay pedidos cerrados con fecha de recepción en este rango.
+                </p>
+              ) : (
+                <GraficoBarras
+                  datos={conDatos}
+                  referencia={META_FILL_RATE}
+                  etiquetaReferencia={`Meta: ${META_FILL_RATE}% de cumplimiento`}
+                />
+              )}
+            </Card>
+          )}
+
+          {filtros.id_proveedor !== undefined && (
+            <Card className="p-0 overflow-hidden">
+              <div className="px-5 pt-4 pb-3">
+                <p className="font-display text-base font-semibold text-brand-900">
+                  Pedidos de {nombreProveedor ?? 'este proveedor'}
+                </p>
+                <p className="text-[12.5px] text-brand-900/55">
+                  Pedidos cerrados del rango, por fecha de recepción. El % de cada uno es lo recibido sobre lo
+                  pedido; lo que se entrega de más en una línea no compensa lo que falta en otra.
+                </p>
+              </div>
+              {detalle.length === 0 ? (
+                <p className="px-5 pb-8 pt-4 text-center text-sm text-brand-900/50">
+                  Este proveedor no tiene pedidos cerrados con fecha de recepción en este rango.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-y border-brand-900/8 bg-brand-900/[0.025] text-left text-[11.5px] uppercase tracking-wide text-brand-900/50">
+                        <th className="px-5 py-2 font-medium">Pedido</th>
+                        <th className="px-3 py-2 font-medium">Fecha de recepción</th>
+                        <th className="px-3 py-2 text-right font-medium">Pedido (cant.)</th>
+                        <th className="px-3 py-2 text-right font-medium">Recibido</th>
+                        <th className="px-5 py-2 text-right font-medium">Fill rate</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-900/6">
+                      {detalle.map((p) => (
+                        <tr key={p.id_pedido}>
+                          <td className="px-5 py-2.5 font-medium text-brand-900">{p.nro_pedido}</td>
+                          <td className="px-3 py-2.5 text-brand-900/75 tabular-nums">{aTexto(p.fecha_recepcion)}</td>
+                          <td className="px-3 py-2.5 text-right text-brand-900/75 tabular-nums">
+                            {p.cantidad.toLocaleString('es-EC')}
+                          </td>
+                          <td className="px-3 py-2.5 text-right text-brand-900/75 tabular-nums">
+                            {p.recibida.toLocaleString('es-EC')}
+                          </td>
+                          <td className={`px-5 py-2.5 text-right font-semibold tabular-nums ${colorPorcentaje(p.porcentaje)}`}>
+                            {p.porcentaje.toFixed(1)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {!filtros.id_proveedor && sinDatos.length > 0 && (
+            <Card>
+              <p className="text-sm font-medium text-brand-900">
+                {hayFiltros ? 'Sin pedidos cerrados en este rango' : 'Sin pedidos cerrados todavía'}
+              </p>
               <p className="mt-1 text-[12.5px] text-brand-900/55">
-                Estos proveedores no aparecen en el gráfico porque no tienen fill rate que medir. No
-                es un 0: es que todavía no se cerró ningún pedido suyo.
+                Estos proveedores no aparecen en el gráfico porque no tienen fill rate que medir. No es un 0: es
+                que no tienen ningún pedido cerrado {hayFiltros ? 'con fecha de recepción en este rango' : 'todavía'}.
               </p>
               <ul className="mt-3 flex flex-wrap gap-2">
-                {sinDatos.map((nombre) => (
+                {sinDatos.map((nombre, i) => (
                   <li
-                    key={nombre}
+                    key={`${nombre}-${i}`}
                     className="rounded-md bg-brand-900/[0.04] px-2.5 py-1 text-[12.5px] text-brand-900/70"
                   >
                     {nombre}
