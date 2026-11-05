@@ -100,31 +100,31 @@ function colorPorcentaje(valor: number): string {
  * proveedores). Con un solo indicador, la longitud de una barra es la
  * codificación más precisa que existe para comparar magnitudes.
  *
- * Filtros (05-nov-2026, pedido de Calidad para el seguimiento): semana,
- * fecha de recepción desde/hasta y proveedor. La semana solo rellena el
- * rango de fechas (lunes a domingo); el rango manda. "Fecha de recepción" es
- * la fecha de recepción esperada del pedido, la que trae BC. Las fechas solo
- * pueden ir hasta DIAS_ATRAS días atrás (pedido del usuario, mismo día). Sin
- * filtros se ve lo mismo que antes: todos los pedidos cerrados, igual que la nota.
+ * Filtros (05-nov-2026, pedido de Calidad para el seguimiento): semana, UNA
+ * fecha de recepción y proveedor. La semana manda un rango lunes-domingo; la
+ * fecha, ese día solo (desde = hasta). Primero hubo desde/hasta, pero con el
+ * tope de DIAS_ATRAS días el rango sobraba (pedido del usuario, mismo día).
+ * "Fecha de recepción" es la fecha de recepción esperada del pedido, la que
+ * trae BC. Sin filtros se ve lo mismo que antes: todos los pedidos cerrados,
+ * igual que la nota. El API sigue recibiendo desde/hasta.
  *
- * Con un proveedor elegido se listan sus pedidos del rango con el % de cada
+ * Con un proveedor elegido se listan sus pedidos del periodo con el % de cada
  * uno, que es lo que hace falta para hablar con él de un pedido concreto.
  */
 function Contenido() {
   const [filtros, setFiltros] = useState<FiltrosFillRate>({});
   const { minimo, maximo } = useMemo(() => rangoPermitido(), []);
   const semanas = useMemo(() => semanasRecientes(minimo, maximo), [minimo, maximo]);
-  const rangoInvalido = !!(filtros.desde && filtros.hasta && filtros.hasta < filtros.desde);
 
   const { data, isLoading, isFetching, isError } = useQuery({
     queryKey: ['reporte-fill-rate', filtros],
     queryFn: () => reportesApi.obtenerReporteFillRate(filtros),
     placeholderData: keepPreviousData,
-    // Con "hasta" antes de "desde" no se pregunta: se avisa debajo de los filtros.
-    enabled: !rangoInvalido,
   });
 
   const semanaElegida = semanas.find((s) => s.desde === filtros.desde && s.hasta === filtros.hasta);
+  // Un día suelto (desde = hasta) es lo que eligió el campo de fecha.
+  const diaElegido = filtros.desde && filtros.desde === filtros.hasta ? filtros.desde : '';
   const hayFiltros = !!(filtros.desde || filtros.hasta || filtros.id_proveedor);
 
   const { conDatos, promedio } = useMemo(() => {
@@ -161,7 +161,7 @@ function Contenido() {
 
       {/* Filtros */}
       <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1.6fr_auto] lg:items-end">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1.6fr_auto] lg:items-end">
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-brand-900/70">Semana</span>
             <select
@@ -169,7 +169,7 @@ function Contenido() {
               value={semanaElegida?.desde ?? ''}
               onChange={(e) => cambiarSemana(e.target.value)}
             >
-              <option value="">{filtros.desde || filtros.hasta ? 'Rango personalizado' : 'Todas las fechas'}</option>
+              <option value="">{diaElegido ? 'Un día (ver fecha)' : 'Todas las fechas'}</option>
               {semanas.map((s) => (
                 <option key={s.desde} value={s.desde}>
                   {s.etiqueta}
@@ -179,30 +179,17 @@ function Contenido() {
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-brand-900/70">Recepción desde</span>
+            <span className="mb-1 block text-xs font-medium text-brand-900/70">Fecha de recepción</span>
             <input
               type="date"
               className={CLASE_CAMPO}
-              value={filtros.desde ?? ''}
+              value={diaElegido}
               min={minimo}
               max={maximo}
-              onChange={(e) =>
-                setFiltros((f) => ({ ...f, desde: e.target.value ? acotar(e.target.value, minimo, maximo) : undefined }))
-              }
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-brand-900/70">Recepción hasta</span>
-            <input
-              type="date"
-              className={CLASE_CAMPO}
-              value={filtros.hasta ?? ''}
-              min={filtros.desde ?? minimo}
-              max={maximo}
-              onChange={(e) =>
-                setFiltros((f) => ({ ...f, hasta: e.target.value ? acotar(e.target.value, minimo, maximo) : undefined }))
-              }
+              onChange={(e) => {
+                const dia = e.target.value ? acotar(e.target.value, minimo, maximo) : undefined;
+                setFiltros((f) => ({ ...f, desde: dia, hasta: dia }));
+              }}
             />
           </label>
 
@@ -236,8 +223,7 @@ function Contenido() {
         </div>
         <p className="mt-2.5 text-[11.5px] text-brand-900/45">
           La fecha de recepción es la fecha de recepción esperada de cada pedido en Business Central. Se puede
-          filtrar hasta {DIAS_ATRAS} días atrás (desde el {aTexto(minimo)}).
-          {rangoInvalido && <span className="ml-1 text-brand-wine">La fecha "hasta" es anterior a "desde".</span>}
+          elegir hasta {DIAS_ATRAS} días atrás (desde el {aTexto(minimo)}); muestra los pedidos de ese día.
         </p>
       </Card>
 
@@ -295,7 +281,7 @@ function Contenido() {
               </p>
               {conDatos.length === 0 ? (
                 <p className="py-8 text-center text-sm text-brand-900/50">
-                  No hay pedidos cerrados con fecha de recepción en este rango.
+                  No hay pedidos cerrados con fecha de recepción en el periodo elegido.
                 </p>
               ) : (
                 <GraficoBarras
@@ -314,13 +300,13 @@ function Contenido() {
                   Pedidos de {nombreProveedor ?? 'este proveedor'}
                 </p>
                 <p className="text-[12.5px] text-brand-900/55">
-                  Pedidos cerrados del rango, por fecha de recepción. El % de cada uno es lo recibido sobre lo
+                  Pedidos cerrados del periodo elegido, por fecha de recepción. El % de cada uno es lo recibido sobre lo
                   pedido; lo que se entrega de más en una línea no compensa lo que falta en otra.
                 </p>
               </div>
               {detalle.length === 0 ? (
                 <p className="px-5 pb-8 pt-4 text-center text-sm text-brand-900/50">
-                  Este proveedor no tiene pedidos cerrados con fecha de recepción en este rango.
+                  Este proveedor no tiene pedidos cerrados con fecha de recepción en el periodo elegido.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -360,11 +346,11 @@ function Contenido() {
           {!filtros.id_proveedor && sinDatos.length > 0 && (
             <Card>
               <p className="text-sm font-medium text-brand-900">
-                {hayFiltros ? 'Sin pedidos cerrados en este rango' : 'Sin pedidos cerrados todavía'}
+                {hayFiltros ? 'Sin pedidos cerrados en el periodo elegido' : 'Sin pedidos cerrados todavía'}
               </p>
               <p className="mt-1 text-[12.5px] text-brand-900/55">
                 Estos proveedores no aparecen en el gráfico porque no tienen fill rate que medir. No es un 0: es
-                que no tienen ningún pedido cerrado {hayFiltros ? 'con fecha de recepción en este rango' : 'todavía'}.
+                que no tienen ningún pedido cerrado {hayFiltros ? 'con fecha de recepción en el periodo elegido' : 'todavía'}.
               </p>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {sinDatos.map((nombre, i) => (
