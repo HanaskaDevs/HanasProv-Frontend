@@ -83,6 +83,19 @@ interface Intento {
 let intentoActual: Intento | null = null;
 
 /**
+ * Por qué no se consiguió el último token (05-nov-2026). Viaja con el login
+ * como 'cf-turnstile-motivo' para que el servidor lo deje en el log y lo
+ * muestre en el mensaje: antes un token ausente se rechazaba sin rastro y no
+ * había forma de saber si el navegador no cargó el script de Cloudflare
+ * (red, proxy, antivirus) o si el desafío falló.
+ */
+let ultimoMotivo: string | null = null;
+
+export function motivoFalloTurnstile(): string | null {
+  return ultimoMotivo;
+}
+
+/**
  * Carga el script una sola vez para toda la sesión. La promesa se guarda
  * (y no un booleano) para que dos llamadas simultáneas esperen la misma
  * carga en vez de insertar dos etiquetas <script>.
@@ -103,7 +116,14 @@ function cargarScript(): Promise<ApiTurnstile | null> {
     script.onload = () => resolver(window.turnstile ?? null);
     // null y no un rechazo: que el captcha no cargue no es un error que
     // deba romper el login, es un caso previsto.
-    script.onerror = () => resolver(null);
+    // Si falló, se olvida la promesa y se quita la etiqueta: el próximo
+    // "Ingresar" vuelve a intentar cargarlo (antes quedaba en null para
+    // toda la sesión y había que recargar la página).
+    script.onerror = () => {
+      promesaScript = null;
+      script.remove();
+      resolver(null);
+    };
 
     document.head.appendChild(script);
   });
@@ -200,13 +220,20 @@ export function destruirTurnstile(): void {
  * llega vencido si la persona se demora en escribir.
  */
 export async function obtenerTokenTurnstile(): Promise<string | null> {
+  ultimoMotivo = null;
   if (!SITE_KEY) return null;
 
   const api = await cargarScript();
-  if (!api) return null;
+  if (!api) {
+    ultimoMotivo = 'script-no-cargo';
+    return null;
+  }
 
   const widget = idWidget ?? (await prepararTurnstile());
-  if (widget === null) return null;
+  if (widget === null) {
+    ultimoMotivo = 'widget-no-se-creo';
+    return null;
+  }
 
   return new Promise<string | null>((resolver) => {
     let reloj = 0;
@@ -214,13 +241,18 @@ export async function obtenerTokenTurnstile(): Promise<string | null> {
 
     const programarLimite = (ms: number) => {
       window.clearTimeout(reloj);
-      reloj = window.setTimeout(() => terminar(null), ms);
+      reloj = window.setTimeout(() => fallar('tiempo-agotado'), ms);
     };
 
     const terminar = (token: string | null) => {
       window.clearTimeout(reloj);
       if (intentoActual === intento) intentoActual = null;
       resolver(token);
+    };
+
+    const fallar = (motivo: string) => {
+      ultimoMotivo = motivo;
+      terminar(null);
     };
 
     // Los tokens son de un solo uso: hay que resetear antes de pedir otro,
@@ -231,7 +263,7 @@ export async function obtenerTokenTurnstile(): Promise<string | null> {
         api.reset(widget);
         api.execute(widget);
       } catch {
-        terminar(null);
+        fallar('execute-fallo');
       }
     };
 
@@ -244,13 +276,13 @@ export async function obtenerTokenTurnstile(): Promise<string | null> {
         // se le da UNA oportunidad. Uno no recuperable, o el segundo
         // seguido, corta la espera para no dejar a la persona mirando el
         // botón girar hasta el límite.
-        if (!esReintentable(codigo) || fallos >= 2) terminar(null);
+        if (!esReintentable(codigo) || fallos >= 2) fallar(`error-${codigo || 'sin-codigo'}`);
       },
       // El desafío expiró sin resolverse (por ejemplo, la casilla quedó
       // sin tocar): se vuelve a ejecutar una vez.
       alVencer: () => {
         fallos += 1;
-        if (fallos >= 2) terminar(null);
+        if (fallos >= 2) fallar('desafio-vencido');
         else ejecutar();
       },
     };
