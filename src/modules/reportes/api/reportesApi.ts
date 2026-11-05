@@ -99,3 +99,47 @@ export async function obtenerPlanContingenciaNino(): Promise<ResumenPlanContinge
   const { data } = await apiClient.get<ResumenPlanContingencia>('/reportes/plan-contingencia-nino');
   return data;
 }
+
+// ─── Cumplimiento de entregas (fill rate) con filtros, 05-nov-2026 ───
+
+export interface FiltrosFillRate {
+  /** Fecha de recepción desde (AAAA-MM-DD). La semana se manda como desde/hasta. */
+  desde?: string;
+  hasta?: string;
+  id_proveedor?: number;
+}
+
+export interface FillRateProveedor {
+  id_proveedor: number;
+  razon_social: string | null;
+  /** Pedidos cerrados del rango que entran al promedio. */
+  pedidos: number;
+  porcentaje: number;
+}
+
+export interface FillRatePedido {
+  id_pedido: number;
+  nro_pedido: string;
+  id_proveedor: number;
+  /** Fecha de recepción esperada del pedido (la de BC), AAAA-MM-DD. */
+  fecha_recepcion: string | null;
+  cantidad: number;
+  recibida: number;
+  porcentaje: number;
+}
+
+export interface ReporteFillRate {
+  desde: string | null;
+  hasta: string | null;
+  proveedores: FillRateProveedor[];
+  /** Proveedores sin pedidos cerrados en el rango (no es un 0: no hay nada que medir). */
+  sin_pedidos: string[];
+  opciones_proveedor: { id_proveedor: number; razon_social: string | null; ruc: string | null }[];
+  /** Solo con un proveedor elegido: sus pedidos del rango. */
+  detalle: FillRatePedido[];
+}
+
+export async function obtenerReporteFillRate(filtros: FiltrosFillRate): Promise<ReporteFillRate> {
+  const { data } = await apiClient.get<ReporteFillRate>('/proveedores/reporte-fill-rate', { params: filtros });
+  return data;
+}

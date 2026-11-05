@@ -1,3 +1,4 @@
+import { motivoFalloTurnstile } from '../utils/turnstile';
 import apiClient from '../../../shared/api/apiClient';
 import type { LoginResponse, MeResponse } from '../types';
 
@@ -13,7 +14,11 @@ export async function login(
     // formulario, para no traducirlo en el camino. Si no hay token (el
     // captcha está apagado, o el script no cargó) el campo no viaja y lo
     // resuelve el backend, que es donde la decisión no se puede manipular.
-    ...(tokenCaptcha ? { 'cf-turnstile-response': tokenCaptcha } : {}),
+    // Sin token se manda POR QUÉ no se consiguió, para el log y el mensaje
+    // del servidor (05-nov-2026). Si el captcha está apagado, el backend lo ignora.
+    ...(tokenCaptcha
+      ? { 'cf-turnstile-response': tokenCaptcha }
+      : { 'cf-turnstile-motivo': motivoFalloTurnstile() ?? 'sin-token' }),
   });
   return data;
 }
