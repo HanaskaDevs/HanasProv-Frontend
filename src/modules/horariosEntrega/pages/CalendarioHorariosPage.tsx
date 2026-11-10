@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../auth/hooks/useAuth';
 import * as horariosEntregaApi from '../api/horariosEntregaApi';
@@ -9,8 +9,6 @@ import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
 import RoleRoute from '../../../routes/RoleRoute';
-import ModalGestionHorarios from '../components/ModalGestionHorarios';
-import ModalCargaMasivaHorarios from '../components/ModalCargaMasivaHorarios';
 
 function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }) {
   const delDia = horarios.filter((h) => h.dia_entrega === dia);
@@ -87,16 +85,15 @@ function TablaDia({ dia, horarios }: { dia: string; horarios: HorarioEntrega[] }
 }
 
 function CalendarioContenido() {
-  // CRUD (crear/editar/borrar horario): Sistemas, Admin, Compras y Calidad
-  // (Calidad desde el 16-oct-2026) -> coincide con
-  // HorarioEntregaService::verificarAccesoGestion en el backend.
-  const { esSistemas, esAdmin, esCompras, esCalidad } = useAuth();
+  // Desde el 10-nov-2026 el calendario se administra SOLO desde Business
+  // Central (pedido del usuario; extensión Calendario_Portal_Proveedores, que
+  // lo sincroniza aquí). Esta pantalla queda de solo lectura: sin "Gestionar
+  // calendario" ni "Carga masiva". El backend también lo corta
+  // (portal.horarios_solo_bc / PORTAL_HORARIOS_SOLO_BC). Los modales
+  // ModalGestionHorarios y ModalCargaMasivaHorarios siguen en el código por si
+  // se vuelve atrás.
   const navigate = useNavigate();
   const [tab, setTab] = useState<ClasificacionHorario>('Perecibles');
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [cargaMasivaAbierta, setCargaMasivaAbierta] = useState(false);
-  const queryClient = useQueryClient();
-  const puedeGestionar = esSistemas || esAdmin || esCompras || esCalidad;
 
   const { data: horarios, isLoading } = useQuery({
     queryKey: ['horarios-entrega', tab],
@@ -122,6 +119,9 @@ function CalendarioContenido() {
             Calendario de horarios de entrega
           </h1>
           <p className="text-brand-900/50 text-xs mt-0.5">Día, andén/puerta y horario de recepción por proveedor.</p>
+          <p className="text-brand-900/60 text-xs mt-1">
+            Este calendario se administra desde Business Central. Los cambios hechos allí aparecen aquí en menos de una hora.
+          </p>
         </div>
         <div className="flex gap-2">
           {/* Modo TV es una pantalla completa pensada para un monitor fijo
@@ -135,17 +135,6 @@ function CalendarioContenido() {
           {!Capacitor.isNativePlatform() && (
             <Button variant="secondary" className="text-xs px-3 py-1.5" onClick={() => navigate('/calendario/modo-tv')}>
               Modo TV
-            </Button>
-          )}
-          {/* Carga masiva desde Excel: Sistemas y Admin (CargaMasivaHorariosService). */}
-          {(esSistemas || esAdmin) && (
-            <Button variant="secondary" className="text-xs px-3 py-1.5" onClick={() => setCargaMasivaAbierta(true)}>
-              Carga masiva
-            </Button>
-          )}
-          {puedeGestionar && (
-            <Button className="text-xs px-3 py-1.5" onClick={() => setModalAbierto(true)}>
-              Gestionar calendario
             </Button>
           )}
         </div>
@@ -181,14 +170,6 @@ function CalendarioContenido() {
             <TablaDia key={dia} dia={dia} horarios={horarios ?? []} />
           ))}
         </div>
-      )}
-
-      {modalAbierto && <ModalGestionHorarios onClose={() => setModalAbierto(false)} />}
-      {cargaMasivaAbierta && (
-        <ModalCargaMasivaHorarios
-          onClose={() => setCargaMasivaAbierta(false)}
-          onCargado={() => queryClient.invalidateQueries({ queryKey: ['horarios-entrega'] })}
-        />
       )}
     </div>
   );
