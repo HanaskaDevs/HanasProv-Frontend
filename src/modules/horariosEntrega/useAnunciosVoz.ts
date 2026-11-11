@@ -8,6 +8,7 @@ import {
   destrabarAudio,
   normalizarNombreParaVoz,
   precalentarVoces,
+  reproducirCampanita,
   soportaVoz,
 } from './anunciosVoz';
 
@@ -142,6 +143,9 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
       // Dentro del gesto: es el único momento en que el navegador deja
       // reanudar el audio.
       destrabarAudio();
+      // El din-don en el acto: quien apretó OK en la TV confirma ahí mismo
+      // que el sonido funciona, sin esperar a que cambie algún proveedor.
+      void reproducirCampanita();
       setAudioBloqueado(false);
     }
 
