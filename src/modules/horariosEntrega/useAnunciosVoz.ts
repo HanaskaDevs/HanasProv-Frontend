@@ -8,6 +8,7 @@ import {
   destrabarAudio,
   normalizarNombreParaVoz,
   precalentarVoces,
+  probarSonido,
   reproducirCampanita,
   soportaVoz,
 } from './anunciosVoz';
@@ -132,6 +133,19 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     anunciar(frases, { alBloquearse: () => setAudioBloqueado(true) });
   }, [firma]);
 
+  // El PRIMER gesto sobre la pantalla destraba el audio aunque todavía no
+  // se haya detectado ningún bloqueo: en Safari de iPhone la voz no avisa
+  // que está bloqueada, solo no suena.
+  useEffect(() => {
+    const eventos: (keyof DocumentEventMap)[] = ['click', 'keydown', 'touchstart'];
+    function alPrimerGesto() {
+      destrabarAudio();
+      eventos.forEach((e) => document.removeEventListener(e, alPrimerGesto));
+    }
+    eventos.forEach((e) => document.addEventListener(e, alPrimerGesto));
+    return () => eventos.forEach((e) => document.removeEventListener(e, alPrimerGesto));
+  }, []);
+
   // Cualquier gesto sobre la pantalla habilita el audio en el navegador.
   // Se escucha siempre (no solo cuando ya falló) porque el bloqueo se
   // detecta recién al intentar hablar, y para entonces ese anuncio ya se
@@ -155,5 +169,10 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     return () => eventos.forEach((e) => document.removeEventListener(e, destrabar));
   }, [audioBloqueado]);
 
-  return { audioBloqueado };
+  function probar() {
+    setAudioBloqueado(false);
+    probarSonido({ alBloquearse: () => setAudioBloqueado(true) });
+  }
+
+  return { audioBloqueado, probarSonido: probar };
 }

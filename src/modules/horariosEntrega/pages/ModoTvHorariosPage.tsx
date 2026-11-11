@@ -225,7 +225,8 @@ export default function ModoTvHorariosPage() {
   // explícito del usuario).
   const filasDelDia = filasPorClasificacionDelDia.flat();
 
-  const { audioBloqueado } = useAnunciosVoz(filasDelDia, configAnuncios?.voz_activa ?? false);
+  const vozActiva = configAnuncios?.voz_activa ?? false;
+  const { audioBloqueado, probarSonido } = useAnunciosVoz(filasDelDia, vozActiva);
 
   // Franja de la hora actual: [9:00, 10:00), [10:00, 11:00), etc. Se
   // recalcula solo cuando cambia la hora (no en cada segundo del reloj),
@@ -356,18 +357,35 @@ export default function ModoTvHorariosPage() {
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-brand-900 to-[#0f2027] text-white overflow-hidden flex flex-col">
-      {!pantallaCompletaActiva && (
-        <button
-          onClick={solicitarPantallaCompleta}
-          className="absolute top-3 right-3 z-10 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
-            <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
-          </svg>
-          Pantalla completa
-        </button>
-      )}
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+        {/* Para comprobar que la TV (o el celular) suena sin esperar a que
+            un proveedor cambie de estado. Ver probarSonido en anunciosVoz. */}
+        {vozActiva && (
+          <button
+            type="button"
+            onClick={probarSonido}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            </svg>
+            Probar sonido
+          </button>
+        )}
+        {!pantallaCompletaActiva && (
+          <button
+            onClick={solicitarPantallaCompleta}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+              <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+            </svg>
+            Pantalla completa
+          </button>
+        )}
+      </div>
 
       {/* Los navegadores no dejan reproducir audio hasta que alguien
           interactúa con la página (autoplay policy). En una TV abierta por

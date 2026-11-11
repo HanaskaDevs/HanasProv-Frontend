@@ -256,10 +256,35 @@ export async function audioRetenidoPorElNavegador(): Promise<boolean> {
   return (contexto.state as AudioContextState) !== 'running';
 }
 
-/** Llamarla DENTRO de un toque o tecla: ahí el navegador deja reanudar el audio. */
+let vozDestrabada = false;
+
+/**
+ * Llamarla DENTRO de un toque o tecla: ahí el navegador deja reanudar el
+ * audio. Destraba las dos vías: el Web Audio (din-don y voz del servidor) y
+ * la voz del navegador. Safari de iPhone ignora en silencio cualquier
+ * speak() hasta que uno se haya hecho dentro de un gesto; con una frase
+ * vacía y muda, los anuncios que vienen después ya suenan.
+ */
 export function destrabarAudio(): void {
   const contexto = obtenerContextoAudio();
   if (contexto && contexto.state !== 'running') void contexto.resume().catch(() => {});
+
+  if (tieneWebSpeech() && !vozDestrabada) {
+    vozDestrabada = true;
+    const vacia = new SpeechSynthesisUtterance(' ');
+    vacia.volume = 0;
+    window.speechSynthesis.speak(vacia);
+  }
+}
+
+/**
+ * Botón "Probar sonido" del Modo TV: din-don y una frase por la misma vía
+ * que usarán los anuncios. Sin esto, la única forma de saber si una TV
+ * suena era esperar a que algún proveedor cambiara de estado.
+ */
+export function probarSonido(opciones: OpcionesHablar = {}): void {
+  destrabarAudio();
+  anunciar(['Prueba de sonido. Los anuncios por voz están activos.'], opciones);
 }
 
 function tocarNota(contexto: AudioContext, frecuencia: number, inicio: number, duracion: number): void {
