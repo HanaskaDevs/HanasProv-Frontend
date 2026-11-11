@@ -43,4 +43,7 @@ export const ROLES = {
   // Catálogo (29-oct-2026): datos y códigos BC de los productos. Edita datos
   // de productos (estén o no aprobados), no documentos; no aprueba.
   CATALOGO: 'Catálogo',
+  // Modo TV (11-nov-2026): la cuenta de las pantallas de TV. Solo ve el
+  // calendario en Modo TV y su sesión no vence (lo decide el backend).
+  MODO_TV: 'Modo TV',
 } as const;

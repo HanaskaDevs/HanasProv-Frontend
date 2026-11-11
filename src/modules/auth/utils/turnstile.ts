@@ -35,6 +35,8 @@
  *     persona termina de escribir, así el primer intento no paga la carga.
  */
 
+import { Capacitor } from '@capacitor/core';
+
 const URL_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
 /** id del div, dentro del formulario de login, donde se dibuja el widget. */
@@ -62,8 +64,17 @@ declare global {
   }
 }
 
-/** La site key es PÚBLICA: va en el bundle a propósito. La secret NUNCA. */
-const SITE_KEY: string | undefined = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+/**
+ * La site key es PÚBLICA: va en el bundle a propósito. La secret NUNCA.
+ *
+ * En la app Android no hay captcha (11-nov-2026): en algunas tablets el
+ * desafío nunca respondía y no podían entrar. El backend deja pasar el
+ * origen de la app sin token (TURNSTILE_ORIGENES_SIN_CAPTCHA); sin site key
+ * acá, la app ni carga el script ni espera 15 s antes de mandar el login.
+ */
+const SITE_KEY: string | undefined = Capacitor.isNativePlatform()
+  ? undefined
+  : import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 let promesaScript: Promise<ApiTurnstile | null> | null = null;
 let idWidget: string | null = null;

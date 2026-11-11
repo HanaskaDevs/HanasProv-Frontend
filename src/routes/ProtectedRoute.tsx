@@ -7,7 +7,7 @@ import Spinner from '../shared/components/Spinner';
 import { useInactividad } from '../shared/hooks/useInactividad';
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading, logout, esModoTv } = useAuth();
   const navigate = useNavigate();
 
   // Control de inactividad (15 minutos)
@@ -22,6 +22,12 @@ export default function ProtectedRoute() {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // La cuenta de las TVs (rol Modo TV) no tiene panel ni menú: después del
+  // login, y desde cualquier otra pantalla, va directo al Modo TV.
+  if (esModoTv) {
+    return <Navigate to="/calendario/modo-tv" replace />;
   }
 
   return (
