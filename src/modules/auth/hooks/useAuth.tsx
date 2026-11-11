@@ -25,6 +25,7 @@ interface AuthContextValue {
   esCalidad: boolean;
   esGuardia: boolean;
   esCatalogo: boolean;
+  esModoTv: boolean;
   esProveedor: boolean;
   puedeGestionarRecepciones: boolean;
   login: (email: string, password: string, tokenCaptcha?: string | null) => Promise<Usuario>;
@@ -213,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         esCalidad: rolActivo === ROLES.CALIDAD,
         esGuardia: rolActivo === ROLES.GUARDIA,
         esCatalogo: rolActivo === ROLES.CATALOGO,
+        esModoTv: rolActivo === ROLES.MODO_TV,
         esProveedor: usuario?.tipo_usuario === 'Proveedor',
         puedeGestionarRecepciones:
           rolActivo === ROLES.SISTEMAS || rolActivo === ROLES.ADMIN || rolActivo === ROLES.COMPRAS,
