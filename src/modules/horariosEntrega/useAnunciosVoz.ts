@@ -3,7 +3,9 @@ import type { EstadoHorario, HorarioHoy } from './types';
 import {
   MENSAJES_POR_ESTADO,
   anunciar,
+  audioRetenidoPorElNavegador,
   cancelarTodo,
+  destrabarAudio,
   normalizarNombreParaVoz,
   precalentarVoces,
   soportaVoz,
@@ -72,6 +74,19 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     return () => cancelarTodo();
   }, []);
 
+  // Si el navegador retiene el audio desde el arranque (TV que abre el Modo
+  // TV sola), el aviso sale ya, no recién al perder el primer anuncio.
+  useEffect(() => {
+    if (!vozActiva) return;
+    let vigente = true;
+    void audioRetenidoPorElNavegador().then((retenido) => {
+      if (vigente && retenido) setAudioBloqueado(true);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [vozActiva]);
+
   useEffect(() => {
     const filas = filasRef.current;
 
@@ -124,6 +139,9 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     if (!audioBloqueado) return;
 
     function destrabar() {
+      // Dentro del gesto: es el único momento en que el navegador deja
+      // reanudar el audio.
+      destrabarAudio();
       setAudioBloqueado(false);
     }
 

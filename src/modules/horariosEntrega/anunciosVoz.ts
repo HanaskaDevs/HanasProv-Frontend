@@ -1,4 +1,5 @@
 import type { EstadoHorario } from './types';
+import { obtenerAudioAnuncio } from './api/horariosEntregaApi';
 
 /**
  * Anuncios por voz del Modo TV, estilo tablero de aeropuerto.
@@ -98,9 +99,23 @@ export function normalizarNombreParaVoz(nombre: string): string {
     .replace(/(^|\s|\/|-)([\p{L}])/gu, (_, sep, letra: string) => sep + letra.toLocaleUpperCase('es'));
 }
 
-/** El navegador de la TV puede no tener Web Speech (raro, pero pasa). */
-export function soportaVoz(): boolean {
+/**
+ * DOS FORMAS DE HABLAR (11-nov-2026):
+ *
+ *  - La voz del navegador (Web Speech), si tiene una voz en español. Es lo
+ *    que pasa en las PCs con Chrome, y suena igual que antes.
+ *  - Si no, el audio que genera el servidor con Piper (GET
+ *    /horarios-entrega/anuncio-audio), reproducido con Web Audio. Es el
+ *    caso de las Smart TV: su navegador (Zeus y casi todos) es el WebView
+ *    de Android, que no trae Web Speech, y la TV de recepción no decía nada.
+ */
+function tieneWebSpeech(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
+}
+
+/** Hay con qué anunciar: voz del navegador o, si no, Web Audio para el audio del servidor. */
+export function soportaVoz(): boolean {
+  return tieneWebSpeech() || obtenerConstructorAudio() !== null;
 }
 
 /**
@@ -131,7 +146,7 @@ function elegirVoz(): SpeechSynthesisVoice | null {
  * lista llega vacía en la primera vuelta.
  */
 export function precalentarVoces(): void {
-  if (!soportaVoz()) return;
+  if (!tieneWebSpeech()) return;
 
   vozElegida = elegirVoz();
 
@@ -201,12 +216,17 @@ const VELOCIDAD_VOZ = 0.82;
 
 let contextoAudio: AudioContext | null = null;
 
-function obtenerContextoAudio(): AudioContext | null {
+function obtenerConstructorAudio(): typeof AudioContext | null {
   if (typeof window === 'undefined') return null;
+  return (
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext ??
+    null
+  );
+}
 
-  const Constructor =
-    window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-
+function obtenerContextoAudio(): AudioContext | null {
+  const Constructor = obtenerConstructorAudio();
   if (!Constructor) return null;
 
   contextoAudio ??= new Constructor();
@@ -218,6 +238,28 @@ function obtenerContextoAudio(): AudioContext | null {
   }
 
   return contextoAudio;
+}
+
+/**
+ * ¿El navegador está reteniendo el audio hasta que alguien toque la
+ * pantalla (política de autoplay)? Es lo normal en una TV que abre el Modo
+ * TV sola al encender: el aviso "Toca la pantalla..." se muestra apenas
+ * carga, y no recién cuando se pierde el primer anuncio.
+ */
+export async function audioRetenidoPorElNavegador(): Promise<boolean> {
+  const contexto = obtenerContextoAudio();
+  if (!contexto) return false;
+  if (contexto.state === 'running') return false;
+  // resume() sin gesto queda pendiente para siempre en algunos navegadores:
+  // se le da un momento y se mira el estado.
+  await Promise.race([contexto.resume().catch(() => {}), new Promise((r) => setTimeout(r, 400))]);
+  return (contexto.state as AudioContextState) !== 'running';
+}
+
+/** Llamarla DENTRO de un toque o tecla: ahí el navegador deja reanudar el audio. */
+export function destrabarAudio(): void {
+  const contexto = obtenerContextoAudio();
+  if (contexto && contexto.state !== 'running') void contexto.resume().catch(() => {});
 }
 
 function tocarNota(contexto: AudioContext, frecuencia: number, inicio: number, duracion: number): void {
@@ -241,9 +283,12 @@ function tocarNota(contexto: AudioContext, frecuencia: number, inicio: number, d
 }
 
 /** Suena el din-don y resuelve cuando terminó, para hablar recién después. */
-export function reproducirCampanita(): Promise<void> {
+export async function reproducirCampanita(): Promise<void> {
   const contexto = obtenerContextoAudio();
-  if (!contexto) return Promise.resolve();
+  if (!contexto) return;
+  // Con el audio retenido, las notas quedarían en cola y sonarían recién al
+  // tocar la pantalla, fuera de lugar.
+  if (await audioRetenidoPorElNavegador()) return;
 
   const t0 = contexto.currentTime + 0.05;
   tocarNota(contexto, NOTA_DIN, t0, 0.9);
@@ -277,6 +322,13 @@ function destrabarSiHaceFalta(): void {
  * volvería a escuchar un solo anuncio hasta recargar la TV.
  */
 function decir(texto: string, opciones: OpcionesHablar): Promise<void> {
+  // Sin una voz en español en el navegador (Smart TV, o una PC sin voces
+  // en español): audio del servidor. vozElegida se busca al montar y otra
+  // vez cuando el navegador avisa que cargó las voces.
+  if (!tieneWebSpeech() || !(vozElegida ?? elegirVoz())) {
+    return decirConAudioDelServidor(texto, opciones);
+  }
+
   return new Promise((resolver) => {
     destrabarSiHaceFalta();
 
@@ -309,6 +361,43 @@ function decir(texto: string, opciones: OpcionesHablar): Promise<void> {
     };
 
     window.speechSynthesis.speak(mensaje);
+  });
+}
+
+/**
+ * Dice la frase con el WAV que genera el servidor. Resuelve al terminar de
+ * sonar, o enseguida si no se pudo (sin red, servidor sin Piper): un
+ * anuncio perdido no puede trabar la cola.
+ */
+async function decirConAudioDelServidor(texto: string, opciones: OpcionesHablar): Promise<void> {
+  const contexto = obtenerContextoAudio();
+  if (!contexto) return;
+
+  if (await audioRetenidoPorElNavegador()) {
+    opciones.alBloquearse?.();
+    return;
+  }
+
+  let buffer: AudioBuffer;
+  try {
+    const datos = await obtenerAudioAnuncio(texto);
+    buffer = await contexto.decodeAudioData(datos);
+  } catch (error) {
+    console.warn('No se pudo obtener el audio del anuncio', error);
+    return;
+  }
+
+  await new Promise<void>((resolver) => {
+    const fuente = contexto.createBufferSource();
+    fuente.buffer = buffer;
+    fuente.connect(contexto.destination);
+    // Respaldo por si 'ended' no llega (pestaña en segundo plano).
+    const respaldo = setTimeout(resolver, buffer.duration * 1000 + 2000);
+    fuente.onended = () => {
+      clearTimeout(respaldo);
+      resolver();
+    };
+    fuente.start();
   });
 }
 
@@ -355,6 +444,6 @@ export function anunciar(textos: string[], opciones: OpcionesHablar = {}): void 
 /** Al salir del Modo TV: que no siga hablando sobre la pantalla siguiente. */
 export function cancelarTodo(): void {
   lotesPendientes.length = 0;
-  if (!soportaVoz()) return;
+  if (!tieneWebSpeech()) return;
   window.speechSynthesis.cancel();
 }

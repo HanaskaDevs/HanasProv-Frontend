@@ -378,6 +378,8 @@ export default function ModoTvHorariosPage() {
       {audioBloqueado && (
         <button
           type="button"
+          // Con foco, el OK del control remoto de la TV lo "toca".
+          autoFocus
           className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-brand-yellow text-brand-900 font-medium shadow-lg animate-pulse"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
