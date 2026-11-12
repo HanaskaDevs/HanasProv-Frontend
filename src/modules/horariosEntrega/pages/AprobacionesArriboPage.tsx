@@ -165,10 +165,16 @@ function AprobacionesContenido() {
 }
 
 export default function AprobacionesArriboPage() {
-  const { esSistemas, esCalidad } = useAuth();
+  const { esSistemas, esCalidad, usuario } = useAuth();
+
+  // La persona designada para resolver arribos (12-nov-2026) entra aunque
+  // su rol no sea Calidad: hoy es alguien con rol Admin. Es la misma regla
+  // que aplica el backend (Usuario::resuelveAprobacionesArribo), que es el
+  // que protege de verdad; esto solo evita mostrarle "sin acceso".
+  const resuelveArribos = usuario?.resuelve_aprobaciones_arribo ?? false;
 
   return (
-    <RoleRoute allow={esSistemas || esCalidad}>
+    <RoleRoute allow={esSistemas || esCalidad || resuelveArribos}>
       <AprobacionesContenido />
     </RoleRoute>
   );

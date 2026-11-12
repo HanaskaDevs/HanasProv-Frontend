@@ -399,6 +399,28 @@ const MENU_ADMIN: MenuItem[] = [
   AREA_REPORTES,
 ];
 
+/**
+ * El menú de Admin para QUIEN RESUELVE LOS ARRIBOS (12-nov-2026).
+ *
+ * La persona designada (portal.email_aprobacion_arribo) tiene rol Admin, y
+ * el ítem solo existía para Calidad: no le salía. El backend ahora la deja
+ * entrar por su correo, no por su rol (Usuario::resuelveAprobacionesArribo),
+ * así que acá se le agrega el ítem solo a ella; el resto de Admin sigue sin
+ * verlo, porque el backend les respondería 403.
+ */
+const AREA_OPERACION_CON_APROBACIONES: MenuItem = {
+  label: 'Operación',
+  children: [...(AREA_OPERACION.children ?? []), APROBACIONES_ARRIBO_ITEM],
+};
+
+const MENU_ADMIN_CON_APROBACIONES: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
+  AREA_PROVEEDORES,
+  AREA_OPERACION_CON_APROBACIONES,
+  AREA_CALIDAD_ADMIN,
+  AREA_REPORTES,
+];
+
 // Compras NO lleva Auditorías: el backend solo deja auditar a Sistemas,
 // Admin y Calidad (ver AuditoriaService::verificarAcceso y
 // CalificacionRecepcionService::verificarAcceso), así que tenerlo en el menú
@@ -582,7 +604,7 @@ export function obtenerMenu(
     case ROLES.SISTEMAS:
       return MENU_SISTEMAS;
     case ROLES.ADMIN:
-      return MENU_ADMIN;
+      return resuelveAprobacionesArribo ? MENU_ADMIN_CON_APROBACIONES : MENU_ADMIN;
     case ROLES.CALIDAD:
       // Mismo menú en la web y en la app (pedido explícito, 23-oct-2026).
       // Antes la app solo mostraba Auditorías y ocultaba el resto.
