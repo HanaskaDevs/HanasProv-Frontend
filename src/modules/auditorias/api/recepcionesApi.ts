@@ -1,6 +1,7 @@
 import apiClient from '../../../shared/api/apiClient';
 import type {
   CalificacionRecepcionDetalle,
+  ImagenObservacion,
   CalificacionRecepcionHistorial,
   FilaReporteCalificacion,
   ProveedorParaRecepcion,
@@ -63,4 +64,36 @@ export async function guardarRespuesta(
 export async function finalizar(idCalificacion: number): Promise<CalificacionRecepcionDetalle> {
   const { data } = await apiClient.post<CalificacionRecepcionDetalle>(`${BASE}/${idCalificacion}/finalizar`);
   return data;
+}
+
+// ---------------------------------------------------------------------
+// Fotos de la observación (12-nov-2026)
+// ---------------------------------------------------------------------
+
+/**
+ * Sube UNA foto a la observación de un parámetro.
+ *
+ * El parámetro tiene que estar respondido (Sí/No) antes: la foto cuelga
+ * de la fila de respuesta, que no admite "sin responder". Si no lo está,
+ * el backend contesta 422 con ese mensaje.
+ */
+export async function subirImagenObservacion(
+  idCalificacion: number,
+  idParametro: number,
+  archivo: File
+): Promise<ImagenObservacion> {
+  const formData = new FormData();
+  formData.append('id_recepcion_parametro', String(idParametro));
+  formData.append('imagen', archivo);
+
+  const { data } = await apiClient.post<ImagenObservacion>(
+    `${BASE}/${idCalificacion}/imagenes`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
+  return data;
+}
+
+export async function eliminarImagenObservacion(idImagen: number): Promise<void> {
+  await apiClient.delete(`${BASE}/imagenes/${idImagen}`);
 }

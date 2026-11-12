@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ImagenesObservacion from './ImagenesObservacion';
 import type { ParametroRecepcion } from '../types';
 
 /**
@@ -16,15 +17,21 @@ export default function FilaParametroRecepcion({
     guardando,
     onResponder,
     onGuardarObservacion,
+    onSubirImagen,
+    onEliminarImagen,
 }: {
     parametro: ParametroRecepcion;
     soloLectura: boolean;
     guardando: boolean;
     onResponder: (cumple: boolean) => void;
     onGuardarObservacion: (observacion: string | null) => void;
+    onSubirImagen: (archivo: File) => Promise<void>;
+    onEliminarImagen: (idImagen: number) => Promise<void>;
 }) {
     const [observacion, setObservacion] = useState(parametro.observacion ?? '');
-    const [mostrarObservacion, setMostrarObservacion] = useState(!!parametro.observacion);
+    const [mostrarObservacion, setMostrarObservacion] = useState(
+        !!parametro.observacion || parametro.imagenes.length > 0
+    );
 
     useEffect(() => {
         setObservacion(parametro.observacion ?? '');
@@ -91,16 +98,32 @@ export default function FilaParametroRecepcion({
                 )}
             </div>
 
-            {(mostrarObservacion || (soloLectura && observacion)) && (
-                <textarea
-                    disabled={soloLectura}
-                    value={observacion}
-                    onChange={(e) => setObservacion(e.target.value)}
-                    onBlur={() => onGuardarObservacion(observacion || null)}
-                    placeholder="Observaciones..."
-                    rows={2}
-                    className="mt-2.5 sm:ml-9 w-full sm:w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
-                />
+            {(mostrarObservacion || (soloLectura && (observacion || parametro.imagenes.length > 0))) && (
+                <>
+                    <textarea
+                        disabled={soloLectura}
+                        value={observacion}
+                        onChange={(e) => setObservacion(e.target.value)}
+                        onBlur={() => onGuardarObservacion(observacion || null)}
+                        placeholder="Observaciones..."
+                        rows={2}
+                        className="mt-2.5 sm:ml-9 w-full sm:w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
+                    />
+
+                    {/* La foto cuelga de la respuesta, y la respuesta no
+                        existe hasta que se elige Sí o No -> hasta entonces
+                        el botón queda deshabilitado con el motivo a la
+                        vista, en vez de dejar intentarlo y fallar con 422. */}
+                    <ImagenesObservacion
+                        imagenes={parametro.imagenes}
+                        soloLectura={soloLectura}
+                        deshabilitadoMotivo={
+                            respondida ? undefined : 'Primero responde el parámetro para poder adjuntar fotos.'
+                        }
+                        onSubir={onSubirImagen}
+                        onEliminar={onEliminarImagen}
+                    />
+                </>
             )}
         </div>
     );
