@@ -28,6 +28,11 @@ import type { EntregaHistorial, ResumenProveedor } from '../api/historialProveed
  * la hora de esa marca. La ESPERA es de la llegada (Guardia) al primer
  * escaneo.
  *
+ * NADA DE TÉRMINOS TÉCNICOS A LA VISTA (pedido del usuario, 12-nov): los
+ * usuarios no son técnicos. Ni nombres de sistemas o bases (SIGH, WMS,
+ * tablas) en textos, ayudas ni columnas del Excel; eso va solo en estos
+ * comentarios.
+ *
  * La SALIDA es la programada en el calendario: el portal no registra la
  * hora en que se va el camión.
  *
@@ -174,7 +179,7 @@ export default function ReporteHistorialProveedoresPage() {
         Programada: e.hora_programada ?? '',
         Arribo: e.hora_arribo ?? '',
         'Atraso (min)': e.minutos_atraso ?? '',
-        'Recepción en SIGH': e.hora_recepcion ?? '',
+        Recepción: e.hora_recepcion ?? '',
         'Registrado como recibido': e.hora_entregado ?? '',
         'Espera (min)': e.minutos_espera ?? '',
         'Salida programada': e.hora_salida ?? '',
@@ -270,14 +275,6 @@ export default function ReporteHistorialProveedoresPage() {
           </div>
         </Card>
 
-        <p className="text-xs text-brand-900/45">
-          El <strong>atraso</strong> compara la hora citada con la de llegada, que marca el Guardia. La{' '}
-          <strong>recepción</strong> es cuando bodega escaneó el primer producto en WMS; <strong>recibido</strong>, cuando se
-          cerró la recepción en SIGH (si trajo varios pedidos, el último). La{' '}
-          <strong>espera</strong> es lo que pasó entre la llegada y la recepción. La <strong>salida</strong> es la
-          programada en el calendario: la hora real de salida no se registra.
-        </p>
-
         {consulta.isLoading ? (
           <Card>
             <Spinner />
@@ -372,7 +369,7 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
             <th className="px-3 py-2.5 text-center">Llegó</th>
             <th className="px-3 py-2.5 text-center">Diferencia</th>
             <th className="px-3 py-2.5 text-center">Recepción</th>
-            <th className="px-3 py-2.5 text-center" title="Hora en que se cerró la recepción en SIGH">
+            <th className="px-3 py-2.5 text-center" title="Hora en que se terminó de recibir">
               Recibido
             </th>
             <th className="px-3 py-2.5 text-center">Espera</th>
