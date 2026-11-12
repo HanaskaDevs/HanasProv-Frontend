@@ -9,7 +9,8 @@ export type IconoAccion =
   | 'desbloquear'
   | 'activar'
   | 'inactivar'
-  | 'eliminar';
+  | 'eliminar'
+  | 'entrar';
 
 export interface AccionFila {
   etiqueta: string;
@@ -62,6 +63,12 @@ const ICONOS: Record<IconoAccion, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="m5.6 5.6 12.8 12.8" />
+    </>
+  ),
+  entrar: (
+    <>
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <path d="m10 17 5-5-5-5M15 12H3" />
     </>
   ),
   eliminar: (

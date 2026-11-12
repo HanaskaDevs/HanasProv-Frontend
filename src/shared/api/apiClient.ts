@@ -1,5 +1,11 @@
 import axios from 'axios';
 import { leerEmpresaDePestana } from '../utils/empresaPestana';
+import {
+  leerTokenSuplantacion,
+  olvidarTokenSuplantacion,
+  RUTA_AL_VOLVER,
+  tokenDeEstaPestana,
+} from '../utils/sesionSuplantada';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -9,7 +15,7 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = tokenDeEstaPestana();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -36,6 +42,19 @@ export const CLAVE_MOTIVO_SALIDA = 'motivo_salida_sesion';
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Dentro de la cuenta de un proveedor (Sistemas): si esa sesión venció o
+    // el proveedor quedó suspendido, se sale de SU cuenta y se vuelve a la
+    // propia. Nunca se borra el token de Sistemas por algo del proveedor.
+    const status = error.response?.status;
+    if (
+      leerTokenSuplantacion() &&
+      (status === 401 || (status === 403 && error.response?.data?.proveedor_suspendido))
+    ) {
+      olvidarTokenSuplantacion();
+      window.location.href = RUTA_AL_VOLVER;
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';

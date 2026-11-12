@@ -27,6 +27,8 @@ export interface LoginResponse {
 export interface MeResponse {
   usuario: Usuario;
   id_empresa_activa: number | null;
+  /** Quién de Sistemas está dentro de esta cuenta ("Entrar como proveedor"); null en una sesión normal. */
+  suplantado_por?: { nombre: string | null; email: string | null } | null;
 }
 
 // Nombres de rol tal como existen en la tabla Rol. Se usan para gatear UI,

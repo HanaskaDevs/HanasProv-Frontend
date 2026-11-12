@@ -11,6 +11,19 @@ import {
   leerEmpresaDePestana,
   olvidarEmpresaDePestana,
 } from '../../../shared/utils/empresaPestana';
+import {
+  guardarTokenSuplantacion,
+  leerTokenSuplantacion,
+  olvidarTokenSuplantacion,
+  RUTA_AL_VOLVER,
+  tokenDeEstaPestana,
+} from '../../../shared/utils/sesionSuplantada';
+
+/** Quién de Sistemas está dentro de la cuenta del proveedor ("Entrar como proveedor"). */
+export interface Suplantador {
+  nombre: string | null;
+  email: string | null;
+}
 
 interface AuthContextValue {
   usuario: Usuario | null;
@@ -32,6 +45,12 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   cambiarEmpresa: (idEmpresa: number) => Promise<void>;
   refetchUsuario: () => Promise<void>;
+  /** null en una sesión normal; con datos cuando Sistemas entró como este proveedor. */
+  suplantadoPor: Suplantador | null;
+  /** Sistemas: abre en ESTA pestaña la cuenta de un usuario proveedor. */
+  entrarComoProveedor: (idUsuario: number) => Promise<void>;
+  /** Cierra la sesión del proveedor y vuelve a la cuenta propia de Sistemas. */
+  volverAMiCuenta: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -40,9 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [idEmpresaActiva, setIdEmpresaActiva] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [suplantadoPor, setSuplantadoPor] = useState<Suplantador | null>(null);
 
   async function cargarUsuarioActual() {
-  const token = localStorage.getItem('token');
+  const token = tokenDeEstaPestana();
   if (!token) {
     setIsLoading(false);
     return;
@@ -50,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   try {
     const data = await authApi.me();
     setUsuario(data.usuario);
+    setSuplantadoPor(data.suplantado_por ?? null);
 
     // Number() en todo: el driver de SQL Server devuelve estos ids como string
     // ("2" en vez de 2), y una comparación entre tipos distintos nunca casa.
@@ -91,6 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // el token intacto, el próximo intento (otro visibilitychange, o
     // recargar) entra solo apenas vuelva la conexión.
     const tokenInvalido = axios.isAxiosError(error) && error.response?.status === 401;
+    if (tokenInvalido && leerTokenSuplantacion()) {
+      // Venció la sesión del proveedor, no la de Sistemas: de vuelta a la propia.
+      olvidarTokenSuplantacion();
+      window.location.href = RUTA_AL_VOLVER;
+      return;
+    }
     if (tokenInvalido) {
       localStorage.removeItem('token');
       olvidarEmpresaDePestana();
@@ -113,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // que tenga que cerrar sesión y volver a entrar para verlo reflejado.
   useEffect(() => {
     function alVolverALaPestaña() {
-      if (document.visibilityState === 'visible' && localStorage.getItem('token')) {
+      if (document.visibilityState === 'visible' && tokenDeEstaPestana()) {
         cargarUsuarioActual();
       }
     }
@@ -156,6 +183,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
   async function logout() {
+    // Dentro de la cuenta de un proveedor, "Cerrar sesión" cierra la de él
+    // y deja a Sistemas en la suya.
+    if (leerTokenSuplantacion()) {
+      await volverAMiCuenta();
+      return;
+    }
     try {
       await authApi.logout();
     } finally {
@@ -164,6 +197,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       olvidarSaludoPendiente();
       setUsuario(null);
       setIdEmpresaActiva(null);
+    }
+  }
+
+  async function entrarComoProveedor(idUsuario: number) {
+    const { token, id_empresa_activa } = await authApi.suplantar(idUsuario);
+    guardarTokenSuplantacion(token);
+    if (id_empresa_activa) {
+      guardarEmpresaDePestana(Number(id_empresa_activa));
+    }
+    // Recarga completa: toda la app vuelve a pedir sus datos como el proveedor.
+    window.location.href = '/panel';
+  }
+
+  async function volverAMiCuenta() {
+    try {
+      // Con el token del proveedor todavía puesto: revoca ESA sesión.
+      await authApi.logout();
+    } catch {
+      // Si ya había vencido, no hay nada que cerrar.
+    } finally {
+      olvidarTokenSuplantacion();
+      window.location.href = RUTA_AL_VOLVER;
     }
   }
 
@@ -222,6 +277,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         cambiarEmpresa,
         refetchUsuario: cargarUsuarioActual,
+        suplantadoPor,
+        entrarComoProveedor,
+        volverAMiCuenta,
       }}
     >
       {children}

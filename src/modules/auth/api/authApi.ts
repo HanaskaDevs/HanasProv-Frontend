@@ -27,6 +27,12 @@ export async function logout(): Promise<void> {
   await apiClient.post('/auth/logout');
 }
 
+/** Sistemas: token de un usuario proveedor, sin su contraseña ("Entrar como proveedor"). */
+export async function suplantar(idUsuario: number): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>(`/usuarios/externos/${idUsuario}/suplantar`);
+  return data;
+}
+
 export async function me(): Promise<MeResponse> {
   const { data } = await apiClient.get<MeResponse>('/auth/me');
   return data;
