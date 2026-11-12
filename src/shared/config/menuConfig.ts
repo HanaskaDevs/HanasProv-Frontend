@@ -473,6 +473,31 @@ const MENU_CALIDAD: MenuItem[] = [
   AREA_REPORTES_CALIDAD,
 ];
 
+/**
+ * El menú de Calidad para QUIEN RESUELVE LOS ARRIBOS (12-nov-2026, pedido
+ * del usuario: "al usuario vacurio@hanaska.com que le salga el apartado
+ * aprobaciones de arribo").
+ *
+ * Sigue sin estar para todo el rol Calidad -ver el comentario de
+ * AREA_OPERACION_CALIDAD-: lo ve solo la persona cuyo correo es el que
+ * recibe esos avisos (portal.email_aprobacion_arribo en el backend, que
+ * llega al front como usuario.resuelve_aprobaciones_arribo). Así, el día
+ * que esa responsabilidad cambie de persona, se cambia una variable de
+ * entorno y el menú la sigue.
+ */
+const AREA_OPERACION_CALIDAD_CON_APROBACIONES: MenuItem = {
+  label: 'Operación',
+  children: [...(AREA_OPERACION_CALIDAD.children ?? []), APROBACIONES_ARRIBO_ITEM],
+};
+
+const MENU_CALIDAD_CON_APROBACIONES: MenuItem[] = [
+  { label: 'Inicio', to: '/panel' },
+  AREA_PROVEEDORES_CALIDAD,
+  AREA_OPERACION_CALIDAD_CON_APROBACIONES,
+  AREA_CALIDAD_ROL_CALIDAD,
+  AREA_REPORTES_CALIDAD,
+];
+
 // Catálogo (29-oct-2026, pedido del usuario): mantiene los datos de los
 // productos. Catálogo de productos (códigos BC), Productos por revisar (solo
 // consulta) y Productos por proveedor (editar datos).
@@ -499,7 +524,8 @@ const MENU_GUARDIA: MenuItem[] = [SEGUIMIENTO_HOY_PLANO];
 export function obtenerMenu(
   rolActivo: string | null,
   tipoUsuario: 'Interno' | 'Proveedor',
-  esAspirante = false
+  esAspirante = false,
+  resuelveAprobacionesArribo = false
 ): MenuItem[] {
   if (tipoUsuario === 'Proveedor') {
     if (esAspirante) {
@@ -519,7 +545,7 @@ export function obtenerMenu(
     case ROLES.CALIDAD:
       // Mismo menú en la web y en la app (pedido explícito, 23-oct-2026).
       // Antes la app solo mostraba Auditorías y ocultaba el resto.
-      return MENU_CALIDAD;
+      return resuelveAprobacionesArribo ? MENU_CALIDAD_CON_APROBACIONES : MENU_CALIDAD;
     case ROLES.COMPRAS:
       return MENU_COMPRAS;
     case ROLES.GUARDIA:

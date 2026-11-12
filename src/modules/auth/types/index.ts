@@ -15,6 +15,13 @@ export interface Usuario {
   cargo: string | null;
   tipo_usuario: 'Interno' | 'Proveedor';
   requiere_cambio_password: boolean;
+  /**
+   * true = es la persona que resuelve las solicitudes de arribo tardío
+   * (su correo es el de portal.email_aprobacion_arribo en el backend).
+   * Solo sirve para mostrarle el ítem "Aprobaciones de arribo" en el
+   * menú; el permiso real lo decide el backend por rol.
+   */
+  resuelve_aprobaciones_arribo?: boolean;
   empresas: EmpresaAcceso[];
 }
 
