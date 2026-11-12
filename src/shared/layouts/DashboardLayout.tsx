@@ -12,6 +12,7 @@ import * as fichaApi from '../../modules/miFicha/api/fichaApi';
 import GuiaInicioTour from '../components/GuiaInicioTour';
 import type { GuiaPasoPublico } from '../api/publicConfigApi';
 import HanaBot from '../components/HanaBot';
+import AvisoSuplantacion from '../components/AvisoSuplantacion';
 import Footer from '../components/Footer';
 import TarjetaMiResponsable from '../../modules/responsables/components/TarjetaMiResponsable';
 import ModalBannerInformativo from '../../modules/banner/components/ModalBannerInformativo';
@@ -239,6 +240,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-brand-200/10">
+      <AvisoSuplantacion />
       <header className="relative bg-brand-900 text-white shrink-0 transition-all duration-300">
         {/* Modo navideño: dentro del portal la nieve cae SOLO sobre la barra
             azul (04-nov-2026, pedido del usuario); en el login cae en toda la

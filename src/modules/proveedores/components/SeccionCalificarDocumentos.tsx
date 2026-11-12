@@ -175,6 +175,10 @@ function FilaDocumento({
     },
   });
 
+  // 'YYYY-MM-DD' contra la fecha local de hoy: vence hoy todavía vale.
+  const hoy = new Date().toLocaleDateString('en-CA');
+  const vencido = !!doc.fecha_caducidad && doc.fecha_caducidad < hoy;
+
   const chip =
     doc.estado_calificacion === 'Aprobado'
       ? 'bg-emerald-100 text-emerald-600'
@@ -197,7 +201,12 @@ function FilaDocumento({
             {doc.nombre_original}
           </p>
           <div className="flex items-center gap-1.5 flex-wrap mt-1">
-            {doc.fecha_caducidad && <Badge tone="info">Vence {doc.fecha_caducidad}</Badge>}
+            {doc.fecha_caducidad &&
+              (vencido ? (
+                <Badge tone="danger">Vencido el {doc.fecha_caducidad}</Badge>
+              ) : (
+                <Badge tone="info">Vence {doc.fecha_caducidad}</Badge>
+              ))}
           </div>
           {doc.fecha_subida && (
             <p className="text-[10.5px] text-brand-900/40 mt-1">
@@ -265,6 +274,9 @@ function FilaDocumento({
             fecha={doc.fecha_calificacion}
             calificando={calificar.isPending}
             soloLectura={soloLectura}
+            motivoNoAprobar={
+              vencido ? 'Documento vencido: no se puede aprobar. El proveedor debe subir el renovado.' : undefined
+            }
             onCalificar={(aprobado, observacion) => calificar.mutate({ aprobado, observacion })}
           />
         )}
@@ -312,11 +324,37 @@ export default function SeccionCalificarDocumentos({ idProveedor }: { idProveedo
   const documentosRechazados = todosLosDocumentos.filter(({ doc }) => doc.estado_calificacion === 'Rechazado');
 
   const registrada = data.calificacion_documentos_registrada;
+  const pendientes = data.pendientes_documentacion;
   const hayRechazados = documentosRechazados.length > 0;
 
   return (
     <div className="space-y-4">
-      {!data.documentacion_registrada && (
+      {/* Dice qué falta o qué venció de verdad, en vez de suponer que
+          faltan documentos solo porque no presionó "Registrar documentación". */}
+      {pendientes && !pendientes.al_dia && (
+        <Card className="!p-3 bg-brand-yellow/10 border-brand-yellow/30">
+          <p className="text-xs text-brand-900">
+            {[
+              pendientes.faltantes.length > 0 && `Le falta subir: ${pendientes.faltantes.join(', ')}.`,
+              pendientes.vencidos.length > 0 &&
+                `Tiene vencido: ${pendientes.vencidos.join(', ')}. Debe subir el documento renovado.`,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          </p>
+        </Card>
+      )}
+
+      {pendientes?.al_dia && !data.documentacion_registrada && (
+        <Card className="!p-3 bg-brand-yellow/10 border-brand-yellow/30">
+          <p className="text-xs text-brand-900">
+            Este proveedor ya cargó todos los documentos obligatorios, pero todavía no presionó "Registrar
+            documentación".
+          </p>
+        </Card>
+      )}
+
+      {!pendientes && !data.documentacion_registrada && (
         <Card className="!p-3 bg-brand-yellow/10 border-brand-yellow/30">
           <p className="text-xs text-brand-900">
             Este proveedor todavía no registra su documentación. Puedes revisar lo que ya cargó, pero probablemente

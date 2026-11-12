@@ -50,7 +50,7 @@ function UsuariosExternosContent() {
   // Sistemas -> se necesita el rol acá dentro, no solo en el RoleRoute de
   // abajo. Ocultar el botón es comodidad: el backend igual rechaza a quien
   // no sea Sistemas (ver UsuarioService::crearUsuariosProveedorEnLote).
-  const { esSistemas, esAdmin } = useAuth();
+  const { esSistemas, esAdmin, entrarComoUsuario } = useAuth();
 
   const [usuarios, setUsuarios] = useState<UsuarioExterno[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,6 +169,23 @@ function UsuariosExternosContent() {
     }
   }
 
+  async function entrarComo(u: UsuarioExterno) {
+    const confirmado = window.confirm(
+      `Vas a entrar al portal con la cuenta de ${u.nombre_completo} (${u.email}). ` +
+        'Lo que hagas queda hecho en su cuenta. ¿Continuar?'
+    );
+    if (!confirmado) return;
+
+    setProcesandoId(u.id);
+    try {
+      await ejecutar('Entrando con la cuenta del proveedor', () => entrarComoUsuario(u.id, 'externos'), u.email);
+    } catch (error) {
+      const datos = isAxiosError(error) ? (error.response?.data as { message?: string } | undefined) : undefined;
+      window.alert(datos?.message ?? 'No se pudo entrar con la cuenta de este proveedor.');
+      setProcesandoId(null);
+    }
+  }
+
   async function alternarEstado(u: UsuarioExterno) {
     setProcesandoId(u.id);
     try {
@@ -217,6 +234,17 @@ function UsuariosExternosContent() {
       { etiqueta: 'Editar', icono: 'editar', onClick: () => setUsuarioEditando(u.id) },
       { etiqueta: 'Agregar empresa', icono: 'empresa', onClick: () => setUsuarioParaEmpresa(u.id) },
     ];
+
+    // Solo Sistemas, sobre cuentas activas (lo vuelve a validar el backend).
+    if (esSistemas && u.activo) {
+      acciones.push({
+        etiqueta: 'Entrar como este proveedor',
+        icono: 'entrar',
+        ayuda: 'Ver el portal con su cuenta, sin su contraseña',
+        onClick: () => entrarComo(u),
+        cargando: procesandoId === u.id,
+      });
+    }
 
     if (u.requiere_activacion) {
       acciones.push({

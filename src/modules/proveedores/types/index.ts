@@ -66,6 +66,12 @@ export interface TipoDocumentoCalificable {
 export interface ChecklistCalificacion {
   razon_social: string;
   documentacion_registrada: boolean;
+  /** Obligatorios sin subir y documentos vencidos (mismo cálculo que la calificación de recepciones). */
+  pendientes_documentacion?: {
+    faltantes: string[];
+    vencidos: string[];
+    al_dia: boolean;
+  };
   calificacion_documentos_registrada: boolean;
   documentos: TipoDocumentoCalificable[];
 }

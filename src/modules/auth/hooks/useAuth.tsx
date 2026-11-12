@@ -11,6 +11,19 @@ import {
   leerEmpresaDePestana,
   olvidarEmpresaDePestana,
 } from '../../../shared/utils/empresaPestana';
+import {
+  guardarTokenSuplantacion,
+  leerTokenSuplantacion,
+  olvidarTokenSuplantacion,
+  rutaAlVolver,
+  tokenDeEstaPestana,
+} from '../../../shared/utils/sesionSuplantada';
+
+/** Quién de Sistemas está dentro de la cuenta de otro usuario ("Entrar como este usuario"). */
+export interface Suplantador {
+  nombre: string | null;
+  email: string | null;
+}
 
 interface AuthContextValue {
   usuario: Usuario | null;
@@ -32,6 +45,12 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   cambiarEmpresa: (idEmpresa: number) => Promise<void>;
   refetchUsuario: () => Promise<void>;
+  /** null en una sesión normal; con datos cuando Sistemas entró con esta cuenta. */
+  suplantadoPor: Suplantador | null;
+  /** Sistemas: abre en ESTA pestaña la cuenta de un proveedor ('externos') o de un interno ('internos'). */
+  entrarComoUsuario: (idUsuario: number, tipo: 'externos' | 'internos') => Promise<void>;
+  /** Cierra la sesión del otro usuario y vuelve a la cuenta propia de Sistemas. */
+  volverAMiCuenta: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -40,9 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [idEmpresaActiva, setIdEmpresaActiva] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [suplantadoPor, setSuplantadoPor] = useState<Suplantador | null>(null);
 
   async function cargarUsuarioActual() {
-  const token = localStorage.getItem('token');
+  const token = tokenDeEstaPestana();
   if (!token) {
     setIsLoading(false);
     return;
@@ -50,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   try {
     const data = await authApi.me();
     setUsuario(data.usuario);
+    setSuplantadoPor(data.suplantado_por ?? null);
 
     // Number() en todo: el driver de SQL Server devuelve estos ids como string
     // ("2" en vez de 2), y una comparación entre tipos distintos nunca casa.
@@ -91,6 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // el token intacto, el próximo intento (otro visibilitychange, o
     // recargar) entra solo apenas vuelva la conexión.
     const tokenInvalido = axios.isAxiosError(error) && error.response?.status === 401;
+    if (tokenInvalido && leerTokenSuplantacion()) {
+      // Venció la sesión del otro usuario, no la de Sistemas: de vuelta a la propia.
+      const destino = rutaAlVolver();
+      olvidarTokenSuplantacion();
+      window.location.href = destino;
+      return;
+    }
     if (tokenInvalido) {
       localStorage.removeItem('token');
       olvidarEmpresaDePestana();
@@ -113,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // que tenga que cerrar sesión y volver a entrar para verlo reflejado.
   useEffect(() => {
     function alVolverALaPestaña() {
-      if (document.visibilityState === 'visible' && localStorage.getItem('token')) {
+      if (document.visibilityState === 'visible' && tokenDeEstaPestana()) {
         cargarUsuarioActual();
       }
     }
@@ -156,6 +184,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
   async function logout() {
+    // Dentro de la cuenta de otro usuario, "Cerrar sesión" cierra la de él
+    // y deja a Sistemas en la suya.
+    if (leerTokenSuplantacion()) {
+      await volverAMiCuenta();
+      return;
+    }
     try {
       await authApi.logout();
     } finally {
@@ -164,6 +198,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       olvidarSaludoPendiente();
       setUsuario(null);
       setIdEmpresaActiva(null);
+    }
+  }
+
+  async function entrarComoUsuario(idUsuario: number, tipo: 'externos' | 'internos') {
+    const { token, id_empresa_activa } = await authApi.suplantar(idUsuario, tipo);
+    guardarTokenSuplantacion(token, tipo === 'internos' ? '/usuarios/internos' : '/usuarios/proveedores');
+    if (id_empresa_activa) {
+      guardarEmpresaDePestana(Number(id_empresa_activa));
+    }
+    // Recarga completa: toda la app vuelve a pedir sus datos como ese usuario.
+    window.location.href = '/panel';
+  }
+
+  async function volverAMiCuenta() {
+    try {
+      // Con el token del otro usuario todavía puesto: revoca ESA sesión.
+      await authApi.logout();
+    } catch {
+      // Si ya había vencido, no hay nada que cerrar.
+    } finally {
+      const destino = rutaAlVolver();
+      olvidarTokenSuplantacion();
+      window.location.href = destino;
     }
   }
 
@@ -222,6 +279,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         cambiarEmpresa,
         refetchUsuario: cargarUsuarioActual,
+        suplantadoPor,
+        entrarComoUsuario,
+        volverAMiCuenta,
       }}
     >
       {children}

@@ -37,6 +37,8 @@ interface ControlesCalificacionProps {
   compacto?: boolean;
   /** true cuando ya se "Registró" la calificación completa -> ni siquiera se puede volver a calificar hasta que el proveedor corrija algo. */
   soloLectura?: boolean;
+  /** Si viene, no se puede aprobar (ej. documento vencido): el ✓ queda desactivado y se muestra este motivo. Rechazar sí se puede. */
+  motivoNoAprobar?: string;
 }
 
 /**
@@ -53,6 +55,7 @@ export default function ControlesCalificacion({
   calificando,
   compacto = false,
   soloLectura = false,
+  motivoNoAprobar,
 }: ControlesCalificacionProps) {
   const [modoRechazo, setModoRechazo] = useState(false);
   const [modoRecalificar, setModoRecalificar] = useState(false);
@@ -144,12 +147,13 @@ export default function ControlesCalificacion({
   }
 
   return (
+    <div className="space-y-1">
     <div className="flex items-center gap-2">
       <button
         onClick={() => onCalificar(true)}
-        disabled={calificando}
-        title="Aprobar"
-        className="h-7 w-7 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+        disabled={calificando || !!motivoNoAprobar}
+        title={motivoNoAprobar ?? 'Aprobar'}
+        className="h-7 w-7 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <IconoCheck />
       </button>
@@ -169,6 +173,8 @@ export default function ControlesCalificacion({
           Cancelar
         </button>
       )}
+    </div>
+    {motivoNoAprobar && <p className="text-[10.5px] text-brand-wine">{motivoNoAprobar}</p>}
     </div>
   );
 }
