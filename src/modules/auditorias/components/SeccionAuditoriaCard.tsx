@@ -7,10 +7,14 @@ export default function SeccionAuditoriaCard({
     seccion,
     soloLectura,
     onGuardarRespuesta,
+    onSubirImagen,
+    onEliminarImagen,
 }: {
     seccion: SeccionAuditoria;
     soloLectura: boolean;
     onGuardarRespuesta: (idPregunta: number, payload: { puntaje_obtenido: number | null; no_aplica: boolean; observacion: string | null }) => void;
+    onSubirImagen: (idPregunta: number, archivo: File) => Promise<void>;
+    onEliminarImagen: (idImagen: number) => Promise<void>;
 }) {
     const puntajeMaxSeccion = useMemo(
         () => seccion.preguntas.reduce((acc, p) => acc + p.puntaje_max, 0),
@@ -58,6 +62,8 @@ export default function SeccionAuditoriaCard({
                                     pregunta={pregunta}
                                     soloLectura={soloLectura}
                                     onGuardar={(payload) => onGuardarRespuesta(pregunta.id_auditoria_pregunta, payload)}
+                                    onSubirImagen={(archivo) => onSubirImagen(pregunta.id_auditoria_pregunta, archivo)}
+                                    onEliminarImagen={onEliminarImagen}
                                 />
                             </div>
                         ))}

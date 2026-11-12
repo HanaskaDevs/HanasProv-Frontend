@@ -204,7 +204,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }
 
-  const menu = obtenerMenu(rolActivo, usuario?.tipo_usuario ?? 'Interno', esAspirante);
+  const menu = obtenerMenu(
+    rolActivo,
+    usuario?.tipo_usuario ?? 'Interno',
+    esAspirante,
+    usuario?.resuelve_aprobaciones_arribo ?? false
+  );
 
   /**
    * ¿La ruta actual está dentro de esta área? Con el menú agrupado hace

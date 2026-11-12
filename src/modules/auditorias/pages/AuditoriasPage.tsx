@@ -145,6 +145,24 @@ export default function AuditoriasPage() {
         setAuditoria(actualizada);
     }
 
+    /**
+     * Fotos de la observación (12-nov-2026). Tras subir o eliminar se
+     * recarga el detalle completo: es la misma pieza que ya mantiene
+     * sincronizada la pantalla con el servidor en el autoguardado, y así
+     * la miniatura aparece (o desaparece) con el id real.
+     */
+    async function subirImagen(idPregunta: number, archivo: File) {
+        if (!auditoria) return;
+        await auditoriasApi.subirImagenObservacion(auditoria.id_auditoria, idPregunta, archivo);
+        setAuditoria(await auditoriasApi.obtener(auditoria.id_auditoria));
+    }
+
+    async function eliminarImagen(idImagen: number) {
+        if (!auditoria) return;
+        await auditoriasApi.eliminarImagenObservacion(idImagen);
+        setAuditoria(await auditoriasApi.obtener(auditoria.id_auditoria));
+    }
+
     function confirmarFinalizar() {
         if (!auditoria) return;
         finalizarMutation.mutate(auditoria.id_auditoria);
@@ -245,6 +263,8 @@ export default function AuditoriasPage() {
                                     seccion={seccion}
                                     soloLectura
                                     onGuardarRespuesta={guardarRespuesta}
+                                    onSubirImagen={subirImagen}
+                                    onEliminarImagen={eliminarImagen}
                                 />
                             ))}
                         </div>
@@ -271,6 +291,8 @@ export default function AuditoriasPage() {
                                 seccion={auditoria.secciones[indiceSeccion]}
                                 soloLectura={false}
                                 onGuardarRespuesta={guardarRespuesta}
+                                onSubirImagen={subirImagen}
+                                onEliminarImagen={eliminarImagen}
                             />
 
                             <div className="flex items-center justify-between gap-2">

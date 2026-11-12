@@ -173,6 +173,8 @@ function Formulario({
     onVolver,
     onResponder,
     onGuardarObservacion,
+    onSubirImagen,
+    onEliminarImagen,
     onGuardarCabecera,
     onFinalizar,
 }: {
@@ -183,6 +185,8 @@ function Formulario({
     onVolver: () => void;
     onResponder: (idParametro: number, cumple: boolean) => void;
     onGuardarObservacion: (idParametro: number, observacion: string | null) => void;
+    onSubirImagen: (idParametro: number, archivo: File) => Promise<void>;
+    onEliminarImagen: (idImagen: number) => Promise<void>;
     onGuardarCabecera: (payload: { fecha_recepcion?: string; contacto?: string }) => void;
     onFinalizar: () => void;
 }) {
@@ -254,6 +258,8 @@ function Formulario({
                                 guardando={guardandoId === p.id_recepcion_parametro}
                                 onResponder={(cumple) => onResponder(p.id_recepcion_parametro, cumple)}
                                 onGuardarObservacion={(obs) => onGuardarObservacion(p.id_recepcion_parametro, obs)}
+                                onSubirImagen={(archivo) => onSubirImagen(p.id_recepcion_parametro, archivo)}
+                                onEliminarImagen={onEliminarImagen}
                             />
                         ))}
                     </div>
@@ -391,6 +397,23 @@ function CalificacionRecepcionesContent() {
         onSuccess: (data) => setDetalle(data),
     });
 
+    /**
+     * Fotos de la observación (12-nov-2026). Después de subir o eliminar
+     * se vuelve a pedir el detalle, que es lo que ya hace el resto del
+     * formulario con cada guardado.
+     */
+    async function subirImagen(idParametro: number, archivo: File) {
+        if (!detalle) return;
+        await recepcionesApi.subirImagenObservacion(detalle.id_calificacion_recepcion, idParametro, archivo);
+        setDetalle(await recepcionesApi.obtener(detalle.id_calificacion_recepcion));
+    }
+
+    async function eliminarImagen(idImagen: number) {
+        if (!detalle) return;
+        await recepcionesApi.eliminarImagenObservacion(idImagen);
+        setDetalle(await recepcionesApi.obtener(detalle.id_calificacion_recepcion));
+    }
+
     const guardarCabecera = useMutation({
         mutationFn: (payload: { fecha_recepcion?: string; contacto?: string }) =>
             recepcionesApi.actualizarCabecera(detalle!.id_calificacion_recepcion, payload),
@@ -442,6 +465,8 @@ function CalificacionRecepcionesContent() {
                     onGuardarObservacion={(idParametro, observacion) =>
                         guardarObservacion.mutate({ idParametro, observacion })
                     }
+                    onSubirImagen={subirImagen}
+                    onEliminarImagen={eliminarImagen}
                     onGuardarCabecera={(payload) => guardarCabecera.mutate(payload)}
                     onFinalizar={() => finalizar.mutate()}
                 />

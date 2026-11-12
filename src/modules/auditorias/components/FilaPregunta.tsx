@@ -1,19 +1,28 @@
 import { useEffect, useState } from 'react';
+import ImagenesObservacion from './ImagenesObservacion';
 import type { PreguntaAuditoria } from '../types';
 
 export default function FilaPregunta({
     pregunta,
     soloLectura,
     onGuardar,
+    onSubirImagen,
+    onEliminarImagen,
 }: {
     pregunta: PreguntaAuditoria;
     soloLectura: boolean;
     onGuardar: (payload: { puntaje_obtenido: number | null; no_aplica: boolean; observacion: string | null }) => void;
+    onSubirImagen: (archivo: File) => Promise<void>;
+    onEliminarImagen: (idImagen: number) => Promise<void>;
 }) {
     const [puntaje, setPuntaje] = useState(pregunta.puntaje_obtenido?.toString() ?? '');
     const [noAplica, setNoAplica] = useState(pregunta.no_aplica);
     const [observacion, setObservacion] = useState(pregunta.observacion ?? '');
-    const [mostrarObservacion, setMostrarObservacion] = useState(!!pregunta.observacion);
+    // El bloque de observación se abre solo si ya hay algo que mostrar:
+    // texto escrito antes o fotos ya adjuntas.
+    const [mostrarObservacion, setMostrarObservacion] = useState(
+        !!pregunta.observacion || pregunta.imagenes.length > 0
+    );
 
     useEffect(() => {
         setPuntaje(pregunta.puntaje_obtenido?.toString() ?? '');
@@ -94,16 +103,25 @@ export default function FilaPregunta({
                 )}
             </div>
 
-            {(mostrarObservacion || (soloLectura && observacion)) && (
-                <textarea
-                    disabled={soloLectura}
-                    value={observacion}
-                    onChange={(e) => setObservacion(e.target.value)}
-                    onBlur={guardarObservacion}
-                    placeholder="Observaciones..."
-                    rows={2}
-                    className="mt-2.5 sm:ml-9 w-full sm:w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
-                />
+            {(mostrarObservacion || (soloLectura && (observacion || pregunta.imagenes.length > 0))) && (
+                <>
+                    <textarea
+                        disabled={soloLectura}
+                        value={observacion}
+                        onChange={(e) => setObservacion(e.target.value)}
+                        onBlur={guardarObservacion}
+                        placeholder="Observaciones..."
+                        rows={2}
+                        className="mt-2.5 sm:ml-9 w-full sm:w-[calc(100%-2.25rem)] rounded-lg border border-brand-900/12 px-3 py-2 text-sm resize-none focus:outline-none focus:border-brand-700 disabled:bg-brand-900/5"
+                    />
+
+                    <ImagenesObservacion
+                        imagenes={pregunta.imagenes}
+                        soloLectura={soloLectura}
+                        onSubir={onSubirImagen}
+                        onEliminar={onEliminarImagen}
+                    />
+                </>
             )}
         </div>
     );

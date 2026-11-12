@@ -141,6 +141,23 @@ function useFullscreen() {
 }
 
 /**
+ * Las categorías que rota el Modo TV: las 3 clasificaciones del
+ * calendario más "No llegaron" (12-nov-2026, pedido del usuario).
+ *
+ * "No llegaron" NO es una clasificación: no se pide al backend, se arma
+ * juntando los horarios en estado Rechazado de las otras tres (ver el
+ * cálculo en el cuerpo de la pantalla). Por eso el array de categorías
+ * vive acá y no en types.ts junto a CLASIFICACIONES, que sí son los
+ * valores que entiende la API.
+ */
+const VALOR_NO_LLEGARON = 'No_Llegaron';
+
+const CATEGORIAS_TV: { valor: string; etiqueta: string }[] = [
+  ...CLASIFICACIONES,
+  { valor: VALOR_NO_LLEGARON, etiqueta: 'No llegaron' },
+];
+
+/**
  * Trae las 3 clasificaciones EN PARALELO (una query por cada una, no una
  * sola que cambia de clasificación) -> antes se pedía solo la
  * clasificación que se estaba mostrando, y al rotar a la siguiente el
@@ -233,13 +250,40 @@ export default function ModoTvHorariosPage() {
   const inicioFranjaMin = ahora.getHours() * 60;
   const finFranjaMin = inicioFranjaMin + 60;
 
-  const filasPorClasificacion = filasPorClasificacionDelDia.map((filas) =>
+  /*
+   * CATEGORÍA "NO LLEGARON" (12-nov-2026, pedido del usuario).
+   *
+   * Es una categoría más en la rotación, pero NO es una clasificación del
+   * calendario: junta los horarios en estado Rechazado de las tres
+   * clasificaciones. Rechazado quiere decir que pasó el límite de atraso
+   * (portal.minutos_atrasado_a_rechazado) sin que el Guardia marcara el
+   * arribo.
+   *
+   * No se filtra por la franja horaria: si un proveedor de las 9:00 no
+   * llegó, a las 13:00 sigue sin haber llegado y tiene que verse. Las
+   * otras tres categorías sí se filtran, porque muestran lo que está
+   * pasando AHORA.
+   *
+   * Y sale solo de la lista en cuanto el estado cambia: la pantalla
+   * recalcula las categorías en cada refresco (MS_REFRESCO_DATOS), así
+   * que si el Guardia marca el arribo -o Calidad aprueba una solicitud-,
+   * la fila deja de estar Rechazada y vuelve a la categoría que le toca.
+   */
+  const filasEnFranja = filasPorClasificacionDelDia.map((filas) =>
     filas.filter((h) => estaEnFranja(h, inicioFranjaMin, finFranjaMin))
   );
+
+  const filasNoLlegaron = filasPorClasificacionDelDia
+    .flat()
+    .filter((h) => h.estado === 'Rechazado')
+    .sort((a, b) => (a.hora_llegada ?? '').localeCompare(b.hora_llegada ?? ''));
+
+  const filasPorClasificacion = [...filasEnFranja, filasNoLlegaron];
   const totalPaginasPorClasificacion = filasPorClasificacion.map((filas) => Math.max(1, Math.ceil(filas.length / FILAS_POR_PAGINA)));
 
-  const clasificacionActual = CLASIFICACIONES[indiceClasificacion % CLASIFICACIONES.length];
+  const clasificacionActual = CATEGORIAS_TV[indiceClasificacion % CATEGORIAS_TV.length];
   const filas = filasPorClasificacion[indiceClasificacion] ?? [];
+  const esCategoriaNoLlegaron = clasificacionActual.valor === VALOR_NO_LLEGARON;
   const totalPaginas = totalPaginasPorClasificacion[indiceClasificacion] ?? 1;
 
   // Se intenta apenas se monta (funciona si se llegó por el botón de
@@ -294,7 +338,7 @@ export default function ModoTvHorariosPage() {
       if (paginaActualRef.current + 1 < totalActual) {
         setPaginaActual(paginaActualRef.current + 1);
       } else {
-        setIndiceClasificacion((indiceClasificacionRef.current + 1) % CLASIFICACIONES.length);
+        setIndiceClasificacion((indiceClasificacionRef.current + 1) % CATEGORIAS_TV.length);
         setPaginaActual(0);
       }
     }, SEGUNDOS_POR_PASO * 1000);
@@ -407,8 +451,8 @@ export default function ModoTvHorariosPage() {
             </span>
           )}
           <div className="flex items-center gap-3">
-            {CLASIFICACIONES.map((c, i) => {
-              const esActual = i === indiceClasificacion % CLASIFICACIONES.length;
+            {CATEGORIAS_TV.map((c, i) => {
+              const esActual = i === indiceClasificacion % CATEGORIAS_TV.length;
 
               return (
                 <button
@@ -434,8 +478,14 @@ export default function ModoTvHorariosPage() {
       <div className="flex-1 overflow-hidden px-8 py-6">
         {filas.length === 0 ? (
           <p className="text-white/50 text-xl text-center py-24">
-            No hay entregas de {clasificacionActual.etiqueta} programadas entre{' '}
-            {formatearHoraEntera(ahora.getHours())} y {formatearHoraEntera((ahora.getHours() + 1) % 24)}.
+            {esCategoriaNoLlegaron ? (
+              <>Todos los proveedores programados para hoy llegaron a tiempo.</>
+            ) : (
+              <>
+                No hay entregas de {clasificacionActual.etiqueta} programadas entre{' '}
+                {formatearHoraEntera(ahora.getHours())} y {formatearHoraEntera((ahora.getHours() + 1) % 24)}.
+              </>
+            )}
           </p>
         ) : (
           <table className="w-full text-left border-separate border-spacing-y-2">

@@ -1,3 +1,21 @@
+/**
+ * Foto adjunta a la observación de una pregunta (12-nov-2026).
+ * La `url` es un endpoint AUTENTICADO: se pide con apiClient y se muestra
+ * como blob, no se puede poner directo en un <img src>.
+ */
+export interface ImagenObservacion {
+  id: number;
+  nombre: string | null;
+  url: string;
+}
+
+/**
+ * Tope de fotos por pregunta. Espejo de
+ * ImagenObservacionService::MAX_IMAGENES del backend: si se cambia uno,
+ * hay que cambiar el otro.
+ */
+export const MAX_IMAGENES_OBSERVACION = 2;
+
 export interface TipoAuditoria {
   id_tipo_auditoria: number;
   nombre: string;
@@ -28,6 +46,7 @@ export interface PreguntaAuditoria {
   puntaje_obtenido: number | null;
   no_aplica: boolean;
   observacion: string | null;
+  imagenes: ImagenObservacion[];
 }
 
 export interface SeccionAuditoria {
@@ -105,6 +124,7 @@ export interface ParametroRecepcion {
   /** null = todavía sin responder (distinto de haber respondido que no). */
   cumple: boolean | null;
   observacion: string | null;
+  imagenes: ImagenObservacion[];
 }
 
 export interface ResumenRecepcion {

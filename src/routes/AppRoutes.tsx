@@ -56,6 +56,8 @@ const ReporteCalificacionProveedoresPage = lazy(() => import('../modules/reporte
 const ReporteCumplimientoEntregasPage = lazy(() => import('../modules/reportes/pages/ReporteCumplimientoEntregasPage'));
 const ReporteCaducidadDocumentosPage = lazy(() => import('../modules/reportes/pages/ReporteCaducidadDocumentosPage'));
 const PlanContingenciaNinoPage = lazy(() => import('../modules/reportes/pages/PlanContingenciaNinoPage'));
+const ReporteHistorialReclamosPage = lazy(() => import('../modules/reportes/pages/ReporteHistorialReclamosPage'));
+const ReporteHistorialProveedoresPage = lazy(() => import('../modules/reportes/pages/ReporteHistorialProveedoresPage'));
 
 // Páginas legales: PÚBLICAS a propósito (fuera de ProtectedRoute). Quien
 // necesita ejercer un derecho sobre sus datos puede ser justamente alguien
@@ -144,6 +146,8 @@ export default function AppRoutes() {
           <Route path="/reportes/cumplimiento-entregas" element={<ReporteCumplimientoEntregasPage />} />
           <Route path="/reportes/caducidad-documentos" element={<ReporteCaducidadDocumentosPage />} />
           <Route path="/reportes/plan-contingencia-nino" element={<PlanContingenciaNinoPage />} />
+          <Route path="/reportes/historial-reclamos" element={<ReporteHistorialReclamosPage />} />
+          <Route path="/reportes/historial-proveedores" element={<ReporteHistorialProveedoresPage />} />
           <Route path="/configuraciones" element={<ConfiguracionesPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
         </Route>
