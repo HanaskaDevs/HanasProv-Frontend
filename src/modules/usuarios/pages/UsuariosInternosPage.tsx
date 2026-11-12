@@ -122,7 +122,10 @@ function UsuariosInternosContent() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
+      {/* En el celular la cabecera y los filtros bajan de línea (flex-wrap):
+          antes iban en una sola fila más ancha que la pantalla, la página
+          entera se corría de lado y no se podía deslizar bien (12-nov). */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold text-brand-900">Usuarios internos</h1>
           <p className="text-sm text-brand-900/60 mt-1">Staff con acceso al sistema (Sistemas, Admin, Calidad, Compras).</p>
@@ -131,7 +134,7 @@ function UsuariosInternosContent() {
       </div>
 
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por nombre o correo..." />
         <SelectFiltro
           valor={filtroRol}
@@ -160,7 +163,8 @@ function UsuariosInternosContent() {
             No hay usuarios internos que coincidan con la búsqueda.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-brand-200/30 text-left text-brand-900/70">
               <tr>
                 <th className="px-4 py-3 font-medium">Nombre</th>
@@ -239,6 +243,7 @@ function UsuariosInternosContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 

@@ -313,12 +313,15 @@ function UsuariosExternosContent() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
+      {/* En el celular la cabecera y los filtros bajan de línea (flex-wrap):
+          antes iban en una sola fila más ancha que la pantalla, la página
+          entera se corría de lado y no se podía deslizar bien (12-nov). */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold text-brand-900">Usuarios externos</h1>
           <p className="text-sm text-brand-900/60 mt-1">Proveedores con acceso al portal.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {esSistemas && (
             <Button variant="secondary" onClick={() => setModalCargaAbierto(true)}>
               Carga masiva (Excel)
@@ -328,7 +331,7 @@ function UsuariosExternosContent() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} placeholder="Buscar por nombre, proveedor o correo..." />
         <SelectFiltro
           valor={filtroEstado}
@@ -363,7 +366,7 @@ function UsuariosExternosContent() {
             {usuariosSeleccionados.length === 1 ? '' : 's'} de activar seleccionado
             {usuariosSeleccionados.length === 1 ? '' : 's'}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="ghost" className="text-xs" onClick={() => setSeleccionados(new Set())}>
               Limpiar selección
             </Button>
