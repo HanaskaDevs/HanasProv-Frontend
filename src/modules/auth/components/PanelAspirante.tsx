@@ -55,6 +55,12 @@ function calcularPorcentajeFicha(ficha: FichaProveedor): number {
   return Math.round((pasos.filter(Boolean).length / 4) * 100);
 }
 
+/** 'YYYY-MM-DD' -> '31/10/2026', sin pasar por Date (evita el corrimiento de zona horaria). */
+function formatearFecha(fechaIso: string): string {
+  const [anio, mes, dia] = fechaIso.slice(0, 10).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
 type EstadoPaso = 'completado' | 'actual' | 'pendiente' | 'rechazado';
 
 interface Paso {
@@ -144,8 +150,18 @@ export default function PanelAspirante() {
   const documentosRechazados = tiposDocumentos
     .flatMap((t) => t.documentos)
     .filter((d) => d.estado_calificacion === 'Rechazado');
+  // Documentos ya vencidos (ej. la LUAE): el proveedor tiene que subir el
+  // renovado (12-nov-2026). Se nombra el TIPO, que es lo que reconoce, no el
+  // nombre del archivo. Los rechazados ya tienen su propio aviso.
+  const documentosVencidos = tiposDocumentos.flatMap((t) =>
+    t.documentos
+      .filter((d) => d.vencido && d.estado_calificacion !== 'Rechazado')
+      .map((d) => ({ nombre: t.nombre_documento, fecha: d.fecha_caducidad }))
+  );
+  const nombresVencidos = Array.from(new Set(documentosVencidos.map((d) => d.nombre))).join(', ');
   const documentacionRegistrada = documentos.data?.registrado ?? false;
-  const documentacionCompleta = documentacionRegistrada && documentosRechazados.length === 0;
+  const documentacionCompleta =
+    documentacionRegistrada && documentosRechazados.length === 0 && documentosVencidos.length === 0;
 
   const productosRechazados = productos.data?.productos_rechazados ?? 0;
   const correccionesPendientesProductos = productos.data?.correcciones_pendientes ?? false;
@@ -176,11 +192,13 @@ export default function PanelAspirante() {
       descripcion:
         documentosRechazados.length > 0
           ? `${documentosRechazados.length} documento(s) por corregir.`
+          : documentosVencidos.length > 0
+          ? `Documento vencido: ${nombresVencidos}. Suba la versión renovada.`
           : obligatoriosFaltantes.length > 0
           ? `Faltan ${obligatoriosFaltantes.length} documento(s) obligatorio(s).`
           : 'RUC, certificados y demás documentos obligatorios.',
       estado:
-        documentosRechazados.length > 0
+        documentosRechazados.length > 0 || documentosVencidos.length > 0
           ? 'rechazado'
           : documentacionCompleta
           ? 'completado'
@@ -188,7 +206,12 @@ export default function PanelAspirante() {
           ? 'actual'
           : 'pendiente',
       to: '/documentos',
-      textoBoton: documentosRechazados.length > 0 ? 'Corregir documentos' : 'Cargar documentos',
+      textoBoton:
+        documentosRechazados.length > 0
+          ? 'Corregir documentos'
+          : documentosVencidos.length > 0
+          ? 'Actualizar documento'
+          : 'Cargar documentos',
     },
     {
       numero: 3,
@@ -222,6 +245,27 @@ export default function PanelAspirante() {
           documentación vigente y registrar su oferta de productos.
         </p>
       </div>
+
+      {documentosVencidos.length > 0 && (
+        <div className="rounded-lg border border-brand-wine/30 bg-brand-wine/[0.05] px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <IconoAlerta className="shrink-0 text-brand-wine" />
+          <p className="text-sm text-brand-900 flex-1 min-w-[16rem]">
+            <span className="font-semibold text-brand-wine">
+              {documentosVencidos.length === 1 ? 'Tiene un documento vencido' : 'Tiene documentos vencidos'}:
+            </span>{' '}
+            {documentosVencidos
+              .map((d) => (d.fecha ? `${d.nombre} (venció el ${formatearFecha(d.fecha)})` : d.nombre))
+              .join(', ')}
+            . Suba la versión renovada con su nueva fecha de caducidad.
+          </p>
+          <Link
+            to="/documentos"
+            className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-md bg-brand-wine text-white hover:opacity-90 transition-opacity cursor-pointer"
+          >
+            Actualizar documento <IconoFlecha />
+          </Link>
+        </div>
+      )}
 
       {hayCorrecciones && (
         <div className="rounded-lg border border-brand-wine/20 bg-brand-wine/[0.03] px-4 py-3 flex items-start gap-2.5">
