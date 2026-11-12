@@ -1,6 +1,7 @@
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+import { lazyPagina } from './lazyPagina';
 import PantallaCarga from '../shared/components/PantallaCarga';
 import { useAuth } from '../modules/auth/hooks/useAuth';
 
@@ -12,6 +13,11 @@ import { useAuth } from '../modules/auth/hooks/useAuth';
  * Catálogo de Productos) y `leaflet` (3.9 MB, solo el mapa de Mi Ficha)
  * son los dos casos más caros, y ninguno de los dos lo necesita, por
  * ejemplo, un proveedor que solo entra a ver sus pedidos.
+ *
+ * Se usa lazyPagina() y no lazy() a secas: si el `dist` cambia con la
+ * pestaña abierta, el chunk que pide esta versión ya no existe y la
+ * pantalla queda en blanco con un 404. lazyPagina recarga una vez (ver
+ * ese archivo).
  *
  * Landing y Login quedan a propósito FUERA del lazy: son la primera
  * pantalla que ve cualquiera, así que meterlas en un chunk aparte solo
@@ -25,49 +31,49 @@ import LandingPage from '../modules/landing/pages/LandingPage';
 import LoginPage from '../modules/auth/pages/LoginPage';
 
 // --- Auth (públicas, fuera del flujo principal) ---
-const ActivarCuentaPage = lazy(() => import('../modules/auth/pages/ActivarCuentaPage'));
-const OlvidePasswordPage = lazy(() => import('../modules/auth/pages/OlvidePasswordPage'));
-const RestablecerPasswordPage = lazy(() => import('../modules/auth/pages/RestablecerPasswordPage'));
+const ActivarCuentaPage = lazyPagina(() => import('../modules/auth/pages/ActivarCuentaPage'));
+const OlvidePasswordPage = lazyPagina(() => import('../modules/auth/pages/OlvidePasswordPage'));
+const RestablecerPasswordPage = lazyPagina(() => import('../modules/auth/pages/RestablecerPasswordPage'));
 
 // --- Dashboard ---
-const DashboardHomePage = lazy(() => import('../modules/auth/pages/DashboardHomePage'));
-const EmpresasPage = lazy(() => import('../modules/empresas/pages/EmpresasPage'));
-const MiFichaPage = lazy(() => import('../modules/miFicha/pages/MiFichaPage'));
-const DocumentosPage = lazy(() => import('../modules/documentacion/pages/DocumentosPage'));
-const ProductosPage = lazy(() => import('../modules/fichaProductos/pages/ProductosPage'));
-const UsuariosInternosPage = lazy(() => import('../modules/usuarios/pages/UsuariosInternosPage'));
-const UsuariosExternosPage = lazy(() => import('../modules/usuarios/pages/UsuariosExternosPage'));
-const ProveedoresPage = lazy(() => import('../modules/proveedores/pages/ProveedoresPage'));
-const DetalleProveedoresPage = lazy(() => import('../modules/proveedores/pages/DetalleProveedoresPage'));
-const CatalogoProductosPage = lazy(() => import('../modules/catalogoProductos/pages/CatalogoProductosPage'));
-const ProductosProveedorPage = lazy(() => import('../modules/productosProveedor/pages/ProductosProveedorPage'));
-const RevisionComprasPage = lazy(() => import('../modules/revisionCompras/pages/RevisionComprasPage'));
-const CalificacionPage = lazy(() => import('../modules/calificacion/pages/CalificacionPage'));
-const PedidosPage = lazy(() => import('../modules/pedidos/pages/PedidosPage'));
-const ReclamosAbiertosPage = lazy(() => import('../modules/reclamos/pages/ReclamosAbiertosPage'));
-const ReclamosCerradosPage = lazy(() => import('../modules/reclamos/pages/ReclamosCerradosPage'));
-const CambiosPrecioPage = lazy(() => import('../modules/cambiosPrecio/pages/CambiosPrecioPage'));
-const AuditoriasPage = lazy(() => import('../modules/auditorias/pages/AuditoriasPage'));
-const CalificacionRecepcionesPage = lazy(() => import('../modules/auditorias/pages/CalificacionRecepcionesPage'));
-const PoliticasPage = lazy(() => import('../modules/politicas/pages/PoliticasPage'));
-const ConfiguracionesPage = lazy(() => import('../modules/configuraciones/pages/ConfiguracionesPage'));
-const CatalogosPage = lazy(() => import('../modules/catalogos/pages/CatalogosPage'));
-const ReporteCalificacionProveedoresPage = lazy(() => import('../modules/reportes/pages/ReporteCalificacionProveedoresPage'));
-const ReporteCumplimientoEntregasPage = lazy(() => import('../modules/reportes/pages/ReporteCumplimientoEntregasPage'));
-const ReporteCaducidadDocumentosPage = lazy(() => import('../modules/reportes/pages/ReporteCaducidadDocumentosPage'));
-const PlanContingenciaNinoPage = lazy(() => import('../modules/reportes/pages/PlanContingenciaNinoPage'));
-const ReporteHistorialReclamosPage = lazy(() => import('../modules/reportes/pages/ReporteHistorialReclamosPage'));
-const ReporteHistorialProveedoresPage = lazy(() => import('../modules/reportes/pages/ReporteHistorialProveedoresPage'));
+const DashboardHomePage = lazyPagina(() => import('../modules/auth/pages/DashboardHomePage'));
+const EmpresasPage = lazyPagina(() => import('../modules/empresas/pages/EmpresasPage'));
+const MiFichaPage = lazyPagina(() => import('../modules/miFicha/pages/MiFichaPage'));
+const DocumentosPage = lazyPagina(() => import('../modules/documentacion/pages/DocumentosPage'));
+const ProductosPage = lazyPagina(() => import('../modules/fichaProductos/pages/ProductosPage'));
+const UsuariosInternosPage = lazyPagina(() => import('../modules/usuarios/pages/UsuariosInternosPage'));
+const UsuariosExternosPage = lazyPagina(() => import('../modules/usuarios/pages/UsuariosExternosPage'));
+const ProveedoresPage = lazyPagina(() => import('../modules/proveedores/pages/ProveedoresPage'));
+const DetalleProveedoresPage = lazyPagina(() => import('../modules/proveedores/pages/DetalleProveedoresPage'));
+const CatalogoProductosPage = lazyPagina(() => import('../modules/catalogoProductos/pages/CatalogoProductosPage'));
+const ProductosProveedorPage = lazyPagina(() => import('../modules/productosProveedor/pages/ProductosProveedorPage'));
+const RevisionComprasPage = lazyPagina(() => import('../modules/revisionCompras/pages/RevisionComprasPage'));
+const CalificacionPage = lazyPagina(() => import('../modules/calificacion/pages/CalificacionPage'));
+const PedidosPage = lazyPagina(() => import('../modules/pedidos/pages/PedidosPage'));
+const ReclamosAbiertosPage = lazyPagina(() => import('../modules/reclamos/pages/ReclamosAbiertosPage'));
+const ReclamosCerradosPage = lazyPagina(() => import('../modules/reclamos/pages/ReclamosCerradosPage'));
+const CambiosPrecioPage = lazyPagina(() => import('../modules/cambiosPrecio/pages/CambiosPrecioPage'));
+const AuditoriasPage = lazyPagina(() => import('../modules/auditorias/pages/AuditoriasPage'));
+const CalificacionRecepcionesPage = lazyPagina(() => import('../modules/auditorias/pages/CalificacionRecepcionesPage'));
+const PoliticasPage = lazyPagina(() => import('../modules/politicas/pages/PoliticasPage'));
+const ConfiguracionesPage = lazyPagina(() => import('../modules/configuraciones/pages/ConfiguracionesPage'));
+const CatalogosPage = lazyPagina(() => import('../modules/catalogos/pages/CatalogosPage'));
+const ReporteCalificacionProveedoresPage = lazyPagina(() => import('../modules/reportes/pages/ReporteCalificacionProveedoresPage'));
+const ReporteCumplimientoEntregasPage = lazyPagina(() => import('../modules/reportes/pages/ReporteCumplimientoEntregasPage'));
+const ReporteCaducidadDocumentosPage = lazyPagina(() => import('../modules/reportes/pages/ReporteCaducidadDocumentosPage'));
+const PlanContingenciaNinoPage = lazyPagina(() => import('../modules/reportes/pages/PlanContingenciaNinoPage'));
+const ReporteHistorialReclamosPage = lazyPagina(() => import('../modules/reportes/pages/ReporteHistorialReclamosPage'));
+const ReporteHistorialProveedoresPage = lazyPagina(() => import('../modules/reportes/pages/ReporteHistorialProveedoresPage'));
 
 // Páginas legales: PÚBLICAS a propósito (fuera de ProtectedRoute). Quien
 // necesita ejercer un derecho sobre sus datos puede ser justamente alguien
 // sin cuenta activa; exigir login sería negarle el derecho en la práctica.
-const PoliticaProteccionDatosPage = lazy(() => import('../modules/legal/pages/PoliticaProteccionDatosPage'));
-const FormularioDerechosPage = lazy(() => import('../modules/legal/pages/FormularioDerechosPage'));
-const CalendarioHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/CalendarioHorariosPage'));
-const ModoTvHorariosPage = lazy(() => import('../modules/horariosEntrega/pages/ModoTvHorariosPage'));
-const SeguimientoHoyPage = lazy(() => import('../modules/horariosEntrega/pages/SeguimientoHoyPage'));
-const AprobacionesArriboPage = lazy(() => import('../modules/horariosEntrega/pages/AprobacionesArriboPage'));
+const PoliticaProteccionDatosPage = lazyPagina(() => import('../modules/legal/pages/PoliticaProteccionDatosPage'));
+const FormularioDerechosPage = lazyPagina(() => import('../modules/legal/pages/FormularioDerechosPage'));
+const CalendarioHorariosPage = lazyPagina(() => import('../modules/horariosEntrega/pages/CalendarioHorariosPage'));
+const ModoTvHorariosPage = lazyPagina(() => import('../modules/horariosEntrega/pages/ModoTvHorariosPage'));
+const SeguimientoHoyPage = lazyPagina(() => import('../modules/horariosEntrega/pages/SeguimientoHoyPage'));
+const AprobacionesArriboPage = lazyPagina(() => import('../modules/horariosEntrega/pages/AprobacionesArriboPage'));
 
 /**
  * "/" es la landing pública (marketing, para un proveedor que todavía no
