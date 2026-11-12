@@ -20,18 +20,13 @@ import type { EntregaHistorial, ResumenProveedor } from '../api/historialProveed
  * arribo y la diferencia en minutos. El resumen de arriba ordena a los
  * proveedores por atraso promedio, que es el ranking que se busca.
  *
- * LA RECEPCIÓN ES LA HORA REAL DE SIGH (12-nov-2026). Hasta ese día el
- * sincronizador guardaba la hora en que corría, y el 12-nov todas las
- * entregas salieron a las 11:38 (SIGH había estado caído hasta las
- * 11:37). Ahora se guarda la hora del ingreso a bodega en SIGH y el
- * histórico se corrigió, así que se puede medir la ESPERA: cuánto pasó
- * desde que el proveedor llegó hasta que lo recibieron.
- *
- * RECIBIDO (pedido del usuario, 12-nov tarde): la hora en que la entrega
- * quedó registrada como recibida. Cuando la marca la sincronización con
- * SIGH coincide con la recepción (en SIGH el ingreso a bodega y el cierre
- * del pedido son el mismo acto); cuando la marca Compras a mano, es la hora
- * de esa marca.
+ * RECEPCIÓN Y RECIBIDO SALEN DE BODEGA (12-nov-2026, estudio de SIGH y
+ * WMS): Recepción = primer producto escaneado en WMS ese día; Recibido =
+ * cierre de la recepción en SIGH (si el proveedor trajo varios pedidos, el
+ * del último). Antes el portal guardaba el cierre en las dos columnas, y
+ * por eso parecían la misma hora. Si Compras marca el recibido a mano, es
+ * la hora de esa marca. La ESPERA es de la llegada (Guardia) al primer
+ * escaneo.
  *
  * La SALIDA es la programada en el calendario: el portal no registra la
  * hora en que se va el camión.
@@ -277,8 +272,8 @@ export default function ReporteHistorialProveedoresPage() {
 
         <p className="text-xs text-brand-900/45">
           El <strong>atraso</strong> compara la hora citada con la de llegada, que marca el Guardia. La{' '}
-          <strong>recepción</strong> es la hora real del ingreso a bodega en SIGH; <strong>recibido</strong>, la hora en que
-          quedó registrada como recibida (si la marca la sincronización con SIGH, coincide con la recepción). La{' '}
+          <strong>recepción</strong> es cuando bodega escaneó el primer producto en WMS; <strong>recibido</strong>, cuando se
+          cerró la recepción en SIGH (si trajo varios pedidos, el último). La{' '}
           <strong>espera</strong> es lo que pasó entre la llegada y la recepción. La <strong>salida</strong> es la
           programada en el calendario: la hora real de salida no se registra.
         </p>
@@ -377,7 +372,7 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
             <th className="px-3 py-2.5 text-center">Llegó</th>
             <th className="px-3 py-2.5 text-center">Diferencia</th>
             <th className="px-3 py-2.5 text-center">Recepción</th>
-            <th className="px-3 py-2.5 text-center" title="Hora en que la entrega quedó registrada como recibida">
+            <th className="px-3 py-2.5 text-center" title="Hora en que se cerró la recepción en SIGH">
               Recibido
             </th>
             <th className="px-3 py-2.5 text-center">Espera</th>
