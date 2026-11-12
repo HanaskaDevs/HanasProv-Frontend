@@ -302,6 +302,32 @@ const REPORTE_CALIFICACION_PROVEEDORES: SubMenuItem = {
   descripcion: 'Comparativa por componente de la nota',
 };
 
+/**
+ * Historial de reclamos (12-nov-2026, pedido del usuario): todo lo
+ * reclamado a un proveedor, con la conversación y la descarga en PDF.
+ * Calidad, Admin y Sistemas -los mismos que deja pasar
+ * HistorialReclamosService::verificarAcceso-.
+ */
+const REPORTE_HISTORIAL_RECLAMOS: SubMenuItem = {
+  to: '/reportes/historial-reclamos',
+  label: 'Historial de reclamos',
+  icono: 'reclamo',
+  descripcion: 'Todo lo reclamado por proveedor, descargable en PDF',
+};
+
+/**
+ * Historial de proveedores (12-nov-2026, pedido del usuario): a qué hora
+ * estaba citado cada proveedor, a qué hora llegó y cuánto se demora, con
+ * hasta 3 meses de historia. Mismos roles que el resto de los reportes de
+ * Calidad (ver HistorialEntregasService::verificarAcceso).
+ */
+const REPORTE_HISTORIAL_PROVEEDORES: SubMenuItem = {
+  to: '/reportes/historial-proveedores',
+  label: 'Historial de proveedores',
+  icono: 'recepcion',
+  descripcion: 'Arribos, atrasos y estados de cada entrega',
+};
+
 const AREA_REPORTES: MenuItem = {
   label: 'Reportes',
   children: [
@@ -313,6 +339,8 @@ const AREA_REPORTES: MenuItem = {
       descripcion: 'Fill rate por proveedor',
     },
     REPORTE_CADUCIDAD,
+    REPORTE_HISTORIAL_RECLAMOS,
+    REPORTE_HISTORIAL_PROVEEDORES,
     CALENDARIO_HORARIOS,
   ],
 };
@@ -431,7 +459,12 @@ const AREA_REPORTES_CALIDAD: MenuItem = {
   label: 'Reportes',
   // Calificación de proveedores para Calidad desde el 23-oct-2026 (el
   // backend ya se la mostraba: CalificacionGlobalController incluye Calidad).
-  children: [REPORTE_CALIFICACION_PROVEEDORES, REPORTE_CADUCIDAD],
+  children: [
+    REPORTE_CALIFICACION_PROVEEDORES,
+    REPORTE_CADUCIDAD,
+    REPORTE_HISTORIAL_RECLAMOS,
+    REPORTE_HISTORIAL_PROVEEDORES,
+  ],
 };
 
 /**
