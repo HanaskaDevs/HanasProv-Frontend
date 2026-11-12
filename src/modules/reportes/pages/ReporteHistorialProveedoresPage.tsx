@@ -27,10 +27,11 @@ import type { EntregaHistorial, ResumenProveedor } from '../api/historialProveed
  * histórico se corrigió, así que se puede medir la ESPERA: cuánto pasó
  * desde que el proveedor llegó hasta que lo recibieron.
  *
- * Una sola columna de recepción y no "recepción" y "entrega": en SIGH el
- * ingreso a bodega y el cierre del pedido son el mismo acto, así que las
- * dos horas son siempre iguales. Mostrar dos columnas idénticas era
- * justamente lo que parecía un error.
+ * RECIBIDO (pedido del usuario, 12-nov tarde): la hora en que la entrega
+ * quedó registrada como recibida. Cuando la marca la sincronización con
+ * SIGH coincide con la recepción (en SIGH el ingreso a bodega y el cierre
+ * del pedido son el mismo acto); cuando la marca Compras a mano, es la hora
+ * de esa marca.
  *
  * La SALIDA es la programada en el calendario: el portal no registra la
  * hora en que se va el camión.
@@ -179,6 +180,7 @@ export default function ReporteHistorialProveedoresPage() {
         Arribo: e.hora_arribo ?? '',
         'Atraso (min)': e.minutos_atraso ?? '',
         'Recepción en SIGH': e.hora_recepcion ?? '',
+        'Registrado como recibido': e.hora_entregado ?? '',
         'Espera (min)': e.minutos_espera ?? '',
         'Salida programada': e.hora_salida ?? '',
         Documento: e.nro_documento_bc ?? '',
@@ -275,8 +277,9 @@ export default function ReporteHistorialProveedoresPage() {
 
         <p className="text-xs text-brand-900/45">
           El <strong>atraso</strong> compara la hora citada con la de llegada, que marca el Guardia. La{' '}
-          <strong>recepción</strong> es la hora real del ingreso a bodega en SIGH (es también la del cierre del pedido),
-          y la <strong>espera</strong> es lo que pasó entre la llegada y la recepción. La <strong>salida</strong> es la
+          <strong>recepción</strong> es la hora real del ingreso a bodega en SIGH; <strong>recibido</strong>, la hora en que
+          quedó registrada como recibida (si la marca la sincronización con SIGH, coincide con la recepción). La{' '}
+          <strong>espera</strong> es lo que pasó entre la llegada y la recepción. La <strong>salida</strong> es la
           programada en el calendario: la hora real de salida no se registra.
         </p>
 
@@ -374,6 +377,9 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
             <th className="px-3 py-2.5 text-center">Llegó</th>
             <th className="px-3 py-2.5 text-center">Diferencia</th>
             <th className="px-3 py-2.5 text-center">Recepción</th>
+            <th className="px-3 py-2.5 text-center" title="Hora en que la entrega quedó registrada como recibida">
+              Recibido
+            </th>
             <th className="px-3 py-2.5 text-center">Espera</th>
             <th className="px-3 py-2.5 text-center" title="Salida programada en el calendario">Salida prog.</th>
             <th className="px-3 py-2.5">Estado</th>
@@ -398,6 +404,7 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
                 <td className="px-3 py-2.5 text-center tabular-nums font-medium">{e.hora_arribo ?? '—'}</td>
                 <td className={`px-3 py-2.5 text-center tabular-nums ${atraso.clase}`}>{atraso.texto}</td>
                 <td className="px-3 py-2.5 text-center tabular-nums">{e.hora_recepcion ?? '—'}</td>
+                <td className="px-3 py-2.5 text-center tabular-nums">{e.hora_entregado ?? '—'}</td>
                 <td className={`px-3 py-2.5 text-center tabular-nums ${textoEspera(e.minutos_espera).clase}`}>
                   {textoEspera(e.minutos_espera).texto}
                 </td>
