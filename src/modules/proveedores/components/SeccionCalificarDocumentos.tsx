@@ -312,11 +312,37 @@ export default function SeccionCalificarDocumentos({ idProveedor }: { idProveedo
   const documentosRechazados = todosLosDocumentos.filter(({ doc }) => doc.estado_calificacion === 'Rechazado');
 
   const registrada = data.calificacion_documentos_registrada;
+  const pendientes = data.pendientes_documentacion;
   const hayRechazados = documentosRechazados.length > 0;
 
   return (
     <div className="space-y-4">
-      {!data.documentacion_registrada && (
+      {/* Dice qué falta o qué venció de verdad, en vez de suponer que
+          faltan documentos solo porque no presionó "Registrar documentación". */}
+      {pendientes && !pendientes.al_dia && (
+        <Card className="!p-3 bg-brand-yellow/10 border-brand-yellow/30">
+          <p className="text-xs text-brand-900">
+            {[
+              pendientes.faltantes.length > 0 && `Le falta subir: ${pendientes.faltantes.join(', ')}.`,
+              pendientes.vencidos.length > 0 &&
+                `Tiene vencido: ${pendientes.vencidos.join(', ')}. Debe subir el documento renovado.`,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          </p>
+        </Card>
+      )}
+
+      {pendientes?.al_dia && !data.documentacion_registrada && (
+        <Card className="!p-3 bg-brand-yellow/10 border-brand-yellow/30">
+          <p className="text-xs text-brand-900">
+            Este proveedor ya cargó todos los documentos obligatorios, pero todavía no presionó "Registrar
+            documentación".
+          </p>
+        </Card>
+      )}
+
+      {!pendientes && !data.documentacion_registrada && (
         <Card className="!p-3 bg-brand-yellow/10 border-brand-yellow/30">
           <p className="text-xs text-brand-900">
             Este proveedor todavía no registra su documentación. Puedes revisar lo que ya cargó, pero probablemente
