@@ -175,6 +175,10 @@ function FilaDocumento({
     },
   });
 
+  // 'YYYY-MM-DD' contra la fecha local de hoy: vence hoy todavía vale.
+  const hoy = new Date().toLocaleDateString('en-CA');
+  const vencido = !!doc.fecha_caducidad && doc.fecha_caducidad < hoy;
+
   const chip =
     doc.estado_calificacion === 'Aprobado'
       ? 'bg-emerald-100 text-emerald-600'
@@ -197,7 +201,12 @@ function FilaDocumento({
             {doc.nombre_original}
           </p>
           <div className="flex items-center gap-1.5 flex-wrap mt-1">
-            {doc.fecha_caducidad && <Badge tone="info">Vence {doc.fecha_caducidad}</Badge>}
+            {doc.fecha_caducidad &&
+              (vencido ? (
+                <Badge tone="danger">Vencido el {doc.fecha_caducidad}</Badge>
+              ) : (
+                <Badge tone="info">Vence {doc.fecha_caducidad}</Badge>
+              ))}
           </div>
           {doc.fecha_subida && (
             <p className="text-[10.5px] text-brand-900/40 mt-1">
@@ -265,6 +274,9 @@ function FilaDocumento({
             fecha={doc.fecha_calificacion}
             calificando={calificar.isPending}
             soloLectura={soloLectura}
+            motivoNoAprobar={
+              vencido ? 'Documento vencido: no se puede aprobar. El proveedor debe subir el renovado.' : undefined
+            }
             onCalificar={(aprobado, observacion) => calificar.mutate({ aprobado, observacion })}
           />
         )}
