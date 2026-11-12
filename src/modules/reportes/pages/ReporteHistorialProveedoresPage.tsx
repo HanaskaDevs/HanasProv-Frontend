@@ -20,14 +20,22 @@ import type { EntregaHistorial, ResumenProveedor } from '../api/historialProveed
  * arribo y la diferencia en minutos. El resumen de arriba ordena a los
  * proveedores por atraso promedio, que es el ranking que se busca.
  *
- * POR QUÉ EL ATRASO SE MIDE SOBRE EL ARRIBO Y NO SOBRE LA RECEPCIÓN: la
- * hora de arribo la marca el Guardia cuando el camión llega, así que es
- * real. Las horas de recepción y entrega las escribe el sincronizador de
- * SIGH con la hora en que corrió el job, no con la del evento: si el job
- * se atrasa, varias entregas quedan con el mismo minuto. Por eso esas dos
- * columnas se muestran como dato informativo y el aviso lo dice en la
- * pantalla, para que nadie saque conclusiones de un número que no las
- * aguanta.
+ * LA RECEPCIÓN ES LA HORA REAL DE SIGH (12-nov-2026). Hasta ese día el
+ * sincronizador guardaba la hora en que corría, y el 12-nov todas las
+ * entregas salieron a las 11:38 (SIGH había estado caído hasta las
+ * 11:37). Ahora se guarda la hora del ingreso a bodega en SIGH y el
+ * histórico se corrigió, así que se puede medir la ESPERA: cuánto pasó
+ * desde que el proveedor llegó hasta que lo recibieron.
+ *
+ * Una sola columna de recepción y no "recepción" y "entrega": en SIGH el
+ * ingreso a bodega y el cierre del pedido son el mismo acto, así que las
+ * dos horas son siempre iguales. Mostrar dos columnas idénticas era
+ * justamente lo que parecía un error.
+ *
+ * La SALIDA es la programada en el calendario: el portal no registra la
+ * hora en que se va el camión.
+ *
+ * Acceso: Sistemas, Admin y Compras (pedido del usuario, 12-nov).
  */
 
 /** Rangos rápidos, en días. El backend topa en 3 meses. */
@@ -78,6 +86,20 @@ function fechaCorta(valor: string | null): string {
   return a && m && d ? `${d}/${m}` : valor;
 }
 
+/**
+ * La espera hasta la recepción. Negativa quiere decir que el Guardia marcó
+ * el arribo DESPUÉS de que SIGH ya lo había recibido: no es una espera, es
+ * un arribo marcado tarde, y se muestra como tal.
+ */
+function textoEspera(minutos: number | null): { texto: string; clase: string } {
+  if (minutos === null) return { texto: '—', clase: 'text-brand-900/30' };
+  if (minutos < 0) return { texto: 'arribo marcado tarde', clase: 'text-brand-900/40 italic' };
+  if (minutos < 60) return { texto: `${minutos} min`, clase: 'text-brand-900/80' };
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  return { texto: `${h} h ${m} min`, clase: minutos > 120 ? 'text-brand-wine font-medium' : 'text-amber-700' };
+}
+
 /** El atraso, en palabras y con su color. */
 function textoAtraso(minutos: number | null): { texto: string; clase: string } {
   if (minutos === null) return { texto: '—', clase: 'text-brand-900/30' };
@@ -89,8 +111,9 @@ function textoAtraso(minutos: number | null): { texto: string; clase: string } {
 
 export default function ReporteHistorialProveedoresPage() {
   // Calidad, Admin y Sistemas, igual que HistorialEntregasService.
-  const { esSistemas, esAdmin, esCalidad } = useAuth();
-  const tieneAcceso = esSistemas || esAdmin || esCalidad;
+  // Sistemas, Admin y Compras, igual que HistorialEntregasService::verificarAcceso.
+  const { esSistemas, esAdmin, esCompras } = useAuth();
+  const tieneAcceso = esSistemas || esAdmin || esCompras;
 
   const [desde, setDesde] = useState(fechaHace(30));
   const [hasta, setHasta] = useState(hoy());
@@ -136,6 +159,7 @@ export default function ReporteHistorialProveedoresPage() {
           'Sin arribo marcado': p.sin_arribo_marcado,
           'Atraso promedio (min)': p.atraso_promedio ?? '',
           'Atraso máximo (min)': p.atraso_maximo ?? '',
+          'Espera promedio hasta la recepción (min)': p.espera_promedio ?? '',
           Recibidas: p.recibidas,
         })),
         'Por proveedor',
@@ -154,8 +178,9 @@ export default function ReporteHistorialProveedoresPage() {
         Programada: e.hora_programada ?? '',
         Arribo: e.hora_arribo ?? '',
         'Atraso (min)': e.minutos_atraso ?? '',
-        'Recepción (sincronización)': e.hora_recepcion ?? '',
-        'Entrega (sincronización)': e.hora_entregado ?? '',
+        'Recepción en SIGH': e.hora_recepcion ?? '',
+        'Espera (min)': e.minutos_espera ?? '',
+        'Salida programada': e.hora_salida ?? '',
         Documento: e.nro_documento_bc ?? '',
         Estado: ESTADOS[e.estado_final].etiqueta,
       })),
@@ -248,13 +273,11 @@ export default function ReporteHistorialProveedoresPage() {
           </div>
         </Card>
 
-        {/* La hora de recepción y la de entrega no son del evento, sino del
-            job que las sincroniza: se avisa acá para que nadie mida
-            permanencia con ellas. */}
         <p className="text-xs text-brand-900/45">
-          El atraso se mide con la <strong>hora de arribo</strong>, que marca el Guardia cuando el proveedor llega. Las
-          columnas de recepción y entrega las escribe la sincronización con SIGH al momento de correr, así que sirven
-          como referencia pero no para medir cuánto duró la descarga.
+          El <strong>atraso</strong> compara la hora citada con la de llegada, que marca el Guardia. La{' '}
+          <strong>recepción</strong> es la hora real del ingreso a bodega en SIGH (es también la del cierre del pedido),
+          y la <strong>espera</strong> es lo que pasó entre la llegada y la recepción. La <strong>salida</strong> es la
+          programada en el calendario: la hora real de salida no se registra.
         </p>
 
         {consulta.isLoading ? (
@@ -293,6 +316,7 @@ function TablaPorProveedor({ filas }: { filas: ResumenProveedor[] }) {
             <th className="px-3 py-2.5 text-center">Tarde</th>
             <th className="px-3 py-2.5 text-center">Atraso promedio</th>
             <th className="px-3 py-2.5 text-center">Peor atraso</th>
+            <th className="px-3 py-2.5 text-center">Espera promedio</th>
             <th className="px-3 py-2.5 text-center">Sin arribo</th>
           </tr>
         </thead>
@@ -312,6 +336,9 @@ function TablaPorProveedor({ filas }: { filas: ResumenProveedor[] }) {
                 <td className={`px-3 py-2.5 text-center tabular-nums ${promedio.clase}`}>{promedio.texto}</td>
                 <td className="px-3 py-2.5 text-center tabular-nums text-brand-900/70">
                   {p.atraso_maximo === null ? '—' : `+${p.atraso_maximo} min`}
+                </td>
+                <td className={`px-3 py-2.5 text-center tabular-nums ${textoEspera(p.espera_promedio).clase}`}>
+                  {textoEspera(p.espera_promedio).texto}
                 </td>
                 <td className="px-3 py-2.5 text-center tabular-nums text-brand-900/40">
                   {p.sin_arribo_marcado || '—'}
@@ -347,7 +374,8 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
             <th className="px-3 py-2.5 text-center">Llegó</th>
             <th className="px-3 py-2.5 text-center">Diferencia</th>
             <th className="px-3 py-2.5 text-center">Recepción</th>
-            <th className="px-3 py-2.5 text-center">Entrega</th>
+            <th className="px-3 py-2.5 text-center">Espera</th>
+            <th className="px-3 py-2.5 text-center" title="Salida programada en el calendario">Salida prog.</th>
             <th className="px-3 py-2.5">Estado</th>
           </tr>
         </thead>
@@ -369,8 +397,11 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
                 <td className="px-3 py-2.5 text-center tabular-nums">{e.hora_programada ?? '—'}</td>
                 <td className="px-3 py-2.5 text-center tabular-nums font-medium">{e.hora_arribo ?? '—'}</td>
                 <td className={`px-3 py-2.5 text-center tabular-nums ${atraso.clase}`}>{atraso.texto}</td>
-                <td className="px-3 py-2.5 text-center tabular-nums text-brand-900/45">{e.hora_recepcion ?? '—'}</td>
-                <td className="px-3 py-2.5 text-center tabular-nums text-brand-900/45">{e.hora_entregado ?? '—'}</td>
+                <td className="px-3 py-2.5 text-center tabular-nums">{e.hora_recepcion ?? '—'}</td>
+                <td className={`px-3 py-2.5 text-center tabular-nums ${textoEspera(e.minutos_espera).clase}`}>
+                  {textoEspera(e.minutos_espera).texto}
+                </td>
+                <td className="px-3 py-2.5 text-center tabular-nums text-brand-900/45">{e.hora_salida ?? '—'}</td>
                 <td className="px-3 py-2.5">
                   <Badge tone={estado.tono}>{estado.etiqueta}</Badge>
                 </td>

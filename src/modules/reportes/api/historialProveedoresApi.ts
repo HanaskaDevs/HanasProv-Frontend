@@ -15,9 +15,17 @@ export interface EntregaHistorial {
   hora_arribo: string | null;
   /** Positivo = llegó tarde, negativo = antes, null = sin arribo marcado. */
   minutos_atraso: number | null;
-  /** Informativos: los escribe el sincronizador de SIGH con su propia hora. */
+  /** Salida PROGRAMADA del calendario. El portal no registra la salida real. */
+  hora_salida: string | null;
+  /**
+   * Hora real del ingreso a bodega en SIGH (desde el 12-nov). En SIGH el
+   * ingreso y el cierre del pedido son el mismo acto, así que
+   * hora_entregado coincide con esta.
+   */
   hora_recepcion: string | null;
   hora_entregado: string | null;
+  /** Minutos desde que llegó hasta que lo recibieron. Negativo = el arribo se marcó tarde. */
+  minutos_espera: number | null;
   nro_documento_bc: string | null;
   estado_final: 'Recibido' | 'En_Recepcion' | 'Arribo' | 'Sin_Arribo';
 }
@@ -33,6 +41,8 @@ export interface ResumenProveedor {
   atraso_promedio: number | null;
   atraso_maximo: number | null;
   recibidas: number;
+  /** Promedio de minutos entre la llegada y la recepción (solo esperas >= 0). */
+  espera_promedio: number | null;
 }
 
 export interface HistorialProveedores {

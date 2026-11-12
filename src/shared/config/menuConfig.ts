@@ -317,9 +317,9 @@ const REPORTE_HISTORIAL_RECLAMOS: SubMenuItem = {
 
 /**
  * Historial de proveedores (12-nov-2026, pedido del usuario): a qué hora
- * estaba citado cada proveedor, a qué hora llegó y cuánto se demora, con
- * hasta 3 meses de historia. Mismos roles que el resto de los reportes de
- * Calidad (ver HistorialEntregasService::verificarAcceso).
+ * estaba citado cada proveedor, a qué hora llegó, cuánto esperó hasta la
+ * recepción, con hasta 3 meses de historia. Sistemas, Admin y Compras
+ * (ver HistorialEntregasService::verificarAcceso); Calidad no.
  */
 const REPORTE_HISTORIAL_PROVEEDORES: SubMenuItem = {
   to: '/reportes/historial-proveedores',
@@ -445,10 +445,19 @@ const AREA_PROVEEDORES_COMPRAS: MenuItem = {
   children: [FICHAS_DE_PROVEEDORES_COMPRAS, PRODUCTOS_POR_REVISAR, PRODUCTOS_POR_PROVEEDOR],
 };
 
+// Compras no tenía Reportes. Gana un área propia con el Historial de
+// proveedores (12-nov-2026): la puntualidad de las entregas es seguimiento
+// suyo.
+const AREA_REPORTES_COMPRAS: MenuItem = {
+  label: 'Reportes',
+  children: [REPORTE_HISTORIAL_PROVEEDORES],
+};
+
 const MENU_COMPRAS: MenuItem[] = [
   { label: 'Inicio', to: '/panel' },
   AREA_PROVEEDORES_COMPRAS,
   AREA_OPERACION_COMPRAS,
+  AREA_REPORTES_COMPRAS,
 ];
 
 // Calidad no tenía Reportes. Se le agrega un área propia con SOLO el de
@@ -463,7 +472,6 @@ const AREA_REPORTES_CALIDAD: MenuItem = {
     REPORTE_CALIFICACION_PROVEEDORES,
     REPORTE_CADUCIDAD,
     REPORTE_HISTORIAL_RECLAMOS,
-    REPORTE_HISTORIAL_PROVEEDORES,
   ],
 };
 
