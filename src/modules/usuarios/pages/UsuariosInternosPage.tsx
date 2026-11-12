@@ -21,6 +21,7 @@ import {
   type UsuarioInterno,
 } from '../api/usuariosApi';
 import { useProcesando } from '../../../shared/components/Procesando';
+import { isAxiosError } from 'axios';
 
 function UsuariosInternosContent() {
   const [usuarios, setUsuarios] = useState<UsuarioInterno[]>([]);
@@ -36,6 +37,7 @@ function UsuariosInternosContent() {
     accion?: string;
   } | null>(null);
   const { ejecutar } = useProcesando();
+  const { usuario: yo, entrarComoUsuario } = useAuth();
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
@@ -88,6 +90,23 @@ function UsuariosInternosContent() {
       setResultadoEnvio({ resultado, idUsuario: u.id, accion: 'La cuenta quedó desbloqueada' });
       await cargar();
     } finally {
+      setProcesandoId(null);
+    }
+  }
+
+  async function entrarComo(u: UsuarioInterno) {
+    const confirmado = window.confirm(
+      `Vas a entrar al portal con la cuenta de ${u.nombre_completo} (${u.email}). ` +
+        'Lo que hagas queda hecho en su cuenta. ¿Continuar?'
+    );
+    if (!confirmado) return;
+
+    setProcesandoId(u.id);
+    try {
+      await ejecutar('Entrando con la cuenta del usuario', () => entrarComoUsuario(u.id, 'internos'), u.email);
+    } catch (error) {
+      const datos = isAxiosError(error) ? (error.response?.data as { message?: string } | undefined) : undefined;
+      window.alert(datos?.message ?? 'No se pudo entrar con la cuenta de este usuario.');
       setProcesandoId(null);
     }
   }
@@ -190,6 +209,22 @@ function UsuariosInternosContent() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
+                    {/* Nunca otro de Sistemas, la cuenta de las TVs (su pantalla no
+                        tiene "Volver a mi cuenta") ni uno mismo. El backend lo vuelve a validar. */}
+                    {u.activo &&
+                      !u.requiere_activacion &&
+                      u.rol?.nombre_rol !== 'Sistemas' &&
+                      u.rol?.nombre_rol !== 'Modo TV' &&
+                      u.id !== yo?.id && (
+                      <Button
+                        variant="ghost"
+                        className="text-xs px-2 py-1"
+                        isLoading={procesandoId === u.id}
+                        onClick={() => entrarComo(u)}
+                      >
+                        Entrar como
+                      </Button>
+                    )}
                     <Button variant="ghost" className="text-xs px-2 py-1" onClick={() => setUsuarioEditando(u.id)}>
                       Editar
                     </Button>

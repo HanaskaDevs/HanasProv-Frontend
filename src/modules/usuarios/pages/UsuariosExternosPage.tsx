@@ -50,7 +50,7 @@ function UsuariosExternosContent() {
   // Sistemas -> se necesita el rol acá dentro, no solo en el RoleRoute de
   // abajo. Ocultar el botón es comodidad: el backend igual rechaza a quien
   // no sea Sistemas (ver UsuarioService::crearUsuariosProveedorEnLote).
-  const { esSistemas, esAdmin, entrarComoProveedor } = useAuth();
+  const { esSistemas, esAdmin, entrarComoUsuario } = useAuth();
 
   const [usuarios, setUsuarios] = useState<UsuarioExterno[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,7 +178,7 @@ function UsuariosExternosContent() {
 
     setProcesandoId(u.id);
     try {
-      await ejecutar('Entrando con la cuenta del proveedor', () => entrarComoProveedor(u.id), u.email);
+      await ejecutar('Entrando con la cuenta del proveedor', () => entrarComoUsuario(u.id, 'externos'), u.email);
     } catch (error) {
       const datos = isAxiosError(error) ? (error.response?.data as { message?: string } | undefined) : undefined;
       window.alert(datos?.message ?? 'No se pudo entrar con la cuenta de este proveedor.');

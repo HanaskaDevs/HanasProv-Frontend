@@ -3,7 +3,7 @@ import { useAuth } from '../../modules/auth/hooks/useAuth';
 
 /**
  * Franja fija arriba de todo mientras Sistemas está dentro de la cuenta de
- * un proveedor ("Entrar como proveedor"), para que nunca se le olvide en
+ * otro usuario ("Entrar como este usuario"), para que nunca se le olvide en
  * qué cuenta está ni haga algo creyendo que es la suya.
  */
 export default function AvisoSuplantacion() {

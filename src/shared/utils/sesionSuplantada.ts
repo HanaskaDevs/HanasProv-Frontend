@@ -1,6 +1,6 @@
 /**
- * "Entrar como proveedor" (12-nov-2026): Sistemas usa un token del
- * proveedor SOLO en esta pestaña.
+ * "Entrar como este usuario" (12-nov-2026): Sistemas usa un token de un
+ * proveedor o de un usuario interno SOLO en esta pestaña.
  *
  * El token propio de Sistemas sigue en localStorage, intacto; el del
  * proveedor va en sessionStorage, que es de esta pestaña. Así las otras
@@ -11,6 +11,7 @@
  * apiClient lo importa, y si viviera en useAuth se formaría un ciclo.
  */
 const CLAVE = 'token_suplantacion';
+const CLAVE_RUTA = 'ruta_al_volver_suplantacion';
 
 export function leerTokenSuplantacion(): string | null {
   try {
@@ -20,9 +21,10 @@ export function leerTokenSuplantacion(): string | null {
   }
 }
 
-export function guardarTokenSuplantacion(token: string): void {
+export function guardarTokenSuplantacion(token: string, rutaAlVolver: string): void {
   try {
     sessionStorage.setItem(CLAVE, token);
+    sessionStorage.setItem(CLAVE_RUTA, rutaAlVolver);
   } catch {
     // Sin sessionStorage no se puede entrar como proveedor sin pisar la
     // sesión propia: mejor que no pase nada.
@@ -32,6 +34,7 @@ export function guardarTokenSuplantacion(token: string): void {
 export function olvidarTokenSuplantacion(): void {
   try {
     sessionStorage.removeItem(CLAVE);
+    sessionStorage.removeItem(CLAVE_RUTA);
   } catch {
     // nada que borrar
   }
@@ -42,5 +45,11 @@ export function tokenDeEstaPestana(): string | null {
   return leerTokenSuplantacion() ?? localStorage.getItem('token');
 }
 
-/** A dónde vuelve Sistemas al salir de la cuenta del proveedor. */
-export const RUTA_AL_VOLVER = '/usuarios/proveedores';
+/** La lista de la que salió Sistemas (proveedores o internos); se lee ANTES de olvidar el token. */
+export function rutaAlVolver(): string {
+  try {
+    return sessionStorage.getItem(CLAVE_RUTA) ?? '/usuarios/proveedores';
+  } catch {
+    return '/usuarios/proveedores';
+  }
+}

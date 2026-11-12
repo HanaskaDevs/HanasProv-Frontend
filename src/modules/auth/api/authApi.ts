@@ -27,9 +27,9 @@ export async function logout(): Promise<void> {
   await apiClient.post('/auth/logout');
 }
 
-/** Sistemas: token de un usuario proveedor, sin su contraseña ("Entrar como proveedor"). */
-export async function suplantar(idUsuario: number): Promise<LoginResponse> {
-  const { data } = await apiClient.post<LoginResponse>(`/usuarios/externos/${idUsuario}/suplantar`);
+/** Sistemas: token de un proveedor o un interno, sin su contraseña ("Entrar como este usuario"). */
+export async function suplantar(idUsuario: number, tipo: 'externos' | 'internos'): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>(`/usuarios/${tipo}/${idUsuario}/suplantar`);
   return data;
 }
 
