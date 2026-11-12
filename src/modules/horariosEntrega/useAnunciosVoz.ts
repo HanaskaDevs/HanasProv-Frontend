@@ -3,9 +3,13 @@ import type { EstadoHorario, HorarioHoy } from './types';
 import {
   MENSAJES_POR_ESTADO,
   anunciar,
+  audioRetenidoPorElNavegador,
   cancelarTodo,
+  destrabarAudio,
   normalizarNombreParaVoz,
   precalentarVoces,
+  probarSonido,
+  reproducirCampanita,
   soportaVoz,
 } from './anunciosVoz';
 
@@ -72,6 +76,19 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     return () => cancelarTodo();
   }, []);
 
+  // Si el navegador retiene el audio desde el arranque (TV que abre el Modo
+  // TV sola), el aviso sale ya, no recién al perder el primer anuncio.
+  useEffect(() => {
+    if (!vozActiva) return;
+    let vigente = true;
+    void audioRetenidoPorElNavegador().then((retenido) => {
+      if (vigente && retenido) setAudioBloqueado(true);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [vozActiva]);
+
   useEffect(() => {
     const filas = filasRef.current;
 
@@ -116,6 +133,19 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     anunciar(frases, { alBloquearse: () => setAudioBloqueado(true) });
   }, [firma]);
 
+  // El PRIMER gesto sobre la pantalla destraba el audio aunque todavía no
+  // se haya detectado ningún bloqueo: en Safari de iPhone la voz no avisa
+  // que está bloqueada, solo no suena.
+  useEffect(() => {
+    const eventos: (keyof DocumentEventMap)[] = ['click', 'keydown', 'touchstart'];
+    function alPrimerGesto() {
+      destrabarAudio();
+      eventos.forEach((e) => document.removeEventListener(e, alPrimerGesto));
+    }
+    eventos.forEach((e) => document.addEventListener(e, alPrimerGesto));
+    return () => eventos.forEach((e) => document.removeEventListener(e, alPrimerGesto));
+  }, []);
+
   // Cualquier gesto sobre la pantalla habilita el audio en el navegador.
   // Se escucha siempre (no solo cuando ya falló) porque el bloqueo se
   // detecta recién al intentar hablar, y para entonces ese anuncio ya se
@@ -124,6 +154,12 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     if (!audioBloqueado) return;
 
     function destrabar() {
+      // Dentro del gesto: es el único momento en que el navegador deja
+      // reanudar el audio.
+      destrabarAudio();
+      // El din-don en el acto: quien apretó OK en la TV confirma ahí mismo
+      // que el sonido funciona, sin esperar a que cambie algún proveedor.
+      void reproducirCampanita();
       setAudioBloqueado(false);
     }
 
@@ -133,5 +169,10 @@ export function useAnunciosVoz(filasDelDia: HorarioHoy[], vozActiva: boolean) {
     return () => eventos.forEach((e) => document.removeEventListener(e, destrabar));
   }, [audioBloqueado]);
 
-  return { audioBloqueado };
+  function probar() {
+    setAudioBloqueado(false);
+    probarSonido({ alBloquearse: () => setAudioBloqueado(true) });
+  }
+
+  return { audioBloqueado, probarSonido: probar };
 }

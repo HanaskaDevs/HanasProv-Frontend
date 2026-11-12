@@ -60,6 +60,19 @@ export async function obtenerConfigAnuncios(): Promise<{ voz_activa: boolean }> 
   return data;
 }
 
+/**
+ * Audio (WAV) de una frase de anuncio, generado en el servidor con Piper:
+ * para los navegadores sin voz propia, como el de las Smart TV (ver
+ * anunciosVoz.ts).
+ */
+export async function obtenerAudioAnuncio(texto: string): Promise<ArrayBuffer> {
+  const { data } = await apiClient.get<ArrayBuffer>('/horarios-entrega/anuncio-audio', {
+    params: { texto },
+    responseType: 'arraybuffer',
+  });
+  return data;
+}
+
 /** Pedidos que ese proveedor debe entregar hoy (modal de seguimiento). */
 export async function pedidosDelDia(id: number): Promise<PedidoDelDia[]> {
   const { data } = await apiClient.get<PedidoDelDia[]>(`/horarios-entrega/${id}/pedidos-del-dia`);
