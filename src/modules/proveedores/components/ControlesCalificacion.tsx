@@ -39,6 +39,12 @@ interface ControlesCalificacionProps {
   soloLectura?: boolean;
   /** Si viene, no se puede aprobar (ej. documento vencido): el ✓ queda desactivado y se muestra este motivo. Rechazar sí se puede. */
   motivoNoAprobar?: string;
+  /**
+   * Tope de caracteres del motivo de rechazo. Si viene, el cuadro no deja
+   * escribir más y muestra un contador. Debe coincidir con la validación
+   * del backend y con el tamaño de la columna (documentos: 250, 13-nov-2026).
+   */
+  maxCaracteres?: number;
 }
 
 /**
@@ -56,6 +62,7 @@ export default function ControlesCalificacion({
   compacto = false,
   soloLectura = false,
   motivoNoAprobar,
+  maxCaracteres,
 }: ControlesCalificacionProps) {
   const [modoRechazo, setModoRechazo] = useState(false);
   const [modoRecalificar, setModoRecalificar] = useState(false);
@@ -117,9 +124,19 @@ export default function ControlesCalificacion({
           onChange={(e) => setTextoObservacion(e.target.value)}
           placeholder="Observación para el proveedor (obligatoria al rechazar)"
           rows={2}
+          maxLength={maxCaracteres}
           className="w-full rounded-md border border-brand-900/20 px-2 py-1.5 text-xs text-brand-900
             focus:outline-none focus:ring-2 focus:ring-brand-700"
         />
+        {maxCaracteres && (
+          <p
+            className={`text-right text-[10.5px] ${
+              textoObservacion.length >= maxCaracteres ? 'text-brand-wine' : 'text-brand-900/40'
+            }`}
+          >
+            {textoObservacion.length} / {maxCaracteres}
+          </p>
+        )}
         <div className="flex gap-2">
           <Button
             variant="danger"

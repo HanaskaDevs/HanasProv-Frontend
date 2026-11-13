@@ -13,6 +13,15 @@ import Spinner from '../../../shared/components/Spinner';
 import Modal from '../../../shared/components/Modal';
 import { mensajeDeError } from '../../miFicha/utils/mensajeDeError';
 
+/**
+ * Tope del motivo de rechazo de un documento (13-nov-2026, pedido del
+ * usuario). Hasta ese día la columna guardaba 50 y la pantalla no ponía
+ * límite: un motivo más largo no se guardaba. Tiene que coincidir con
+ * CalificarRequest::MAX_MOTIVO_DOCUMENTO del backend y con la columna
+ * Documento_Proveedor.Comentario_Calificacion.
+ */
+const MAX_MOTIVO_RECHAZO_DOCUMENTO = 250;
+
 function IconoDocumento({ className = '' }: { className?: string }) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -274,6 +283,7 @@ function FilaDocumento({
             fecha={doc.fecha_calificacion}
             calificando={calificar.isPending}
             soloLectura={soloLectura}
+            maxCaracteres={MAX_MOTIVO_RECHAZO_DOCUMENTO}
             motivoNoAprobar={
               vencido ? 'Documento vencido: no se puede aprobar. El proveedor debe subir el renovado.' : undefined
             }
