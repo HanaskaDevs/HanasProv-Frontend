@@ -102,6 +102,14 @@ export interface Producto {
    * decirle al proveedor quién se lo devolvió.
    */
   etapa_aprobacion: 'Compras' | 'Calidad' | null;
+  /** Código de Business Central del producto; null si es nuevo (13-nov-2026). */
+  bc_nro_producto?: string | null;
+  /**
+   * Quién revisa el PRIMER paso (13-nov-2026): con código BC, Catálogo; sin
+   * código -producto nuevo-, Compras. La etapa en la base sigue llamándose
+   * 'Compras'; esto dice quién se sienta en ese escritorio.
+   */
+  revisa_primer_paso?: 'Compras' | 'Catálogo';
   /** Solo viene en la bandeja de Compras, que lista varios proveedores. */
   proveedor?: {
     id_proveedor: number;

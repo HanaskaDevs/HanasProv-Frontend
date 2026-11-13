@@ -81,7 +81,11 @@ export function BadgeCalificacion({ producto }: { producto: Producto }) {
         className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap"
         // Quién lo devolvió. Antes decía solo "Por corregir" y el proveedor
         // no tenía a quién preguntarle.
-        title={producto.etapa_aprobacion ? `Devuelto por ${producto.etapa_aprobacion}` : undefined}
+        title={
+          producto.etapa_aprobacion
+            ? `Devuelto por ${producto.etapa_aprobacion === 'Compras' ? (producto.revisa_primer_paso ?? 'Compras') : producto.etapa_aprobacion}`
+            : undefined
+        }
       >
         Por corregir
       </span>
@@ -93,8 +97,10 @@ export function BadgeCalificacion({ producto }: { producto: Producto }) {
     // así que se nombra el escritorio donde está parado: el proveedor sabe
     // cuánto le falta y a quién corresponde preguntarle.
     const dondeEsta =
+      // El primer paso lo revisa Compras o Catálogo según el producto
+      // tenga código de Business Central (13-nov-2026).
       producto.etapa_aprobacion === 'Compras'
-        ? 'Revisando Compras'
+        ? `Revisando ${producto.revisa_primer_paso ?? 'Compras'}`
         : producto.etapa_aprobacion === 'Calidad'
           ? 'Revisando Calidad'
           : 'En revisión';

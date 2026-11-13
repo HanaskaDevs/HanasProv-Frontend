@@ -38,6 +38,11 @@ function nombreProveedor(producto: Producto): string {
  * Para CORREGIR los datos del producto (nombre, medidas, grupos) se usa
  * "Productos por proveedor", que ya existía: acá se decide, allá se edita.
  *
+ * QUIÉN DECIDE (13-nov-2026, pedido del usuario): el producto con código
+ * de Business Central lo revisa CATÁLOGO; el nuevo, sin código, COMPRAS.
+ * Cada uno ve en esta bandeja solo lo suyo (lo filtra el backend) y Admin,
+ * Sistemas y Calidad ven y resuelven todo. Cada fila dice a quién espera.
+ *
  * SELECCIÓN MÚLTIPLE (14-oct-2026): se pueden marcar varios y aprobarlos
  * de una vez. A Calidad le llega UN correo por proveedor con todo lo que
  * ese proveedor tiene pendiente, no uno por producto. Devolver y Retirar
@@ -45,9 +50,12 @@ function nombreProveedor(producto: Producto): string {
  */
 function RevisionComprasContenido() {
   const queryClient = useQueryClient();
-  // Catálogo (29-oct-2026) ve la bandeja pero no aprueba, devuelve ni
-  // retira: eso es de Compras y Calidad (el backend lo frena igual).
-  const { esCatalogo: soloVer } = useAuth();
+  // Quién resuelve cada producto (13-nov-2026): con código BC, Catálogo;
+  // sin código, Compras; Admin, Sistemas y Calidad, cualquiera. El backend
+  // lo exige igual (RevisionComprasProductoService::puedeResolver).
+  const { esCompras, esCatalogo, esAdmin, esSistemas, esCalidad } = useAuth();
+  const puedeResolver = (p: Producto) =>
+    esAdmin || esSistemas || esCalidad || ((p.revisa_primer_paso ?? 'Compras') === 'Catálogo' ? esCatalogo : esCompras);
   const [busqueda, setBusqueda] = useState('');
   const [idAbierto, setIdAbierto] = useState<number | null>(null);
   const [motivoPara, setMotivoPara] = useState<{ producto: Producto; accion: 'rechazar' | 'eliminar' } | null>(null);
@@ -110,7 +118,8 @@ function RevisionComprasContenido() {
       (p) =>
         p.nombre_producto.toLowerCase().includes(texto) ||
         nombreProveedor(p).toLowerCase().includes(texto) ||
-        (p.codigo_barras ?? '').toLowerCase().includes(texto)
+        (p.codigo_barras ?? '').toLowerCase().includes(texto) ||
+        (p.bc_nro_producto ?? '').toLowerCase().includes(texto)
     );
   }, [productos, busqueda]);
 
@@ -224,15 +233,16 @@ function RevisionComprasContenido() {
         </Card>
       ) : (
         porProveedor.map(([proveedor, items]) => {
-          const idsDelProveedor = items.map((p) => p.id_producto);
+          // Solo se seleccionan los que este usuario puede resolver.
+          const idsDelProveedor = items.filter(puedeResolver).map((p) => p.id_producto);
           const marcados = idsDelProveedor.filter((id) => seleccionados.has(id)).length;
-          const todos = marcados === idsDelProveedor.length;
+          const todos = idsDelProveedor.length > 0 && marcados === idsDelProveedor.length;
 
           return (
             <Card key={proveedor} className="overflow-hidden p-0">
               <div className="flex items-center justify-between gap-2 border-b border-brand-900/8 bg-brand-900/[0.015] px-4 py-2.5">
                 <label className="flex min-w-0 cursor-pointer items-center gap-3">
-                  {!soloVer && (
+                  {idsDelProveedor.length > 0 && (
                     <input
                       type="checkbox"
                       checked={todos}
@@ -267,7 +277,7 @@ function RevisionComprasContenido() {
                         marcado ? 'bg-brand-yellow/[0.12]' : ''
                       }`}
                     >
-                      {!soloVer && (
+                      {puedeResolver(producto) && (
                         <input
                           type="checkbox"
                           checked={marcado}
@@ -301,13 +311,14 @@ function RevisionComprasContenido() {
                           ))}
                         </div>
                         <p className="text-[12px] text-brand-900/50 truncate">
+                          {producto.bc_nro_producto ? `Código BC ${producto.bc_nro_producto} · ` : 'Producto nuevo · '}
                           {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
                           {producto.precio != null && ` · $${producto.precio}`}
                           {` · ${producto.documentos.length} documento${producto.documentos.length === 1 ? '' : 's'}`}
                         </p>
                       </div>
 
-                      <Badge tone="neutral">Esperando a Compras</Badge>
+                      <Badge tone="neutral">Esperando a {producto.revisa_primer_paso ?? 'Compras'}</Badge>
 
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
@@ -316,7 +327,7 @@ function RevisionComprasContenido() {
                         >
                           Ver documentos
                         </button>
-                        {!soloVer && (
+                        {puedeResolver(producto) && (
                         <>
                         <Button
                           className="!text-[12px] !px-2.5 !py-1"
@@ -361,7 +372,8 @@ function RevisionComprasContenido() {
           onConfirmarCorreccion={() => setIdAbierto(null)}
           confirmandoCorreccion={false}
           idProveedor={productoAbierto.proveedor?.id_proveedor}
-          soloLectura={soloVer}
+          // Catálogo no sube ni cambia documentos (solo datos del producto).
+          soloLectura={esCatalogo && !esAdmin && !esSistemas && !esCalidad && !esCompras}
         />
       )}
 
