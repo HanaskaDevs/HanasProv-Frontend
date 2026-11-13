@@ -6,6 +6,7 @@ import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './modules/auth/hooks/useAuth';
 import { ProcesandoProvider } from './shared/components/Procesando';
+import PantallaErrorCarga from './shared/components/PantallaErrorCarga';
 import 'leaflet/dist/leaflet.css';
 import { iniciarActualizacionesApp } from './shared/utils/actualizacionApp';
 
@@ -45,7 +46,11 @@ createRoot(document.getElementById('root')!).render(
           {/* La pantalla "procesando" con el logo, para las acciones que
               tardan. Va dentro de todo para que cualquier pantalla la use. */}
           <ProcesandoProvider>
-            <App />
+            {/* Si algo falla al dibujar, aviso con botón "Recargar" en vez
+                de pantalla en blanco (ver PantallaErrorCarga). */}
+            <PantallaErrorCarga>
+              <App />
+            </PantallaErrorCarga>
           </ProcesandoProvider>
         </AuthProvider>
       </BrowserRouter>

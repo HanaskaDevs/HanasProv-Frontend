@@ -28,12 +28,22 @@ import { lazy, type ComponentType } from 'react';
  *
  * Es `sessionStorage` y no `localStorage` a propósito: la marca vale para
  * ESTA pestaña y no tiene por qué sobrevivir a cerrarla.
+ *
+ * LA MARCA CADUCA (13-nov-2026). Antes no caducaba: si tras recargar la
+ * persona caía en el login o la landing (que no son lazy), ningún chunk
+ * "cargaba bien", la marca quedaba puesta para siempre en esa pestaña, y
+ * en el SIGUIENTE despliegue ya no se recargaba y la pantalla quedaba en
+ * blanco (visto en producción el 13-nov con PedidosPage). Un bucle real
+ * ocurre en segundos; una marca de hace más de SEGUNDOS_VIGENCIA_MARCA es
+ * de otro despliegue y no debe impedir la recarga.
  */
 const CLAVE_RECARGA = 'portal:recarga-por-chunk-viejo';
+const SEGUNDOS_VIGENCIA_MARCA = 30;
 
 function marcarIntento(): boolean {
   try {
-    if (sessionStorage.getItem(CLAVE_RECARGA)) return false;
+    const marca = Number(sessionStorage.getItem(CLAVE_RECARGA) ?? 0);
+    if (marca && Date.now() - marca < SEGUNDOS_VIGENCIA_MARCA * 1000) return false;
     sessionStorage.setItem(CLAVE_RECARGA, String(Date.now()));
     return true;
   } catch {
