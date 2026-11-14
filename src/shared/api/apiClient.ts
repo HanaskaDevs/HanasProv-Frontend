@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { leerEmpresaDePestana } from '../utils/empresaPestana';
+import { guardarRutaPendiente } from '../utils/rutaPendiente';
 import {
   leerTokenSuplantacion,
   olvidarTokenSuplantacion,
@@ -58,6 +59,7 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      guardarRutaPendiente(window.location.pathname + window.location.search);
       window.location.href = '/login';
     }
 

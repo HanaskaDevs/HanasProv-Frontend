@@ -12,6 +12,7 @@ import PanelSistemas from '../components/PanelSistemas';
 import PanelCalidad from '../components/PanelCalidad';
 import * as fichaApi from '../../miFicha/api/fichaApi';
 import { useModoNavideno } from '../../../shared/hooks/useModoNavideno';
+import TarjetaAprobacionesPendientes from '../../horariosEntrega/components/TarjetaAprobacionesPendientes';
 
 export default function DashboardHomePage() {
   const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esCalidad, esGuardia, esCatalogo } = useAuth();
@@ -109,6 +110,9 @@ export default function DashboardHomePage() {
           </div>
         )}
       </div>
+
+      {/* Arribos tardíos por aprobar: quien los resuelve y Sistemas (14-nov-2026). */}
+      {!esProveedor && (esSistemas || usuario?.resuelve_aprobaciones_arribo) && <TarjetaAprobacionesPendientes />}
 
       {esProveedor ? (
         esAspirante ? <PanelAspirante /> : <PanelProveedor />
