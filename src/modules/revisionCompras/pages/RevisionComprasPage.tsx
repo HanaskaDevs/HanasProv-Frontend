@@ -11,9 +11,12 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import * as productosApi from '../../fichaProductos/api/productosApi';
 import ModalDocumentosProducto from '../../fichaProductos/components/ModalDocumentosProducto';
 import ModalMotivoRevision from '../components/ModalMotivoRevision';
+import ModalSubirExcelCatalogo from '../components/ModalSubirExcelCatalogo';
+import { descargarExcelRevision } from '../utils/excelRevisionCatalogo';
 import type { Producto } from '../../fichaProductos/types';
 import { etiquetaClasificacion } from '../../fichaProductos/types';
 import { nombreVisibleProveedor } from '../../proveedores/types';
+import { formatearPrecio } from '../../../shared/utils/formatoPrecio';
 
 // Razón social, como en todo el portal (ver nombreVisibleProveedor).
 function nombreProveedor(producto: Producto): string {
@@ -62,6 +65,48 @@ function RevisionComprasContenido() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [seleccionados, setSeleccionados] = useState<Set<number>>(() => new Set());
+
+  /*
+   * EXCEL DE CATÁLOGO (18-nov-2026, pedido del usuario): descargar todo lo
+   * que espera a Catálogo, corregirlo en el archivo y volver a subirlo. Solo
+   * actualiza los datos; los productos siguen en esta bandeja. Lo usan
+   * Catálogo, Admin y Sistemas (el backend lo exige igual, ver
+   * RevisionCatalogoExcelService::verificarAcceso).
+   */
+  const usaExcelDeCatalogo = esCatalogo || esAdmin || esSistemas;
+  const [descargandoExcel, setDescargandoExcel] = useState(false);
+  const [subiendoExcel, setSubiendoExcel] = useState(false);
+
+  async function descargarExcel() {
+    setDescargandoExcel(true);
+    setError(null);
+    setAviso(null);
+
+    try {
+      // Se descarga TODO lo que espera a Catálogo, no lo que deja ver el
+      // buscador: es el archivo de trabajo completo del área.
+      const { filas, valores_validos } = await productosApi.exportarEsperandoCatalogo();
+
+      if (filas.length === 0) {
+        setAviso('No hay productos esperando a Catálogo: no hay nada que descargar.');
+        return;
+      }
+
+      await descargarExcelRevision(filas, valores_validos);
+    } catch (e) {
+      alFallar(e);
+    } finally {
+      setDescargandoExcel(false);
+    }
+  }
+
+  function alSubirExcel() {
+    // Los datos cambiaron en la bandeja, en la lista del proveedor y en el
+    // Catálogo de productos: las tres muestran el mismo producto.
+    queryClient.invalidateQueries({ queryKey: ['productos-en-revision'] });
+    queryClient.invalidateQueries({ queryKey: ['mis-productos'] });
+    queryClient.invalidateQueries({ queryKey: ['catalogo-productos'] });
+  }
 
   const { data: productos = [], isLoading } = useQuery({
     queryKey: ['productos-en-revision'],
@@ -160,19 +205,35 @@ function RevisionComprasContenido() {
 
   return (
     <div className="max-w-6xl mx-auto w-full space-y-4">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-brand-900 flex items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700">
-            <path d="M9 11l3 3L22 4" />
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-          </svg>
-          Productos por revisar
-        </h1>
-        <p className="text-brand-900/50 text-xs mt-0.5">
-          {productos.length === 0
-            ? 'No hay productos esperando revisión.'
-            : `${productos.length} producto${productos.length === 1 ? '' : 's'} esperando tu revisión antes de pasar a Calidad.`}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-xl font-semibold text-brand-900 flex items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            Productos por revisar
+          </h1>
+          <p className="text-brand-900/50 text-xs mt-0.5">
+            {productos.length === 0
+              ? 'No hay productos esperando revisión.'
+              : `${productos.length} producto${productos.length === 1 ? '' : 's'} esperando tu revisión antes de pasar a Calidad.`}
+          </p>
+        </div>
+
+        {usaExcelDeCatalogo && (
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" className="!text-xs !px-3 !py-1.5" onClick={descargarExcel} isLoading={descargandoExcel}>
+                Descargar Excel
+              </Button>
+              <Button className="!text-xs !px-3 !py-1.5" onClick={() => setSubiendoExcel(true)}>
+                Subir Excel
+              </Button>
+            </div>
+            <p className="text-[12px] text-brand-900/45">Productos que esperan a Catálogo, con su proveedor y sus datos.</p>
+          </div>
+        )}
       </div>
 
       {aviso && (
@@ -313,7 +374,7 @@ function RevisionComprasContenido() {
                         <p className="text-[12px] text-brand-900/50 truncate">
                           {producto.bc_nro_producto ? `Código BC ${producto.bc_nro_producto} · ` : 'Producto nuevo · '}
                           {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
-                          {producto.precio != null && ` · $${producto.precio}`}
+                          {producto.precio != null && ` · $${formatearPrecio(producto.precio)}`}
                           {` · ${producto.documentos.length} documento${producto.documentos.length === 1 ? '' : 's'}`}
                         </p>
                       </div>
@@ -375,6 +436,10 @@ function RevisionComprasContenido() {
           // Catálogo no sube ni cambia documentos (solo datos del producto).
           soloLectura={esCatalogo && !esAdmin && !esSistemas && !esCalidad && !esCompras}
         />
+      )}
+
+      {subiendoExcel && (
+        <ModalSubirExcelCatalogo onClose={() => setSubiendoExcel(false)} onImportado={alSubirExcel} />
       )}
 
       {motivoPara && (

@@ -10,6 +10,11 @@ import type {
   TipoDocumentoProducto,
   UnidadPresentacion,
 } from '../types';
+import type {
+  ExportacionRevisionCatalogo,
+  FilaImportacionRevision,
+  ReporteImportacionRevision,
+} from '../../revisionCompras/types';
 
 export interface RespuestaPaginada<T> {
   data: T[];
@@ -290,5 +295,33 @@ export async function rechazarEnCompras(idProducto: number, observacion: string)
 
 export async function eliminarEnCompras(idProducto: number, observacion: string): Promise<{ message: string }> {
   const { data } = await apiClient.post(`/productos-revision/${idProducto}/eliminar`, { observacion });
+  return data;
+}
+
+/* -------------------------------------------------------------------------
+ * Excel de lo que espera a CATÁLOGO (18-nov-2026).
+ *
+ * Catálogo descarga todos los productos que le esperan en "Productos por
+ * revisar", los corrige en el archivo y vuelve a subirlo. Solo actualiza
+ * datos: el producto sigue esperando a Catálogo. Lo usan Catálogo, Admin y
+ * Sistemas (lo valida RevisionCatalogoExcelService en el backend).
+ *
+ * El .xlsx se arma y se lee en el navegador (ver
+ * revisionCompras/utils/excelRevisionCatalogo.ts): acá solo viajan filas.
+ * ------------------------------------------------------------------------- */
+export async function exportarEsperandoCatalogo(): Promise<ExportacionRevisionCatalogo> {
+  const { data } = await apiClient.get<ExportacionRevisionCatalogo>('/productos-revision/catalogo/exportar');
+  return data;
+}
+
+/** Paso 1: el reporte de qué cambiaría, sin guardar nada. */
+export async function validarExcelCatalogo(filas: FilaImportacionRevision[]): Promise<ReporteImportacionRevision> {
+  const { data } = await apiClient.post<ReporteImportacionRevision>('/productos-revision/catalogo/importar/validar', { filas });
+  return data;
+}
+
+/** Paso 2: guarda las filas válidas y descarta las que tienen error. */
+export async function importarExcelCatalogo(filas: FilaImportacionRevision[]): Promise<ReporteImportacionRevision> {
+  const { data } = await apiClient.post<ReporteImportacionRevision>('/productos-revision/catalogo/importar', { filas });
   return data;
 }
