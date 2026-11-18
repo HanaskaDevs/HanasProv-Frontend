@@ -13,6 +13,7 @@ import Spinner from '../../../shared/components/Spinner';
 import Modal from '../../../shared/components/Modal';
 import { etiquetaClasificacion } from '../../fichaProductos/types';
 import { mensajeDeError } from '../../miFicha/utils/mensajeDeError';
+import { formatearPrecio } from '../../../shared/utils/formatoPrecio';
 
 function IconoCaja({ className = '' }: { className?: string }) {
   return (
@@ -234,7 +235,7 @@ function TarjetaProducto({
             {/* La categoría primero: en Fruver la Notificación sanitaria es opcional. */}
             {producto.oculto_proveedor && 'Oculto al proveedor · '}
             {etiquetaClasificacion(producto.clasificacion) ?? 'Sin categoría'} · {producto.unidad_presentacion ?? '—'}
-            {producto.precio && ` · $${producto.precio}`}
+            {producto.precio && ` · $${formatearPrecio(producto.precio)}`}
             {producto.codigo_barras && ` · ${producto.codigo_barras}`}
           </p>
         </div>

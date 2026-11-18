@@ -12,6 +12,7 @@ import Modal from '../../../shared/components/Modal';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
 import SelectorGruposProducto from './SelectorGruposProducto';
+import { PASO_PRECIO, formatearPrecio, tieneDecimalesDePrecio } from '../../../shared/utils/formatoPrecio';
 
 /**
  * Un campo numérico vacío es "no lo sé", no "cero".
@@ -47,7 +48,12 @@ const schema = z.object({
   nombre_producto: z.string().min(1, 'El nombre es requerido'),
   codigo_barras: z.string().optional(),
   id_unidad_presentacion: z.coerce.number().min(1, 'Selecciona una unidad'),
-  precio: numeroOpcional('El precio debe ser positivo'),
+  // Hasta 4 decimales (18-nov-2026). El backend lo valida igual
+  // (GuardarProductoRequest); esto solo evita el viaje al servidor.
+  precio: numeroOpcional('El precio debe ser positivo').refine(
+    (valor) => valor === undefined || tieneDecimalesDePrecio(valor as number),
+    'El precio admite hasta 4 decimales'
+  ),
   peso: numeroOpcional('El peso debe ser positivo'),
   // "Unidades x Masterpack (caja)" en pantalla; el nombre del campo sigue
   // siendo el histórico para no migrar la columna ni los 300 productos ya
@@ -229,7 +235,8 @@ export default function ModalProducto({
           nombre_producto: producto.nombre_producto,
           codigo_barras: producto.codigo_barras ?? '',
           id_unidad_presentacion: producto.id_unidad_presentacion,
-          precio: producto.precio ?? '',
+          // Sin los ceros de relleno: el backend manda "5.0000".
+          precio: formatearPrecio(producto.precio),
           peso: producto.peso ?? '',
           unidad_por_caja: producto.unidad_por_caja ?? '',
           contenido_paquete: producto.contenido_paquete ?? '',
@@ -412,7 +419,7 @@ export default function ModalProducto({
                 label="Precio"
                 sufijo="USD"
                 type="number"
-                step="0.01"
+                step={PASO_PRECIO}
                 disabled={precioBloqueado}
                 {...register('precio')}
                 error={errors.precio?.message}

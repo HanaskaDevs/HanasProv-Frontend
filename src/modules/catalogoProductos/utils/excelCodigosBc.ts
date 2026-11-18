@@ -1,6 +1,7 @@
 // src/modules/catalogoProductos/utils/excelCodigosBc.ts
 import type { WorkBook } from 'xlsx';
 import type { FilaImportacion, ProductoCatalogo } from '../types';
+import { formatearPrecio } from '../../../shared/utils/formatoPrecio';
 
 /**
  * Genera y lee el Excel de códigos BC. Todo pasa en el navegador (nunca
@@ -79,7 +80,7 @@ export async function descargarExcelCatalogo(
       f.nombre_producto ?? '',
       f.codigo_barras ?? '',
       f.unidad_presentacion ?? '',
-      f.precio !== null && f.precio !== undefined ? String(f.precio) : '',
+      formatearPrecio(f.precio),
       f.estado_calificacion ?? '',
       f.razon_social ?? '',
       f.ruc ?? '',

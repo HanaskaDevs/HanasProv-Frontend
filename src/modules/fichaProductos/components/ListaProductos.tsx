@@ -21,6 +21,7 @@ import ModalDocumentosProducto, {
 } from './ModalDocumentosProducto';
 import Modal from '../../../shared/components/Modal';
 import { etiquetaClasificacion } from '../types';
+import { formatearPrecio } from '../../../shared/utils/formatoPrecio';
 
 // Mismo molde de columnas para el encabezado y cada fila -> como cada
 // fila es su propio contenedor grid (no comparten una sola tabla), la
@@ -198,7 +199,7 @@ function FilaProducto({
         <p className="text-[12px] text-brand-900/50 truncate flex items-center gap-1">
           <span>
             {producto.codigo_barras ?? 'Sin código de barras'} · {producto.unidad_presentacion}
-            {producto.precio != null && ` · $${producto.precio}`}
+            {producto.precio != null && ` · $${formatearPrecio(producto.precio)}`}
           </span>
           {producto.precio_en_revision && (
             <span

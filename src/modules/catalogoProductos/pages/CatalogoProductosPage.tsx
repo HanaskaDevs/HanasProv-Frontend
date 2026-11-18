@@ -11,6 +11,7 @@ import BarraBusqueda from '../../../shared/components/BarraBusqueda';
 import SelectFiltro from '../../../shared/components/SelectFiltro';
 import Paginacion from '../../../shared/components/Paginacion';
 import useDebounce from '../../../shared/hooks/useDebounce';
+import { formatearPrecio } from '../../../shared/utils/formatoPrecio';
 import * as catalogoApi from '../api/catalogoProductosApi';
 import { descargarExcelCatalogo } from '../utils/excelCodigosBc';
 import ModalImportarCodigosBc from '../components/ModalImportarCodigosBc';
@@ -37,12 +38,6 @@ function TarjetaResumen({ valor, etiqueta, tono }: { valor: number; etiqueta: st
       <p className="text-[12px] text-brand-900/50 mt-1">{etiqueta}</p>
     </div>
   );
-}
-
-function formatearPrecio(precio: number | string | null): string {
-  if (precio === null || precio === undefined || precio === '') return '—';
-  const numero = Number(precio);
-  return Number.isNaN(numero) ? '—' : numero.toFixed(2);
 }
 
 function CatalogoProductosContent() {
@@ -232,7 +227,7 @@ function CatalogoProductosContent() {
                       </td>
                       <td className="px-4 py-2.5 text-xs text-brand-900/60">{p.unidad_presentacion || '—'}</td>
                       <td className="px-4 py-2.5 text-xs text-brand-900/70 text-right tabular-nums">
-                        {formatearPrecio(p.precio)}
+                        {formatearPrecio(p.precio) || '—'}
                       </td>
                       <td className="px-4 py-2.5">
                         <BadgeEstado estado={p.estado_calificacion} />

@@ -12,6 +12,7 @@ import Spinner from '../../../shared/components/Spinner';
 import ModalVisorPdf from '../../../shared/components/ModalVisorPdf';
 import { CORREO_LABORATORIO } from '../../../shared/config/contactos';
 import { mensajeDeError } from '../../miFicha/utils/mensajeDeError';
+import { formatearPrecio } from '../../../shared/utils/formatoPrecio';
 
 const TAMANO_MAXIMO_MB = 4;
 
@@ -539,7 +540,7 @@ export default function ModalDocumentosProducto({
       <p className="text-xs text-brand-900/50 -mt-2 mb-3">
         {etiquetaClasificacion(producto.clasificacion) ?? 'Sin categoría'} · {producto.codigo_barras ?? 'Sin código de barras'} ·{' '}
         {producto.unidad_presentacion}
-        {producto.precio != null && ` · $${producto.precio}`}
+        {producto.precio != null && ` · $${formatearPrecio(producto.precio)}`}
         {producto.precio_en_revision && ' · 🔒 Precio en revisión'}
         {producto.contenido_paquete != null && ` · ${producto.contenido_paquete} u/paquete`}
         {producto.peso != null && ` · ${producto.peso} kg`}

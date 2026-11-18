@@ -9,6 +9,7 @@ import Card from '../../../shared/components/Card';
 import Badge from '../../../shared/components/Badge';
 import Button from '../../../shared/components/Button';
 import Spinner from '../../../shared/components/Spinner';
+import { formatearPrecio } from '../../../shared/utils/formatoPrecio';
 
 function formatearFecha(fecha: string): string {
   const d = new Date(fecha);
@@ -48,9 +49,9 @@ function FilaSolicitud({ solicitud }: { solicitud: SolicitudCambioPrecio }) {
         </div>
 
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-brand-900/50 line-through">${solicitud.precio_anterior}</span>
+          <span className="text-brand-900/50 line-through">${formatearPrecio(solicitud.precio_anterior)}</span>
           <span aria-hidden>→</span>
-          <span className="font-semibold text-brand-900">${solicitud.precio_nuevo}</span>
+          <span className="font-semibold text-brand-900">${formatearPrecio(solicitud.precio_nuevo)}</span>
         </div>
       </div>
 
