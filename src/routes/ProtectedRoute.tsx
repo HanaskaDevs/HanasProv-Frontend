@@ -1,14 +1,16 @@
 import { Suspense } from 'react';
-import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../modules/auth/hooks/useAuth';
 import DashboardLayout from '../shared/layouts/DashboardLayout';
 import PantallaCarga from '../shared/components/PantallaCarga';
 import Spinner from '../shared/components/Spinner';
 import { useInactividad } from '../shared/hooks/useInactividad';
+import { guardarRutaPendiente } from '../shared/utils/rutaPendiente';
 
 export default function ProtectedRoute() {
   const { isAuthenticated, isLoading, logout, esModoTv } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Control de inactividad (15 minutos)
   useInactividad(15, async () => {
@@ -21,6 +23,9 @@ export default function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
+    // Para volver acá después de iniciar sesión (ej. el enlace del correo de
+    // aprobaciones de arribo abierto con la sesión vencida).
+    guardarRutaPendiente(location.pathname + location.search);
     return <Navigate to="/login" replace />;
   }
 

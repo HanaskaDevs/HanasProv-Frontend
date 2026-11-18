@@ -15,6 +15,7 @@ import AuthLayout from '../../../shared/layouts/AuthLayout';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
 import { CLAVE_MOTIVO_SALIDA } from '../../../shared/api/apiClient';
+import { tomarRutaPendiente } from '../../../shared/utils/rutaPendiente';
 
 const loginSchema = z.object({
   email: z.string().email('Correo inválido'),
@@ -70,7 +71,9 @@ export default function LoginPage() {
       const tokenCaptcha = await obtenerTokenTurnstile();
 
       await login(values.email, values.password, tokenCaptcha);
-      navigate('/panel');
+      // Si llegó al login desde un enlace (ej. el correo de aprobaciones de
+      // arribo), vuelve a esa página; si no, al inicio como siempre.
+      navigate(tomarRutaPendiente() ?? '/panel');
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) {
         // Se muestra el mensaje que manda el backend, no uno fijo: además de
