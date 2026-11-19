@@ -130,6 +130,16 @@ const CALENDARIO_HORARIOS: SubMenuItem = {
   descripcion: 'Día, andén y hora de entrega por proveedor',
 };
 
+// Pedidos fuera de planificación (19-nov-2026): turnos sueltos de la semana
+// que Compras agenda en Business Central. Mismos roles que el calendario
+// (HorarioEntregaService::verificarAccesoLectura): va siempre al lado.
+const FUERA_PLANIFICACION: SubMenuItem = {
+  to: '/calendario/fuera-planificacion',
+  label: 'Pedidos fuera de planificación',
+  icono: 'calendario',
+  descripcion: 'Turnos extra de esta semana por clasificación',
+};
+
 // ---------------------------------------------------------------------------
 // Menús planos (roles con pocos módulos)
 // ---------------------------------------------------------------------------
@@ -236,7 +246,7 @@ const AREA_CALIDAD_ADMIN: MenuItem = {
 // el backend decide qué botones mostrar) + Reclamos.
 const AREA_OPERACION_COMPRAS: MenuItem = {
   label: 'Operación',
-  children: [PEDIDOS_ITEM, CALENDARIO_HORARIOS, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
+  children: [PEDIDOS_ITEM, CALENDARIO_HORARIOS, FUERA_PLANIFICACION, RECLAMOS_ABIERTOS, RECLAMOS_CERRADOS],
 };
 
 // Calidad (27-ago-2026, pedido explícito del usuario): SIN Pedidos, SIN
@@ -247,7 +257,7 @@ const AREA_OPERACION_COMPRAS: MenuItem = {
 const AREA_OPERACION_CALIDAD: MenuItem = {
   label: 'Operación',
   // Seguimiento de hoy para Calidad desde el 23-oct-2026.
-  children: [CALENDARIO_HORARIOS, SEGUIMIENTO_HOY_ITEM],
+  children: [CALENDARIO_HORARIOS, FUERA_PLANIFICACION, SEGUIMIENTO_HOY_ITEM],
 };
 
 // El rol Calidad tiene su área "Calidad", igual que Sistemas y Admin: las
@@ -342,6 +352,7 @@ const AREA_REPORTES: MenuItem = {
     REPORTE_HISTORIAL_RECLAMOS,
     REPORTE_HISTORIAL_PROVEEDORES,
     CALENDARIO_HORARIOS,
+    FUERA_PLANIFICACION,
   ],
 };
 

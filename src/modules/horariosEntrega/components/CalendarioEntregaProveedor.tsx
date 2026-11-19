@@ -76,6 +76,8 @@ export default function CalendarioEntregaProveedor() {
                 {h.clasificacion.replace('_', ' ')}
                 {h.anden_puerta ? ` · Andén ${h.anden_puerta}` : ''}
               </p>
+              {/* Turno suelto de esta semana (19-nov-2026), no se repite. */}
+              {h.fuera_planificacion && <p className="text-violet-700 font-semibold">Fuera de planificación</p>}
               {primeraDelDia && (
                 <p
                   className={`line-clamp-2 break-words ${h.pedidos.length > 0 ? 'text-brand-900/75' : 'text-brand-900/35'}`}

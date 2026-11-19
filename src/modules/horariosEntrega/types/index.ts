@@ -34,6 +34,12 @@ export interface HorarioEntrega {
   tiempo_permanencia_min: number | null;
   /** "HH:MM" */
   hora_salida: string | null;
+  /** Pedido fuera de planificación (19-nov-2026): turno suelto de una fecha
+   *  concreta agendado en Business Central. 10 min de tolerancia para marcar
+   *  el arribo y sin solicitud de aprobación. */
+  fuera_planificacion?: boolean;
+  /** "YYYY-MM-DD" del turno fuera de planificación; null en el calendario semanal. */
+  fecha_fuera_planificacion?: string | null;
 }
 
 /** Horario del propio proveedor (GET /horarios-entrega/mios), con los pedidos de ese día. */
@@ -56,7 +62,9 @@ export interface HorarioPropio extends HorarioEntrega {
  * mano: los pone en automático el job que lee SIGH. Una vez Recibido, la
  * fila deja de aparecer en /horarios-entrega/hoy.
  */
-export type EstadoHorario = 'Programado' | 'Atrasado' | 'Rechazado' | 'Arribo' | 'En_Recepcion' | 'Recibido';
+// No_Llego solo sale en la sección de pedidos fuera de planificación: un
+// turno de un día que ya pasó sin arribo.
+export type EstadoHorario = 'Programado' | 'Atrasado' | 'Rechazado' | 'Arribo' | 'En_Recepcion' | 'Recibido' | 'No_Llego';
 
 export const ESTADOS_HORARIO: Record<EstadoHorario, { etiqueta: string }> = {
   Programado: { etiqueta: 'Programado' },
@@ -65,7 +73,33 @@ export const ESTADOS_HORARIO: Record<EstadoHorario, { etiqueta: string }> = {
   Arribo: { etiqueta: 'Arribo' },
   En_Recepcion: { etiqueta: 'En recepción' },
   Recibido: { etiqueta: 'Recibido' },
+  No_Llego: { etiqueta: 'No llegó' },
 };
+
+/** Una ventana de recepción de pedidos fuera de planificación. */
+export interface VentanaFueraPlanificacion {
+  dia: DiaSemana;
+  /** "YYYY-MM-DD" de ese día en la semana en curso. */
+  fecha: string | null;
+  apertura: string;
+  cierre: string;
+}
+
+export interface TurnoFueraPlanificacion extends HorarioEntrega {
+  estado: EstadoHorario;
+  hora_arribo_real: string | null;
+}
+
+/** GET /horarios-entrega/fuera-planificacion: la semana en curso. */
+export interface SemanaFueraPlanificacion {
+  /** "YYYY-MM-DD HH:MM": domingo 01:00 en que empezó la semana. */
+  inicio_ciclo: string;
+  fin_ciclo: string;
+  tolerancia_minutos: number;
+  duraciones: number[];
+  ventanas: Partial<Record<ClasificacionHorario, VentanaFueraPlanificacion[]>>;
+  turnos: TurnoFueraPlanificacion[];
+}
 
 export interface HorarioHoy extends HorarioEntrega {
   estado: EstadoHorario;

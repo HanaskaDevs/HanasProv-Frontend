@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../auth/hooks/useAuth';
 import * as horariosEntregaApi from '../api/horariosEntregaApi';
 import { CLASIFICACIONES, ESTADOS_HORARIO, type EstadoHorario, type HorarioHoy } from '../types';
+import EtiquetaFueraPlanificacion from '../components/EtiquetaFueraPlanificacion';
 import PantallaCarga from '../../../shared/components/PantallaCarga';
 import { useAnunciosVoz } from '../useAnunciosVoz';
 
@@ -31,6 +32,7 @@ const ESTILOS_FILA: Record<EstadoHorario, string> = {
   Arribo: 'bg-sky-400/10 border-sky-400/50',
   En_Recepcion: 'bg-emerald-700/15 border-emerald-700/50',
   Recibido: 'border-white/5 opacity-40',
+  No_Llego: 'border-white/10',
 };
 
 const ESTILOS_CHIP: Record<EstadoHorario, string> = {
@@ -40,6 +42,7 @@ const ESTILOS_CHIP: Record<EstadoHorario, string> = {
   Arribo: 'bg-sky-400 text-brand-900',
   En_Recepcion: 'bg-emerald-700 text-white',
   Recibido: 'bg-emerald-400 text-brand-900',
+  No_Llego: 'bg-white/10 text-white/60',
 };
 
 /** Reloj en vivo, para poder comparar a ojo la hora actual contra la
@@ -530,7 +533,14 @@ export default function ModoTvHorariosPage() {
                   <td className="py-3 pr-4 tabular-nums text-white/80">{h.hora_salida ?? '—'}</td>
                   <td className="py-3 pr-4 text-xl">{h.anden_puerta ?? '—'}</td>
                   <td className="py-3 pr-4 text-white/60 text-lg">{h.codigo_proveedor ?? '—'}</td>
-                  <td className="py-3 pr-4">{h.nombre_proveedor}</td>
+                  <td className="py-3 pr-4">
+                    {h.nombre_proveedor}
+                    {h.fuera_planificacion && (
+                      <span className="ml-3">
+                        <EtiquetaFueraPlanificacion variante="tv" />
+                      </span>
+                    )}
+                  </td>
                   <td className="py-3 pr-4">
                     <span className={`text-sm font-semibold uppercase tracking-wide px-3 py-1 rounded-full ${ESTILOS_CHIP[h.estado]}`}>
                       {ESTADOS_HORARIO[h.estado].etiqueta}

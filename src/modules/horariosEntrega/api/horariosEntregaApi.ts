@@ -6,11 +6,20 @@ import type {
   HorarioPropio,
   PedidoDelDia,
   ProveedorParaHorario,
+  SemanaFueraPlanificacion,
   SolicitudAprobacionArribo,
 } from '../types';
 
 export async function listar(clasificacion?: ClasificacionHorario): Promise<HorarioEntrega[]> {
   const { data } = await apiClient.get<HorarioEntrega[]>('/horarios-entrega', {
+    params: clasificacion ? { clasificacion } : undefined,
+  });
+  return data;
+}
+
+/** Pedidos fuera de planificación de la semana en curso y sus ventanas (solo lectura). */
+export async function fueraPlanificacion(clasificacion?: ClasificacionHorario): Promise<SemanaFueraPlanificacion> {
+  const { data } = await apiClient.get<SemanaFueraPlanificacion>('/horarios-entrega/fuera-planificacion', {
     params: clasificacion ? { clasificacion } : undefined,
   });
   return data;

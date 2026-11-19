@@ -9,6 +9,7 @@ import Spinner from '../../../shared/components/Spinner';
 import Modal from '../../../shared/components/Modal';
 import RoleRoute from '../../../routes/RoleRoute';
 import BadgeEstadoHorario from '../components/BadgeEstadoHorario';
+import EtiquetaFueraPlanificacion from '../components/EtiquetaFueraPlanificacion';
 
 /** Refresca solo: Atrasado/Rechazado/En_Recepcion/Recibido se calculan o
  *  llegan solos (SIGH), así que sin recargar la página el estado igual
@@ -37,10 +38,14 @@ function BotonesAccion({
   compacto: boolean;
 }) {
   const mostrarBotonArribo = horario.estado === 'Programado' || horario.estado === 'Atrasado';
-  const mostrarBotonSolicitar = horario.estado === 'Rechazado' && !horario.tiene_solicitud_pendiente;
-  const mostrarAvisoPendiente = horario.estado === 'Rechazado' && horario.tiene_solicitud_pendiente;
+  // Un pedido fuera de planificación no admite solicitud de aprobación
+  // (19-nov-2026): pasados los 10 min de tolerancia ya no se registra.
+  const fueraDePlan = horario.fuera_planificacion === true;
+  const mostrarBotonSolicitar = horario.estado === 'Rechazado' && !horario.tiene_solicitud_pendiente && !fueraDePlan;
+  const mostrarAvisoPendiente = horario.estado === 'Rechazado' && horario.tiene_solicitud_pendiente && !fueraDePlan;
+  const mostrarAvisoSinTolerancia = horario.estado === 'Rechazado' && fueraDePlan;
 
-  if (!mostrarBotonArribo && !mostrarBotonSolicitar && !mostrarAvisoPendiente) {
+  if (!mostrarBotonArribo && !mostrarBotonSolicitar && !mostrarAvisoPendiente && !mostrarAvisoSinTolerancia) {
     return null;
   }
 
@@ -65,6 +70,9 @@ function BotonesAccion({
       {mostrarAvisoPendiente && (
         <span className="text-[11px] text-brand-900/50 italic">Esperando aprobación de Calidad…</span>
       )}
+      {mostrarAvisoSinTolerancia && (
+        <span className="text-[11px] text-red-700/80 italic">Pasó la tolerancia: no se registra el arribo</span>
+      )}
     </div>
   );
 }
@@ -81,7 +89,14 @@ function FilaSeguimiento({
       <td className="py-2.5 px-4 font-semibold tabular-nums">{horario.hora_llegada}</td>
       <td className="py-2.5 px-2">{horario.anden_puerta ?? '—'}</td>
       <td className="py-2.5 px-2 text-brand-900/60">{horario.codigo_proveedor ?? '—'}</td>
-      <td className="py-2.5 px-2">{horario.nombre_proveedor}</td>
+      <td className="py-2.5 px-2">
+        {horario.nombre_proveedor}
+        {horario.fuera_planificacion && (
+          <span className="ml-2">
+            <EtiquetaFueraPlanificacion />
+          </span>
+        )}
+      </td>
       <td className="py-2.5 px-2 text-brand-900/60">
         {CLASIFICACIONES.find((c) => c.valor === horario.clasificacion)?.etiqueta}
       </td>
@@ -109,6 +124,11 @@ function TarjetaSeguimiento({
         <div>
           <p className="font-semibold text-brand-900 leading-tight">{horario.nombre_proveedor}</p>
           {horario.codigo_proveedor && <p className="text-xs text-brand-900/50">{horario.codigo_proveedor}</p>}
+          {horario.fuera_planificacion && (
+            <p className="mt-1">
+              <EtiquetaFueraPlanificacion />
+            </p>
+          )}
         </div>
         <BadgeEstadoHorario estado={horario.estado} />
       </div>

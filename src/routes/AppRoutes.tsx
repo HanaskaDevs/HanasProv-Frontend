@@ -73,6 +73,7 @@ const FormularioDerechosPage = lazyPagina(() => import('../modules/legal/pages/F
 const CalendarioHorariosPage = lazyPagina(() => import('../modules/horariosEntrega/pages/CalendarioHorariosPage'));
 const ModoTvHorariosPage = lazyPagina(() => import('../modules/horariosEntrega/pages/ModoTvHorariosPage'));
 const SeguimientoHoyPage = lazyPagina(() => import('../modules/horariosEntrega/pages/SeguimientoHoyPage'));
+const FueraPlanificacionPage = lazyPagina(() => import('../modules/horariosEntrega/pages/FueraPlanificacionPage'));
 const AprobacionesArriboPage = lazyPagina(() => import('../modules/horariosEntrega/pages/AprobacionesArriboPage'));
 
 /**
@@ -146,6 +147,7 @@ export default function AppRoutes() {
           <Route path="/politicas" element={<PoliticasPage />} />
           <Route path="/calendario" element={<CalendarioHorariosPage />} />
           <Route path="/calendario/seguimiento" element={<SeguimientoHoyPage />} />
+          <Route path="/calendario/fuera-planificacion" element={<FueraPlanificacionPage />} />
           <Route path="/calendario/aprobaciones" element={<AprobacionesArriboPage />} />
           <Route path="/reportes" element={<Navigate to="/reportes/calificacion-proveedores" replace />} />
           <Route path="/reportes/calificacion-proveedores" element={<ReporteCalificacionProveedoresPage />} />

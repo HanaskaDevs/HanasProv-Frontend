@@ -11,6 +11,7 @@ const ESTILOS: Record<EstadoHorario, string> = {
   Arribo: 'bg-sky-100 text-sky-700',
   En_Recepcion: 'bg-emerald-800/15 text-emerald-900',
   Recibido: 'bg-emerald-100 text-emerald-700',
+  No_Llego: 'bg-brand-900/8 text-brand-900/60',
 };
 
 export default function BadgeEstadoHorario({ estado }: { estado: EstadoHorario }) {
