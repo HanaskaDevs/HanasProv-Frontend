@@ -92,7 +92,7 @@ export interface TurnoFueraPlanificacion extends HorarioEntrega {
 
 /** GET /horarios-entrega/fuera-planificacion: la semana en curso. */
 export interface SemanaFueraPlanificacion {
-  /** "YYYY-MM-DD HH:MM": domingo 01:00 en que empezó la semana. */
+  /** "YYYY-MM-DD HH:MM": sábado 01:00 en que empezó la semana. */
   inicio_ciclo: string;
   fin_ciclo: string;
   tolerancia_minutos: number;

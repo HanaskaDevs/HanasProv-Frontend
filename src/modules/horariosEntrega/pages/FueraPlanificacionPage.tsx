@@ -143,10 +143,10 @@ function FueraPlanificacionContenido() {
           {data && (
             <>
               {' '}
-              (semana que empezó el domingo {fechaCorta(data.inicio_ciclo)})
+              (semana que empezó el sábado {fechaCorta(data.inicio_ciclo)})
             </>
           )}
-          . Se agendan en Business Central y aparecen aquí solos; cada domingo empieza una semana nueva.
+          . Se agendan en Business Central y aparecen aquí solos; cada sábado empieza una semana nueva.
         </p>
       </div>
 
