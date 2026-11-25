@@ -215,7 +215,7 @@ function useHorariosDeHoyPorClasificacion(habilitado: boolean) {
  * que un tablero de vuelos.
  */
 export default function ModoTvHorariosPage() {
-  const { isAuthenticated, isLoading, esSistemas, esAdmin, esCompras, esCalidad, esGuardia, esModoTv } = useAuth();
+  const { isAuthenticated, isLoading, esSistemas, esAdmin, esCompras, esCalidad, esGuardia, esModoTv, esBodega } = useAuth();
   const navigate = useNavigate();
   const [indiceClasificacion, setIndiceClasificacion] = useState(0);
   const [paginaActual, setPaginaActual] = useState(0);
@@ -389,7 +389,8 @@ export default function ModoTvHorariosPage() {
     return <Navigate to="/login" replace />;
   }
 
-  const tieneAcceso = esSistemas || esAdmin || esCompras || esCalidad || esGuardia || esModoTv;
+  // Bodega desde el 25-nov-2026 (pedido del usuario: "que lo vea"), solo lectura.
+  const tieneAcceso = esSistemas || esAdmin || esCompras || esCalidad || esGuardia || esModoTv || esBodega;
 
   if (!tieneAcceso) {
     return (

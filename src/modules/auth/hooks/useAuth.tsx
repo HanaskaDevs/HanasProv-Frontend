@@ -39,6 +39,7 @@ interface AuthContextValue {
   esGuardia: boolean;
   esCatalogo: boolean;
   esModoTv: boolean;
+  esBodega: boolean;
   esProveedor: boolean;
   puedeGestionarRecepciones: boolean;
   login: (email: string, password: string, tokenCaptcha?: string | null) => Promise<Usuario>;
@@ -272,9 +273,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         esGuardia: rolActivo === ROLES.GUARDIA,
         esCatalogo: rolActivo === ROLES.CATALOGO,
         esModoTv: rolActivo === ROLES.MODO_TV,
+        esBodega: rolActivo === ROLES.BODEGA,
         esProveedor: usuario?.tipo_usuario === 'Proveedor',
+        // Quién ve los pedidos por bodega. Solo lo usan las pantallas de
+        // Pedidos. Bodega desde el 25-nov-2026 (todas las bodegas, lo decide
+        // el backend en PedidoInternoService::obtenerBodegasPermitidas).
         puedeGestionarRecepciones:
-          rolActivo === ROLES.SISTEMAS || rolActivo === ROLES.ADMIN || rolActivo === ROLES.COMPRAS,
+          rolActivo === ROLES.SISTEMAS ||
+          rolActivo === ROLES.ADMIN ||
+          rolActivo === ROLES.COMPRAS ||
+          rolActivo === ROLES.BODEGA,
         login,
         logout,
         cambiarEmpresa,

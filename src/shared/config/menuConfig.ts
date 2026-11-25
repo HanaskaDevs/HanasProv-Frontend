@@ -591,6 +591,22 @@ const AREA_PRODUCTOS_CATALOGO: MenuItem = {
 
 const MENU_CATALOGO: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_PRODUCTOS_CATALOGO];
 
+// Bodega (25-nov-2026, pedido del usuario): solo consulta. Pedidos (todas
+// las bodegas), Calendario de horarios (con Modo TV), Pedidos fuera de
+// planificación e Historial de proveedores. Mismo estilo agrupado que
+// Compras, con las mismas áreas Operación y Reportes.
+const AREA_OPERACION_BODEGA: MenuItem = {
+  label: 'Operación',
+  children: [PEDIDOS_ITEM, CALENDARIO_HORARIOS, FUERA_PLANIFICACION],
+};
+
+const AREA_REPORTES_BODEGA: MenuItem = {
+  label: 'Reportes',
+  children: [REPORTE_HISTORIAL_PROVEEDORES],
+};
+
+const MENU_BODEGA: MenuItem[] = [{ label: 'Inicio', to: '/panel' }, AREA_OPERACION_BODEGA, AREA_REPORTES_BODEGA];
+
 // El Guardia es un rol de un solo propósito: marcar que un proveedor
 // arribó en el seguimiento de hoy -> no necesita nada más del portal.
 const MENU_GUARDIA: MenuItem[] = [SEGUIMIENTO_HOY_PLANO];
@@ -626,6 +642,8 @@ export function obtenerMenu(
       return MENU_GUARDIA;
     case ROLES.CATALOGO:
       return MENU_CATALOGO;
+    case ROLES.BODEGA:
+      return MENU_BODEGA;
     default:
       return [];
   }

@@ -15,7 +15,7 @@ import { useModoNavideno } from '../../../shared/hooks/useModoNavideno';
 import TarjetaAprobacionesPendientes from '../../horariosEntrega/components/TarjetaAprobacionesPendientes';
 
 export default function DashboardHomePage() {
-  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esCalidad, esGuardia, esCatalogo } = useAuth();
+  const { usuario, empresaActiva, esProveedor, esSistemas, esAdmin, esCalidad, esGuardia, esCatalogo, esBodega } = useAuth();
   const navidad = useModoNavideno();
 
   // Comparte queryKey con DashboardLayout/MiFichaPage -> React Query lo
@@ -128,6 +128,16 @@ export default function DashboardHomePage() {
             cargar los códigos de BC, <strong>Productos por proveedor</strong> para corregir los datos de cualquier
             producto (aprobado o no; su estado no cambia) y <strong>Productos por revisar</strong> para ver lo que
             los proveedores enviaron a aprobación.
+          </p>
+        </Card>
+      ) : esBodega ? (
+        // Rol Bodega (25-nov-2026): sin panel propio, solo qué hay en cada pantalla.
+        <Card>
+          <p className="text-sm text-brand-900/70">
+            Desde <strong>Operación</strong>, en el menú de arriba: los <strong>Pedidos</strong> que se entregan hoy
+            en cada bodega, el <strong>Calendario de horarios</strong> (con su Modo TV) y los{' '}
+            <strong>Pedidos fuera de planificación</strong> de esta semana. En <strong>Reportes</strong>, el{' '}
+            <strong>Historial de proveedores</strong>: a qué hora llegó cada uno y cuánto esperó.
           </p>
         </Card>
       ) : (

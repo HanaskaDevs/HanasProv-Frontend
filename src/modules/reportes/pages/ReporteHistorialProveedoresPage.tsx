@@ -111,10 +111,10 @@ function textoAtraso(minutos: number | null): { texto: string; clase: string } {
 }
 
 export default function ReporteHistorialProveedoresPage() {
-  // Calidad, Admin y Sistemas, igual que HistorialEntregasService.
-  // Sistemas, Admin y Compras, igual que HistorialEntregasService::verificarAcceso.
-  const { esSistemas, esAdmin, esCompras } = useAuth();
-  const tieneAcceso = esSistemas || esAdmin || esCompras;
+  // Sistemas, Admin, Compras y Bodega (desde el 25-nov-2026), igual que
+  // HistorialEntregasService::verificarAcceso.
+  const { esSistemas, esAdmin, esCompras, esBodega } = useAuth();
+  const tieneAcceso = esSistemas || esAdmin || esCompras || esBodega;
 
   const [desde, setDesde] = useState(fechaHace(30));
   const [hasta, setHasta] = useState(hoy());

@@ -182,10 +182,11 @@ function CalendarioContenido() {
  * lectura, verificado también en el backend.
  */
 export default function CalendarioHorariosPage() {
-  const { esSistemas, esAdmin, esCompras, esCalidad } = useAuth();
+  // Bodega desde el 25-nov-2026: solo ve (el calendario se gestiona en BC).
+  const { esSistemas, esAdmin, esCompras, esCalidad, esBodega } = useAuth();
 
   return (
-    <RoleRoute allow={esSistemas || esAdmin || esCompras || esCalidad}>
+    <RoleRoute allow={esSistemas || esAdmin || esCompras || esCalidad || esBodega}>
       <CalendarioContenido />
     </RoleRoute>
   );

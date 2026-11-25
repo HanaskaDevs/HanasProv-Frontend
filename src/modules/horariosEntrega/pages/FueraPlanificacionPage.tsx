@@ -223,10 +223,11 @@ function FueraPlanificacionContenido() {
  * Business Central. El Guardia los ve en Seguimiento de hoy.
  */
 export default function FueraPlanificacionPage() {
-  const { esSistemas, esAdmin, esCompras, esCalidad } = useAuth();
+  // Bodega desde el 25-nov-2026 (solo consulta, igual que el resto).
+  const { esSistemas, esAdmin, esCompras, esCalidad, esBodega } = useAuth();
 
   return (
-    <RoleRoute allow={esSistemas || esAdmin || esCompras || esCalidad}>
+    <RoleRoute allow={esSistemas || esAdmin || esCompras || esCalidad || esBodega}>
       <FueraPlanificacionContenido />
     </RoleRoute>
   );

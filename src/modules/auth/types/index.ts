@@ -55,4 +55,8 @@ export const ROLES = {
   // Modo TV (11-nov-2026): la cuenta de las pantallas de TV. Solo ve el
   // calendario en Modo TV y su sesión no vence (lo decide el backend).
   MODO_TV: 'Modo TV',
+  // Bodega (25-nov-2026): solo consulta Pedidos (todas las bodegas),
+  // Historial de proveedores, Calendario de horarios (con Modo TV) y
+  // Pedidos fuera de planificación.
+  BODEGA: 'Bodega',
 } as const;

@@ -274,13 +274,13 @@ function BotonModoTv() {
 }
 
 export default function PedidosPage() {
-    const { esProveedor, esSistemas, esAdmin, esCompras, esCalidad, puedeGestionarRecepciones } = useAuth();
+    const { esProveedor, esSistemas, esAdmin, esCompras, esCalidad, esBodega, puedeGestionarRecepciones } = useAuth();
 
     if (esProveedor) {
         return <PedidosProveedor />;
     }
 
-    const veCalendario = esSistemas || esAdmin || esCompras || esCalidad;
+    const veCalendario = esSistemas || esAdmin || esCompras || esCalidad || esBodega;
 
     return (
         <div className="space-y-2">
