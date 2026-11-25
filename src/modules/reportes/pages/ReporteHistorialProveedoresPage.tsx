@@ -44,7 +44,9 @@ import type { EntregaHistorial, ResumenProveedor } from '../api/historialProveed
  * casos: "no llegó" (tenía pedido y pasó la tolerancia sin llegar) y "llegó
  * atrasado" (llegó fuera de plazo; la aprobación quedó pendiente o Calidad la
  * rechazó). Los que llegaron atrasados cuentan en el atraso del resumen. Se
- * registran desde el 11-nov-2026.
+ * registran desde el 11-nov-2026. Sin marca ni solicitud pero con su pedido
+ * recibido en bodega también es "llegó atrasado" (decisión del usuario:
+ * llegó pasada la tolerancia y el Guardia ya no podía marcarlo), sin hora.
  */
 
 /** Rangos rápidos, en días. El backend topa en 3 meses. */
@@ -74,6 +76,8 @@ const ESTADOS: Record<EntregaHistorial['estado_final'], { etiqueta: string; tono
 function textoAprobacion(aprobacion: EntregaHistorial['aprobacion']): string {
   if (aprobacion === 'Rechazada') return 'Aprobación rechazada';
   if (aprobacion === 'Pendiente') return 'Aprobación pendiente';
+  // Llegó pasada la tolerancia, no se marcó y nadie pidió aprobación, pero entregó.
+  if (aprobacion === 'Sin_Solicitud') return 'Pedido recibido, sin solicitud de aprobación';
   return '';
 }
 

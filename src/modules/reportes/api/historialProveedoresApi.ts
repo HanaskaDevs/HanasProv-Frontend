@@ -34,8 +34,12 @@ export interface EntregaHistorial {
    * rechazadas, que antes no salían (ver HistorialEntregasService).
    */
   estado_final: 'Recibido' | 'En_Recepcion' | 'Arribo' | 'Sin_Arribo' | 'Rechazado_No_Llego' | 'Rechazado_Atrasado';
-  /** Solo en Rechazado_Atrasado: en qué quedó la solicitud de arribo tardío. */
-  aprobacion: 'Pendiente' | 'Rechazada' | null;
+  /**
+   * Solo en Rechazado_Atrasado: en qué quedó la solicitud de arribo tardío.
+   * Sin_Solicitud = el Guardia no la pidió, pero su pedido se recibió en
+   * bodega (llegó pasada la tolerancia; caso Finca Los Nonnos, 24-nov).
+   */
+  aprobacion: 'Pendiente' | 'Rechazada' | 'Sin_Solicitud' | null;
 }
 
 export interface ResumenProveedor {
