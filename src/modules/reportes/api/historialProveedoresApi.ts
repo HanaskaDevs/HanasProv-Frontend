@@ -4,7 +4,9 @@ const BASE = '/reportes/historial-proveedores';
 
 /** Una entrega del historial: un proveedor, un día. */
 export interface EntregaHistorial {
-  id_horario_entrega_estado_diario: number;
+  /** Clave única de la fila (las rechazadas no tienen id de estado diario). */
+  clave: string;
+  id_horario_entrega_estado_diario: number | null;
   fecha: string | null;
   id_proveedor: number | null;
   proveedor: string | null;
@@ -27,15 +29,26 @@ export interface EntregaHistorial {
   /** Minutos desde que llegó hasta que lo recibieron. Negativo = el arribo se marcó tarde. */
   minutos_espera: number | null;
   nro_documento_bc: string | null;
-  estado_final: 'Recibido' | 'En_Recepcion' | 'Arribo' | 'Sin_Arribo';
+  /**
+   * Rechazado_No_Llego / Rechazado_Atrasado desde el 25-nov-2026: las citas
+   * rechazadas, que antes no salían (ver HistorialEntregasService).
+   */
+  estado_final: 'Recibido' | 'En_Recepcion' | 'Arribo' | 'Sin_Arribo' | 'Rechazado_No_Llego' | 'Rechazado_Atrasado';
+  /** Solo en Rechazado_Atrasado: en qué quedó la solicitud de arribo tardío. */
+  aprobacion: 'Pendiente' | 'Rechazada' | null;
 }
 
 export interface ResumenProveedor {
   id_proveedor: number;
   proveedor: string | null;
   ruc: string | null;
+  /** Todas sus citas del rango, también las rechazadas. */
   entregas: number;
   sin_arribo_marcado: number;
+  /** Rechazados que no llegaron. */
+  rechazados_no_llego: number;
+  /** Rechazados que llegaron atrasados (aprobación pendiente o rechazada). */
+  rechazados_atrasado: number;
   a_tiempo: number;
   tarde: number;
   atraso_promedio: number | null;

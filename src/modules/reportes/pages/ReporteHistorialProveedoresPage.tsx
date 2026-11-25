@@ -36,7 +36,15 @@ import type { EntregaHistorial, ResumenProveedor } from '../api/historialProveed
  * La SALIDA es la programada en el calendario: el portal no registra la
  * hora en que se va el camión.
  *
- * Acceso: Sistemas, Admin y Compras (pedido del usuario, 12-nov).
+ * Acceso: Sistemas, Admin y Compras (pedido del usuario, 12-nov), y Bodega
+ * desde el 25-nov.
+ *
+ * LOS RECHAZADOS (25-nov-2026, pedido del usuario): también salen las citas
+ * rechazadas, que antes no aparecían porque no tienen marca de llegada. Dos
+ * casos: "no llegó" (tenía pedido y pasó la tolerancia sin llegar) y "llegó
+ * atrasado" (llegó fuera de plazo; la aprobación quedó pendiente o Calidad la
+ * rechazó). Los que llegaron atrasados cuentan en el atraso del resumen. Se
+ * registran desde el 11-nov-2026.
  */
 
 /** Rangos rápidos, en días. El backend topa en 3 meses. */
@@ -58,7 +66,16 @@ const ESTADOS: Record<EntregaHistorial['estado_final'], { etiqueta: string; tono
   En_Recepcion: { etiqueta: 'En recepción', tono: 'neutral' },
   Arribo: { etiqueta: 'Arribó', tono: 'neutral' },
   Sin_Arribo: { etiqueta: 'Sin arribo', tono: 'danger' },
+  Rechazado_No_Llego: { etiqueta: 'Rechazado: no llegó', tono: 'danger' },
+  Rechazado_Atrasado: { etiqueta: 'Rechazado: llegó atrasado', tono: 'danger' },
 };
+
+/** Debajo del estado de un rechazado que llegó atrasado: en qué quedó su aprobación. */
+function textoAprobacion(aprobacion: EntregaHistorial['aprobacion']): string {
+  if (aprobacion === 'Rechazada') return 'Aprobación rechazada';
+  if (aprobacion === 'Pendiente') return 'Aprobación pendiente';
+  return '';
+}
 
 function IconoDescarga() {
   return (
@@ -154,9 +171,11 @@ export default function ReporteHistorialProveedoresPage() {
         porProveedor.map((p) => ({
           Proveedor: p.proveedor ?? '',
           RUC: p.ruc ?? '',
-          Entregas: p.entregas,
+          Citas: p.entregas,
           'A tiempo': p.a_tiempo,
           Tarde: p.tarde,
+          'Rechazado: no llegó': p.rechazados_no_llego,
+          'Rechazado: llegó atrasado': p.rechazados_atrasado,
           'Sin arribo marcado': p.sin_arribo_marcado,
           'Atraso promedio (min)': p.atraso_promedio ?? '',
           'Atraso máximo (min)': p.atraso_maximo ?? '',
@@ -185,6 +204,7 @@ export default function ReporteHistorialProveedoresPage() {
         'Salida programada': e.hora_salida ?? '',
         Documento: e.nro_documento_bc ?? '',
         Estado: ESTADOS[e.estado_final].etiqueta,
+        Aprobación: textoAprobacion(e.aprobacion),
       })),
       'Entregas',
       nombreArchivoConFecha('historial-entregas')
@@ -197,7 +217,8 @@ export default function ReporteHistorialProveedoresPage() {
         <div>
           <h1 className="font-display text-xl font-semibold text-brand-900">Historial de proveedores</h1>
           <p className="text-sm text-brand-900/60">
-            A qué hora estaba citado cada proveedor, a qué hora llegó y cuánto se demoró. Hasta 3 meses atrás.
+            A qué hora estaba citado cada proveedor, a qué hora llegó y cuánto se demoró. Incluye los rechazados:
+            los que no llegaron y los que llegaron atrasados. Hasta 3 meses atrás.
           </p>
         </div>
 
@@ -306,9 +327,15 @@ function TablaPorProveedor({ filas }: { filas: ResumenProveedor[] }) {
         <thead className="bg-brand-900/4 text-xs uppercase tracking-wide text-brand-900/50">
           <tr>
             <th className="px-4 sm:px-5 py-2.5">Proveedor</th>
-            <th className="px-3 py-2.5 text-center">Entregas</th>
+            <th className="px-3 py-2.5 text-center">Citas</th>
             <th className="px-3 py-2.5 text-center">A tiempo</th>
             <th className="px-3 py-2.5 text-center">Tarde</th>
+            <th className="px-3 py-2.5 text-center" title="Rechazados: tenían pedido y no llegaron">
+              No llegó
+            </th>
+            <th className="px-3 py-2.5 text-center" title="Rechazados: llegaron fuera de plazo (aprobación pendiente o rechazada)">
+              Llegó atrasado
+            </th>
             <th className="px-3 py-2.5 text-center">Atraso promedio</th>
             <th className="px-3 py-2.5 text-center">Peor atraso</th>
             <th className="px-3 py-2.5 text-center">Espera promedio</th>
@@ -328,6 +355,8 @@ function TablaPorProveedor({ filas }: { filas: ResumenProveedor[] }) {
                 <td className="px-3 py-2.5 text-center tabular-nums">{p.entregas}</td>
                 <td className="px-3 py-2.5 text-center tabular-nums text-emerald-700">{p.a_tiempo}</td>
                 <td className="px-3 py-2.5 text-center tabular-nums text-brand-wine">{p.tarde}</td>
+                <td className="px-3 py-2.5 text-center tabular-nums text-brand-wine">{p.rechazados_no_llego || '—'}</td>
+                <td className="px-3 py-2.5 text-center tabular-nums text-brand-wine">{p.rechazados_atrasado || '—'}</td>
                 <td className={`px-3 py-2.5 text-center tabular-nums ${promedio.clase}`}>{promedio.texto}</td>
                 <td className="px-3 py-2.5 text-center tabular-nums text-brand-900/70">
                   {p.atraso_maximo === null ? '—' : `+${p.atraso_maximo} min`}
@@ -383,7 +412,7 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
             const estado = ESTADOS[e.estado_final];
 
             return (
-              <tr key={e.id_horario_entrega_estado_diario} className="hover:bg-brand-900/3">
+              <tr key={e.clave} className="hover:bg-brand-900/3">
                 <td className="px-4 sm:px-5 py-2.5 tabular-nums text-brand-900/70">{fechaCorta(e.fecha)}</td>
                 <td className="px-3 py-2.5">
                   <p className="text-brand-900">{e.proveedor ?? 'Proveedor sin nombre'}</p>
@@ -403,6 +432,9 @@ function TablaEntregas({ filas }: { filas: EntregaHistorial[] }) {
                 <td className="px-3 py-2.5 text-center tabular-nums text-brand-900/45">{e.hora_salida ?? '—'}</td>
                 <td className="px-3 py-2.5">
                   <Badge tone={estado.tono}>{estado.etiqueta}</Badge>
+                  {e.aprobacion && (
+                    <p className="mt-0.5 text-[11px] text-brand-900/45">{textoAprobacion(e.aprobacion)}</p>
+                  )}
                 </td>
               </tr>
             );
